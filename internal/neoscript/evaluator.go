@@ -204,6 +204,13 @@ func boundedValue(v reflect.Value, remaining *int, depth int) bool {
 }
 
 func validateProposal(p neoroute.ScriptProposal, in neoroute.ScriptInput) error {
+	if p.StageID == "" && p.AccountID == "" {
+		for _, stage := range in.Stages {
+			if stage.Lua != nil {
+				return nil
+			}
+		}
+	}
 	if strings.TrimSpace(p.StageID) == "" || strings.TrimSpace(p.AccountID) == "" || len(p.StageID) > 256 || len(p.AccountID) > 256 {
 		return errors.New("invalid script output: stageId and accountId must be nonempty strings of at most 256 bytes")
 	}

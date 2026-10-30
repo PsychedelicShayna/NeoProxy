@@ -254,8 +254,21 @@ func (s *Store) reserve(ctx context.Context, req Request, run *runState, state r
 		st := state.vm.Stages[*d.StageIndex]
 		allot, _ := grantFor(state.principal, state.vm.ID)
 		reservation.Window = st.Window
+		// Use the exact bounded Lua/static budgets that produced this decision.
+		// The pool ledger atomically checks them against current in-flight usage.
 		reservation.PerAccount = st.PerAccount * allot
 		reservation.Cap = st.Cap * allot
+		for _, step := range d.Trail {
+			if step.Kind != "stage" || step.StageID != d.StageID {
+				continue
+			}
+			reservation.Cap = min(reservation.Cap, step.Cap)
+			for _, candidate := range step.Candidates {
+				if candidate.AccountID == d.AccountID {
+					reservation.PerAccount = min(reservation.PerAccount, candidate.Budget)
+				}
+			}
+		}
 		reservation.Shared = st.Per == "all"
 		for _, account := range state.snapshot.Accounts {
 			if account.ProviderID == a.ProviderID && accountAllowed(state.principal, account) && (st.Accounts.All || contains(st.Accounts.IDs, account.ID)) {

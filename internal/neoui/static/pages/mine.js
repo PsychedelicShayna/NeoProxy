@@ -61,7 +61,7 @@ export async function render(ctx) {
 				sub: vm.description,
 				actions: [h("div", { class: "ring-row" }, ring({ used: total ? drawn / total : 0, size: 40, large: true }), h("div", { class: "ring-text" }, h("div", { class: "main" }, "of your allotment used"), h("div", { class: "sub" }, g.allotment < 1 ? `you have ${fmtPct(g.allotment, null)} of the standard allotment` : "standard allotment")))],
 				body: [
-					chainRail(vm, { models, accounts: vault.accounts, usageFor, lit: sim, allot: g.allotment, accountLabel: (a) => `account ${vault.accounts.filter((x) => x.providerId === a.providerId).indexOf(a) + 1}` }),
+					chainRail(vm, { models, providers: vault.providers, accounts: vault.accounts, usageFor, lit: sim, allot: g.allotment, accountLabel: (a) => `account ${vault.accounts.filter((x) => x.providerId === a.providerId).indexOf(a) + 1}` }),
 					sim.outcome !== "ok" ? h("div", { class: "ink-2", style: { marginTop: "8px" } }, sim.message) : h("div", { class: "ink-3", style: { marginTop: "6px", fontSize: "12.5px" } }, sim.stageIndex !== undefined ? `Right now a request lands on stage ${sim.stageIndex + 1}, ${models.find((m) => m.id === sim.model)?.display}.` : `Right now a request falls through to ${models.find((m) => m.id === sim.model)?.display}.`),
 				],
 			}),

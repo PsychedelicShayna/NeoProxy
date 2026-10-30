@@ -11,7 +11,7 @@ export async function render(ctx) {
 	root.append(
 		pageHead({
 			title: "Core & vault",
-			desc: "This NeoProxy engine owns provider accounts, credentials and refresh. Exposure controls what is served to users.",
+			desc: "Local provider accounts stay in this engine; shared accounts stay with their NeoPi broker. Exposure and scoped virtual models control who can use them.",
 		}),
 	);
 	const host = h("div");
@@ -41,14 +41,14 @@ export async function render(ctx) {
 				h(
 					"p",
 					{ class: "ink-2", style: { margin: 0 } },
-					"The engine manages provider credentials and refresh. NeoPi, NeoDeck and other clients use their own scoped inference keys; they are not credential brokers.",
+					"Local credentials refresh in NeoProxy. Connected NeoPi gateways keep their own provider secrets and refresh authority; this proxy pins each shared account independently.",
 				),
 			),
 		}),
 	);
 
 	const selected = { id: ctx.params[0] ?? null };
-	const vaultCard = card({ title: "Vault", sub: `${plural(vault.providers.length, "provider")}, ${plural(vault.accounts.length, "account")} managed by this proxy. Hiding a provider removes its models from every user, including direct access.`, actions: [btn("Manage pools", { cls: "outline", onClick: () => ctx.navigate("accounts") })], flush: true, body: h("div") });
+	const vaultCard = card({ title: "Vault", sub: `${plural(vault.providers.length, "provider")}, ${plural(vault.accounts.length, "account")} available to this proxy. Shared models are stored virtual routes with explicit local budgets, never direct provider selectors.`, actions: [btn("Connect NeoPi / manage pools", { cls: "outline", onClick: () => ctx.navigate("accounts") })], flush: true, body: h("div") });
 	host.append(vaultCard);
 	const listHost = vaultCard.querySelector(".card-body");
 
@@ -80,7 +80,7 @@ export async function render(ctx) {
 				h(
 					"div",
 					{ class: "li", style: { background: "var(--panel)" } },
-					h("div", { class: "lt" }, h("div", { class: "main row" }, p.name, h("span", { class: "ink-3", style: { fontWeight: 400 } }, p.vendor), badge(p.kind === "oauth" ? "oauth" : "api key")), h("div", { class: "sub" }, p.exposed ? `served as neoproxy/${p.id}/… · ${plural(accs.length, "account")}` : "hidden from every user")),
+					h("div", { class: "lt" }, h("div", { class: "main row" }, p.name, h("span", { class: "ink-3", style: { fontWeight: 400 } }, p.vendor), badge(p.kind === "neopi-gateway" ? "NeoPi source" : p.kind === "oauth" ? "oauth" : "api key")), h("div", { class: "sub" }, p.exposed ? `${p.kind === "neopi-gateway" ? "stored virtual models only" : `served as neoproxy/${p.id}/…`} · ${plural(accs.length, "account")}` : "hidden from every user")),
 					toggle(p.exposed, async (v) => {
 						await neo.setProviderExposed(p.id, v);
 						toast(v ? `${p.name} is served again` : `${p.name} hidden from users`);
@@ -89,11 +89,12 @@ export async function render(ctx) {
 			);
 			for (const a of accs) {
 				const d = drawers(a.id);
+				const names = [...new Set(d.map((x) => x.vm.name))];
 				tree.append(
 					h(
 						"button",
 						{ type: "button", class: "li clickable", "aria-selected": String(selected.id === a.id), style: { paddingLeft: "32px" }, onClick: () => open(a) },
-						h("div", { class: "lt" }, h("div", { class: "main row" }, h("code", null, a.label), h("span", { class: "ink-3", style: { fontWeight: 400 } }, a.plan)), h("div", { class: "sub" }, d.length ? `drawn by ${[...new Set(d.map((x) => x.vm.name))].join(", ")}` : "no virtual model draws from this account")),
+						h("div", { class: "lt" }, h("div", { class: "main row" }, h("code", null, a.label), h("span", { class: "ink-3", style: { fontWeight: 400 } }, a.plan)), h("div", { class: "sub", title: names.join(", ") }, names.length ? `drawn by ${plural(names.length, "virtual model")}` : "no virtual model draws from this account")),
 						windowsRow(a.windows),
 						h("div", { style: { width: "130px", textAlign: "right" } }, accountState(a)),
 					),
@@ -119,11 +120,12 @@ export async function render(ctx) {
 				},
 				body: [
 					section(
-						"Quota windows",
-						a.windows.length ? a.windows.map((w) => h("div", { class: "ring-row", style: { marginBottom: "8px" } }, ring({ used: w.used, size: 40 }), h("div", { class: "ring-text" }, h("div", { class: "main" }, `${w.kind} window`), h("div", { class: "sub" }, `${fmtPct(w.used)} used · resets in ${fmtIn(w.resetsAt)} · ${w.source || "provider measurement"}`)))) : h("div", { class: "ink-3" }, "Quota unknown. Configure an explicit metered capacity in Account pools before using budgeted routes."),
+						"Local token budgets",
+						a.windows.length ? a.windows.map((w) => h("div", { class: "ring-row", style: { marginBottom: "8px" } }, ring({ used: w.used, size: 40 }), h("div", { class: "ring-text" }, h("div", { class: "main" }, `${w.kind} local budget`), h("div", { class: "sub" }, `${fmtPct(w.used)} used · resets in ${fmtIn(w.resetsAt)} · configured-metered`)))) : h("div", { class: "ink-3" }, "No local budget configured. Set an explicit metered capacity in Account pools before using budgeted routes."),
 						a.state === "cooldown" ? h("div", { class: "ink-2", style: { fontSize: "12.5px" } }, `Cooling down after a rate limit; back in ${fmtIn(a.cooldownUntil)}.`) : null,
 						a.state === "expired" ? h("div", { class: "ink-2", style: { fontSize: "12.5px" } }, "The credential expired. Re-authenticate through this proxy's provider login flow.") : null,
 					),
+					...(a.sourceId ? [section("Provider-reported quota", a.providerWindows?.length ? a.providerWindows.map((w) => h("p", { class: "ink-3" }, `${w.kind}: ${w.known ? `${fmtPct(w.used)} used${w.resetsAt ? ` · resets in ${fmtIn(w.resetsAt)}` : ""}` : "unknown"}`)) : h("p", { class: "ink-3" }, "Unknown. Missing native windows do not establish unlimited usage or absence of a five-hour limit."))] : []),
 					section(
 						"Drawn by",
 						d.length
@@ -135,9 +137,9 @@ export async function render(ctx) {
 										x.per.length ? h("div", { class: "ink-3", style: { fontSize: "12px", marginTop: "2px" } }, x.per.map(([handle, v]) => `${handle} ${fmtPct(v, 1)}`).join(" · ")) : h("div", { class: "ink-3", style: { fontSize: "12px" } }, "nothing drawn yet this window"),
 									),
 								)
-							: h("div", { class: "ink-3" }, "No virtual model includes this account. Direct-access users can still reach it."),
+							: h("div", { class: "ink-3" }, a.sourceId ? "No virtual model includes this shared account. It cannot be reached through a direct provider selector." : "No virtual model includes this account. Direct-access users can still reach it."),
 					),
-					section("Account", kv([["Provider", p.name], ["Kind", p.kind === "oauth" ? "Proxy-managed OAuth login" : "Proxy-managed API key"], ["Owner", users.find((u) => u.id === a.ownerId)?.handle || a.ownerId || "unassigned"], ["Id", h("code", null, a.id)]])),
+					section("Account", kv([["Provider", p.name], ["Kind", p.kind === "neopi-gateway" ? "NeoPi broker-owned credential (no provider secret imported)" : p.kind === "oauth" ? "Proxy-managed OAuth login" : "Proxy-managed API key"], ["Owner", users.find((u) => u.id === a.ownerId)?.handle || a.ownerId || "unassigned"], ["Id", h("code", null, a.id)]])),
 				],
 				foot: [btn("Open in Virtual models", { icon: "arrowRight", cls: "outline", onClick: () => ctx.navigate("virtual-models") })],
 			}),
@@ -153,9 +155,9 @@ export async function render(ctx) {
 	host.append(
 		card({
 			title: "Credential administration",
-			sub: "The proxy's existing credential manager owns storage, refresh and provider login.",
-			actions: [btn("Credentials", { icon: "arrowRight", cls: "sm", onClick: () => ctx.navigate("credentials") })],
-			body: h("p", { class: "ink-2", style: { margin: "4px 0 0" } }, "Organization admins may manage engine credentials here. Owners manage their own accounts through Account pools."),
+			sub: "Local credentials use the existing manager. Shared inference uses authenticated NeoPi gateway connections.",
+			actions: [btn("Connect NeoPi", { cls: "sm outline", onClick: () => ctx.navigate("accounts") }), btn("Local credentials", { icon: "arrowRight", cls: "sm", onClick: () => ctx.navigate("credentials") })],
+			body: h("p", { class: "ink-2", style: { margin: "4px 0 0" } }, "Organization admins connect sources and assign owners. Owners configure their local budgets and pool-scoped inference keys in Account pools. Source bearer credentials are never available to members."),
 		}),
 	);
 

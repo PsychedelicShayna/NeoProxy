@@ -248,6 +248,7 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 	s.neoHTTP.RegisterRoutes(engine, s.mgmt.Middleware())
 	s.initNeoPool(authManager)
 	s.initNeoRouting()
+	s.initNeoSources()
 
 	// Home heartbeat gate: when home is enabled, block all endpoints with 503 until the
 	// subscribe-config heartbeat connection is healthy.
@@ -314,6 +315,10 @@ func (s *Server) Start() error {
 	}
 	if err := s.neoStartupError(); err != nil {
 		return err
+	}
+	if s.neoPool != nil {
+		s.neoPool.StartSources()
+		defer s.neoPool.StopSources()
 	}
 
 	addr := s.server.Addr
@@ -468,6 +473,9 @@ func (s *Server) Stop(ctx context.Context) error {
 	}
 	if s.codexLiveHandler != nil {
 		s.codexLiveHandler.Close()
+	}
+	if s.neoPool != nil {
+		s.neoPool.StopSources()
 	}
 	if s.neoOwnStore && s.neoStore != nil {
 		if errClose := s.neoStore.Close(); errClose != nil {

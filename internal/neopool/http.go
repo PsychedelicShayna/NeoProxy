@@ -63,6 +63,11 @@ func (h *HTTP) Register(group *gin.RouterGroup) {
 	group.POST("/vault/login/callback", h.loginCallback)
 	group.GET("/vault/login/status", h.loginStatus)
 	group.POST("/vault/login/:provider", h.login)
+	group.GET("/vault/sources", h.sourceList)
+	group.POST("/vault/sources", h.sourceSave)
+	group.PUT("/vault/sources/:id", h.sourceSave)
+	group.POST("/vault/sources/:id/sync", h.sourceSync)
+	group.DELETE("/vault/sources/:id", h.sourceDelete)
 }
 
 func session(c *gin.Context) (neo.Principal, bool) {
@@ -153,6 +158,7 @@ func (h *HTTP) vault(c *gin.Context) {
 			if p.Role != "owner" {
 				a.OwnerID = ""
 				a.Windows = []Window{}
+				a.ProviderWindows = nil
 			}
 			accounts = append(accounts, a)
 			providers[a.ProviderID] = true

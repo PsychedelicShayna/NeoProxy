@@ -70,7 +70,7 @@ function topbar(page, s, onMenu) {
 	return h(
 		"header",
 		{ class: "topbar" },
-		h("button", { class: "btn icon menu-btn", onClick: onMenu, "aria-label": "Menu" }, icon("menu")),
+		h("button", { class: "btn icon menu-btn", onClick: onMenu, "aria-label": "Menu", "aria-expanded": "false", "aria-controls": "section-nav" }, icon("menu")),
 		h("a", { class: "brand", href: "#/overview", "aria-label": "NeoProxy overview", title: "NeoProxy" }, mark(), h("span", { class: "brand-name" }, "NeoProxy"), h("span", { class: "crumb" }, "/"), h("span", { class: "crumb-page" }, page.title)),
 		h("span", { class: "spacer" }),
 		h("span", { class: "chip", id: "core-chip" }, h("span", { class: "dot" }), "Core", h("span", { class: "mono" }, "checking")),
@@ -110,7 +110,7 @@ async function refreshChips() {
 }
 
 function sidebar(current, s) {
-	const el = h("nav", { class: "sidebar", "aria-label": "Sections" });
+	const el = h("nav", { class: "sidebar", id: "section-nav", "aria-label": "Sections" });
 	for (const g of groups) {
 		const items = pages.filter((p) => p.group === g.id && !p.hidden && allowed(p, s));
 		if (!items.length) continue;
@@ -191,7 +191,8 @@ function gate(reason, bootstrap = false) {
 // ---------- render ----------
 let cleanup = null;
 let lastId = null;
-let sidebarEl = null;
+let cleanupChrome = null;
+let closeChromeOverlay = null;
 let renderGeneration = 0;
 let expiryTimer;
 
@@ -199,6 +200,9 @@ export async function render() {
 	const generation = ++renderGeneration;
 	clearTimeout(expiryTimer);
 	if (cleanup) { cleanup(); cleanup = null; }
+	cleanupChrome?.();
+	cleanupChrome = null;
+	closeChromeOverlay = null;
 	const s = session.get();
 	if (!s) return gate();
 	if (Number.isFinite(s.expiresAt)) {
@@ -212,17 +216,64 @@ export async function render() {
 	const denied = !allowed(page, s);
 	document.title = `${page.title} · NeoProxy`;
 	clear(root);
-	sidebarEl = sidebar(page, s);
+	const sidebarEl = sidebar(page, s);
 	const pageEl = h("div", { class: "page", id: "page" });
 	const panel = h("div", { class: "panel" }, pageEl);
 	const shell = h(
 		"div",
 		{ class: "shell" },
-		topbar(page, s, () => sidebarEl.classList.toggle("open")),
+		topbar(page, s, () => setMenu(!sidebarEl.classList.contains("open"))),
 		sidebarEl,
 		h("main", { class: "shell-main" }, panel),
 	);
 	root.append(shell);
+	const mobile = matchMedia("(max-width: 900px)");
+	const menuButton = shell.querySelector(".menu-btn");
+	let restoreInspectorFocus = null;
+	const focusInspector = (el) => {
+		const target = el.querySelector(".ins-head button") ?? el.querySelector(".ins-head h2") ?? el;
+		if (!target.matches("button")) target.tabIndex = -1;
+		target.focus({ preventScroll: true });
+	};
+	function syncOverlays() {
+		const menuOpen = mobile.matches && sidebarEl.classList.contains("open");
+		const ins = panel.querySelector(".inspector");
+		sidebarEl.inert = mobile.matches && !menuOpen;
+		if (sidebarEl.inert) sidebarEl.setAttribute("aria-hidden", "true");
+		else sidebarEl.removeAttribute("aria-hidden");
+		menuButton.setAttribute("aria-expanded", String(menuOpen));
+		pageEl.inert = mobile.matches && (menuOpen || !!ins);
+		if (ins) ins.inert = menuOpen;
+	}
+	function setMenu(open, restore = true) {
+		sidebarEl.classList.toggle("open", mobile.matches && open);
+		syncOverlays();
+		if (mobile.matches && open) (sidebarEl.querySelector('[aria-current="page"]') ?? sidebarEl.querySelector("a"))?.focus();
+		else if (restore && mobile.matches) menuButton.focus({ preventScroll: true });
+	}
+	const resize = () => {
+		const hiddenNavFocus = mobile.matches && sidebarEl.contains(document.activeElement);
+		setMenu(false, false);
+		const ins = panel.querySelector(".inspector");
+		if (mobile.matches && ins && !ins.contains(document.activeElement)) focusInspector(ins);
+		else if (hiddenNavFocus) menuButton.focus({ preventScroll: true });
+	};
+	mobile.addEventListener("change", resize);
+	cleanupChrome = () => mobile.removeEventListener("change", resize);
+	closeChromeOverlay = (e) => {
+		if (e.key !== "Escape" || document.querySelector('[role="dialog"]')) return false;
+		if (mobile.matches && sidebarEl.classList.contains("open")) setMenu(false);
+		else {
+			if (e.target?.closest?.("input,textarea,select,[contenteditable]:not([contenteditable=false])")) return false;
+			const close = panel.querySelector(".inspector .ins-head button");
+			if (!close) return false;
+			close.click();
+		}
+		e.preventDefault();
+		e.stopImmediatePropagation();
+		return true;
+	};
+	syncOverlays();
 	refreshChips();
 
 	const ctx = {
@@ -231,9 +282,34 @@ export async function render() {
 		query: r.query,
 		session: s,
 		navigate,
-		setInspector(el) {
-			panel.querySelector(".inspector")?.remove();
+		setInspector(el, { restoreFocus } = {}) {
+			const previous = panel.querySelector(".inspector");
+			const active = document.activeElement;
+			const inside = previous?.contains(active);
+			const controls = 'button,a[href],input,select,textarea,[tabindex]';
+			const focusIndex = inside ? [...previous.querySelectorAll(controls)].indexOf(active) : -1;
+			const focusAttribute = inside ? ["id", "data-provider", "data-model", "name", "aria-label"].find((key) => active.hasAttribute(key)) : null;
+			const selection = inside && (active.tagName === "TEXTAREA" || active.tagName === "INPUT") && active.selectionStart !== null
+				? [active.selectionStart, active.selectionEnd] : null;
+			if (el && (restoreFocus || !previous)) restoreInspectorFocus = restoreFocus ?? (() => {
+				if (active?.isConnected) active.focus({ preventScroll: true });
+			});
+			previous?.remove();
 			if (el) panel.append(el);
+			syncOverlays();
+			if (!el) {
+				const restore = restoreInspectorFocus;
+				restoreInspectorFocus = null;
+				if (previous && shell.isConnected) restore?.();
+			} else if (!previous && mobile.matches) focusInspector(el);
+			else if (inside) {
+				const target = (focusAttribute ? el.querySelector(`[${focusAttribute}="${CSS.escape(active.getAttribute(focusAttribute))}"]`) : null)
+					?? el.querySelectorAll(controls)[focusIndex];
+				if (target) {
+					target.focus({ preventScroll: true });
+					if (selection && target.setSelectionRange && target.selectionStart !== null) target.setSelectionRange(...selection);
+				}
+			}
 		},
 		rerender: () => render(),
 	};
@@ -258,6 +334,7 @@ export async function render() {
 let chord = null;
 let chordTimer = 0;
 document.addEventListener("keydown", (e) => {
+	if (closeChromeOverlay?.(e)) return;
 	const t = e.target;
 	const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
 	if (e.key === "Escape" && typing) {

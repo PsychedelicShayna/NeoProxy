@@ -66,6 +66,15 @@ type Stage struct {
 	Window     string       `json:"window"`
 	Per        string       `json:"per"`
 	Effort     *string      `json:"effort"`
+	Lua        *LuaPolicy   `json:"lua,omitempty"`
+}
+
+// LuaPolicy names functions in VirtualModel.Script. Limits are absolute window
+// fractions before grant scaling, intersected with the stage's static ceilings.
+type LuaPolicy struct {
+	Eligible   string `json:"eligible,omitempty"`
+	PerAccount string `json:"perAccount,omitempty"`
+	Cap        string `json:"cap,omitempty"`
 }
 type Terminal struct {
 	Kind    string `json:"kind"`
@@ -78,21 +87,22 @@ type Candidate struct {
 	Budget    float64 `json:"budget"`
 }
 type TrailStep struct {
-	Kind          string      `json:"kind"`
-	Index         int         `json:"index,omitempty"`
-	StageID       string      `json:"stageId,omitempty"`
-	Model         string      `json:"model,omitempty"`
-	Total         float64     `json:"total,omitempty"`
-	Cap           float64     `json:"cap,omitempty"`
-	Candidates    []Candidate `json:"candidates,omitempty"`
-	Chosen        string      `json:"chosen,omitempty"`
-	Skipped       string      `json:"skipped,omitempty"`
-	Terminal      *Terminal   `json:"terminal,omitempty"`
-	ProviderID    string      `json:"providerId,omitempty"`
-	VirtualModel  string      `json:"virtualModel,omitempty"`
-	AccountID     string      `json:"accountId,omitempty"`
-	Asked         string      `json:"asked,omitempty"`
-	FailureStatus int         `json:"failureStatus,omitempty"`
+	Kind          string              `json:"kind"`
+	Index         int                 `json:"index,omitempty"`
+	StageID       string              `json:"stageId,omitempty"`
+	Model         string              `json:"model,omitempty"`
+	Total         float64             `json:"total,omitempty"`
+	Cap           float64             `json:"cap,omitempty"`
+	Candidates    []Candidate         `json:"candidates,omitempty"`
+	Chosen        string              `json:"chosen,omitempty"`
+	Skipped       string              `json:"skipped,omitempty"`
+	Terminal      *Terminal           `json:"terminal,omitempty"`
+	ProviderID    string              `json:"providerId,omitempty"`
+	VirtualModel  string              `json:"virtualModel,omitempty"`
+	AccountID     string              `json:"accountId,omitempty"`
+	Asked         string              `json:"asked,omitempty"`
+	FailureStatus int                 `json:"failureStatus,omitempty"`
+	Policy        *ScriptPolicyResult `json:"policy,omitempty"`
 }
 
 // Stage zero values are meaningful: preserve index 0, a zero cap and an empty
@@ -207,12 +217,17 @@ type ScriptStage struct {
 	Total      float64     `json:"total"`
 	Cap        float64     `json:"cap"`
 	Skipped    string      `json:"skipped,omitempty"`
+	Lua        *LuaPolicy  `json:"lua,omitempty"`
+	Allotment  float64     `json:"allotment"`
+	Window     string      `json:"window"`
 }
 type ScriptAccount struct {
-	AccountID  string         `json:"accountId"`
-	ProviderID string         `json:"providerId"`
-	State      string         `json:"state"`
-	Windows    []ScriptWindow `json:"windows"`
+	AccountID       string         `json:"accountId"`
+	ProviderID      string         `json:"providerId"`
+	State           string         `json:"state"`
+	Windows         []ScriptWindow `json:"windows"`
+	SourceID        string         `json:"sourceId,omitempty"`
+	ProviderWindows []ScriptWindow `json:"providerWindows"`
 }
 type ScriptWindow struct {
 	Kind     string  `json:"kind"`
@@ -221,8 +236,21 @@ type ScriptWindow struct {
 	ResetsAt int64   `json:"resetsAt"`
 }
 type ScriptProposal struct {
-	StageID   string `json:"stageId"`
-	AccountID string `json:"accountId"`
+	StageID   string               `json:"stageId"`
+	AccountID string               `json:"accountId"`
+	Policies  []ScriptPolicyResult `json:"policies,omitempty"`
+}
+
+// Policy results are advisory reductions, keyed only to authorized candidates.
+type ScriptPolicyResult struct {
+	StageID  string                `json:"stageId"`
+	Cap      *float64              `json:"cap,omitempty"`
+	Accounts []ScriptAccountPolicy `json:"accounts"`
+}
+type ScriptAccountPolicy struct {
+	AccountID string   `json:"accountId"`
+	Eligible  bool     `json:"eligible"`
+	Limit     *float64 `json:"limit,omitempty"`
 }
 
 // Error carries the stable HTTP status/code and full authorized decision.

@@ -3,6 +3,7 @@ package neopool
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -40,6 +41,14 @@ func (s *Store) Snapshot(ctx context.Context) (Snapshot, error) {
 			return out, err
 		}
 		account := Account{ID: id, EngineAuthID: a.ID, ProviderID: a.Provider, OwnerID: owner.String, Label: "account …" + id[len(id)-6:], State: "expired", ModelIDs: []string{}, Windows: []Window{}}
+		if sourceID := a.Attributes["neopi_source_id"]; sourceID != "" {
+			account.SourceID = sourceID
+			account.Label = a.Label
+			account.Plan = "NeoPi gateway"
+			if err = json.Unmarshal([]byte(a.Attributes["neopi_windows"]), &account.ProviderWindows); err != nil {
+				return out, fmt.Errorf("invalid cached provider windows")
+			}
+		}
 		state, next := coreauth.CredentialHealth(a, "", s.now())
 		account.State = state
 		if !next.IsZero() {
@@ -50,6 +59,12 @@ func (s *Store) Snapshot(ctx context.Context) (Snapshot, error) {
 			p = Provider{ID: a.Provider, Name: a.Provider, Vendor: a.Provider, Kind: "oauth", Exposed: true}
 			if a.Attributes["api_key"] != "" || a.Attributes["source"] == "config" {
 				p.Kind = "api-key"
+			}
+			if account.SourceID != "" {
+				p.Kind = "neopi-gateway"
+				p.Vendor = a.Attributes["neopi_provider"]
+				p.SourceLabel = a.Attributes["neopi_source_label"]
+				p.Name = a.Attributes["neopi_source_label"] + " · " + p.Vendor
 			}
 			var exposed bool
 			err = tx.QueryRowContext(ctx, `SELECT exposed FROM neo_provider_exposure WHERE id=?`, p.ID).Scan(&exposed)
@@ -70,6 +85,10 @@ func (s *Store) Snapshot(ctx context.Context) (Snapshot, error) {
 				continue
 			}
 			m := Model{ID: modelID, ProviderID: a.Provider, Name: info.ID, Display: info.DisplayName, Served: "neoproxy/" + modelID, Tags: []string{}, Context: info.ContextLength, Exposed: true}
+			if account.SourceID != "" {
+				m.VirtualOnly = true
+				m.Served = "neoproxy/" + SourceVirtualName(account.SourceID, info.ID)
+			}
 			if m.Context == 0 {
 				m.Context = info.InputTokenLimit
 			}

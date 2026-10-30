@@ -256,6 +256,69 @@ openai-compatibility:
 			}
 		}
 	}
+	// Exercise numeric/boolean functions through the same installed executable
+	// and all consumer protocols, not only the evaluator's typed output.
+	for i := range vm.Stages {
+		vm.Stages[i].Lua = &neoroute.LuaPolicy{Eligible: "allow_stage", PerAccount: "account_share", Cap: "stage_share"}
+	}
+	vm.Script = `
+function allow_stage(ctx)
+  local text = ctx.request.input
+  if ctx.protocol ~= "openai-response" then text = ctx.request.messages[1].content end
+  return (ctx.stage.stageId == "stage-a" and text == "choose-a") or
+         (ctx.stage.stageId == "stage-b" and text == "choose-b")
+end
+function account_share(ctx)
+  local maximum = ctx.request.max_output_tokens or ctx.request.max_tokens
+  return maximum > 1000 and 0.0000001 or 0.01
+end
+function stage_share(ctx) return 0.02 end`
+	call("PUT", "/v8/neo/virtual-models/"+vm.ID, "", vm, 200)
+	for _, protocol := range []struct{ name, path string }{
+		{"openai", "/v1/chat/completions"},
+		{"openai-response", "/v1/responses"},
+		{"claude", "/v1/messages"},
+	} {
+		for _, suffix := range []string{"a", "b"} {
+			body := map[string]any{"model": vm.Served, "messages": []any{map[string]any{"role": "user", "content": "choose-" + suffix}}, "max_tokens": 32}
+			if protocol.name == "openai-response" {
+				body = map[string]any{"model": vm.Served, "input": "choose-" + suffix, "max_output_tokens": 32}
+			}
+			var decision neoroute.Decision
+			if err = json.Unmarshal(call("POST", "/v8/neo/simulate", "", map[string]any{"asked": vm.Served, "userId": member.ID, "protocol": protocol.name, "request": body}, 200), &decision); err != nil {
+				t.Fatal(err)
+			}
+			step := decision.Trail[len(decision.Trail)-1]
+			if decision.StageID != "stage-"+suffix || step.Policy == nil || step.Cap != 0.02 || len(step.Candidates) != 1 || step.Candidates[0].Budget != 0.01 {
+				t.Fatalf("installed %s typed policy simulation diverged: %+v", protocol.name, decision)
+			}
+			data := call("POST", protocol.path, issued.Secret, body, 200)
+			if !strings.Contains(string(data), "local script hook reached model-"+suffix) {
+				t.Fatalf("installed %s callback inference chose another model: %s", protocol.name, data)
+			}
+			select {
+			case model := <-upstreamModels:
+				if model != "model-"+suffix {
+					t.Fatalf("callback dispatched %s, want model-%s", model, suffix)
+				}
+			default:
+				t.Fatal("callback inference returned without a local upstream dispatch")
+			}
+		}
+	}
+	call("POST", "/v1/responses", issued.Secret, map[string]any{"model": vm.Served, "input": "choose-b", "max_output_tokens": 2048}, 429)
+	call("POST", "/v1/responses", issued.Secret, map[string]any{"model": vm.Served, "input": "condition-false", "max_output_tokens": 32}, 429)
+	vm.Script += "\nfunction account_share(ctx) return true end"
+	call("PUT", "/v8/neo/virtual-models/"+vm.ID, "", vm, 200)
+	dataTyped := call("POST", "/v1/responses", issued.Secret, map[string]any{"model": vm.Served, "input": "choose-b", "max_output_tokens": 32}, 422)
+	if !strings.Contains(string(dataTyped), "finite number") {
+		t.Fatalf("installed callback type error was hidden: %s", dataTyped)
+	}
+	select {
+	case model := <-upstreamModels:
+		t.Fatalf("rejected boolean/numeric policy silently dispatched %s", model)
+	default:
+	}
 	// A runtime failure must stay visible through inference, never execute the
 	// ordinary first stage. This also proves the running server survived workers.
 	vm.Script = `error("installed script policy failed")`

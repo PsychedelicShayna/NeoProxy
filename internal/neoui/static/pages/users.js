@@ -4,7 +4,7 @@
 
 import { h, icon, fmtPct, fmtAgo, fmtTime, fmtCompact, plural, clear, copyText } from "../lib/dom.js";
 import { neo, onChange, ApiError } from "../lib/client.js";
-import { pageHead, card, btn, badge, avatar, status, servedName, ring, ringRow, field, input, select, seg, toggle, dialog, confirm, toast, empty, spinner, errorState, outcomeBadge, kv, table } from "../lib/components.js";
+import { pageHead, card, btn, badge, avatar, status, servedName, vmSearchText, vmIdentity, providerLabel, search, ring, ringRow, field, input, select, seg, toggle, dialog, confirm, toast, empty, spinner, errorState, outcomeBadge, kv, table } from "../lib/components.js";
 
 export async function render(ctx) {
 	if (ctx.params[0]) return detail(ctx, ctx.params[0]);
@@ -168,6 +168,41 @@ async function detail(ctx, id) {
 
 	// ----- catalogue -----
 	const catHost = h("div", { class: "list" });
+	let grantQuery = "", grantLimit = 20;
+	const vmSearch = new Map(vms.map((vm) => [vm.id, vmSearchText(vm, models, vault.providers)]));
+	const grantSearch = search("Search models by provider, model or name", (value) => {
+		grantQuery = value.trim().toLowerCase();
+		grantLimit = 20;
+		renderGrantResults();
+	}, { "aria-label": "Search models to grant" });
+	const grantResults = h("div", { class: "list" });
+	const grantSummary = h("p", { class: "ink-3", role: "status", "aria-live": "polite" });
+	const grantMore = btn("Show 20 more", { cls: "outline sm", onClick: () => {
+		const firstNew = grantLimit;
+		grantLimit += 20;
+		renderGrantResults();
+		grantResults.children[firstNew]?.querySelector("button")?.focus();
+	} });
+	const grantHost = h("div", { style: { padding: "12px 16px" } }, h("h4", null, "Grant a model"), grantSearch, grantSummary, grantResults, grantMore);
+	function renderGrantResults() {
+		const granted = new Set(draft.grants.map((g) => g.virtualModel));
+		const remaining = vms.filter((vm) => !granted.has(vm.id));
+		const matches = grantQuery ? remaining.filter((vm) => vmSearch.get(vm.id).includes(grantQuery)) : [];
+		clear(grantResults);
+		grantSummary.textContent = !grantQuery ? `Search ${remaining.length} virtual models` : matches.length ? `Showing ${Math.min(grantLimit, matches.length)} of ${matches.length} matches; refine the search or grant a model.` : "No ungranted virtual models match.";
+		grantMore.classList.toggle("hidden", matches.length <= grantLimit);
+		for (const vm of matches.slice(0, grantLimit)) {
+			grantResults.append(h("div", { class: "li", title: vm.id },
+				h("div", { class: "lt" }, h("div", { class: "main" }, vmIdentity(vm, models, vault.providers)), h("div", { class: "sub" }, servedName(vm.served, { virtual: true }))),
+				btn("Grant", { icon: "plus", cls: "sm outline", title: `Grant ${vmIdentity(vm, models, vault.providers)}`, onClick: () => {
+					draft.grants.push({ virtualModel: vm.id, allotment: 1 });
+					setDirty();
+					renderCatalogue();
+					grantSearch.querySelector("input").focus();
+				} }),
+			));
+		}
+	}
 	const drawnFor = (vmId) => {
 		let n = 0;
 		for (const st of Object.values(usage[user.id]?.[vmId] ?? {})) for (const v of Object.values(st)) n += v;
@@ -185,7 +220,7 @@ async function detail(ctx, id) {
 					"div",
 					{ class: "li" },
 					ring({ used: g.allotment ? drawnFor(vm.id) / (g.allotment * vm.stages.reduce((n, s) => n + s.cap, 0) || 1) : 0, size: 36, title: "Share of this user's total allotment drawn this window" }),
-					h("div", { class: "lt" }, h("div", { class: "main" }, servedName(vm.served, { virtual: true })), h("div", { class: "sub" }, vm.description)),
+					h("div", { class: "lt" }, h("div", { class: "main" }, servedName(vm.served, { virtual: true })), h("div", { class: "sub" }, vmIdentity(vm, models, vault.providers))),
 					h(
 						"div",
 						{ class: "row", style: { width: "260px" } },
@@ -218,30 +253,20 @@ async function detail(ctx, id) {
 				),
 			);
 		}
-		const remaining = vms.filter((v) => !draft.grants.some((g) => g.virtualModel === v.id));
-		if (remaining.length) {
-			catHost.append(
-				h(
-					"div",
-					{ class: "li", style: { background: "var(--panel)" } },
-					h("div", { class: "lt" }, h("div", { class: "sub" }, "Grant another")),
-					h("div", { class: "row wrap" }, remaining.map((v) => btn(v.name, { icon: "plus", cls: "sm outline", onClick: () => { draft.grants.push({ virtualModel: v.id, allotment: 1 }); setDirty(); renderCatalogue(); } }))),
-				),
-			);
-		}
+		renderGrantResults();
 	}
 	renderCatalogue();
-	root.append(card({ title: "Catalogue", sub: "What this user sees when they list models. The allotment scales every budget in that chain: 50% means half the sips and half the cap.", flush: true, body: catHost }));
+	const catalogueCard = card({ title: "Catalogue", sub: "What this user sees when they list models. The allotment scales every budget in that chain: 50% means half the sips and half the cap.", flush: true, body: [catHost, grantHost] });
 
 	// ----- direct access -----
 	root.append(
 		card({
 			title: "Direct provider access",
-			sub: "Off for members by design: they reach providers only through virtual models. Turn a provider on to let this user ask for neoproxy/<provider>/<model> directly, with no budget but the account's own window.",
+			sub: "Local providers can be made directly accessible. NeoPi sources always use their granted virtual models and explicit local budgets; they cannot be enabled here.",
 			body: h(
 				"div",
 				{ class: "row wrap", style: { paddingTop: "4px", gap: "10px 18px" } },
-				vault.providers.map((p) =>
+				vault.providers.filter((p) => p.kind !== "neopi-gateway").map((p) =>
 					toggle(draft.providerAccess.includes(p.id), (v) => {
 						draft.providerAccess = v ? [...draft.providerAccess, p.id] : draft.providerAccess.filter((x) => x !== p.id);
 						setDirty();
@@ -295,12 +320,13 @@ async function detail(ctx, id) {
 			card({
 				title: "Keys",
 				sub: "Bearer tokens this user sends. Each key is a separate line in Activity.",
-				actions: [btn("Issue key", { icon: "plus", cls: "outline sm", onClick: () => issueKey(user, renderKeys, user.role === "owner" ? vault.accounts.filter((a) => a.ownerId === user.id) : vault.accounts) })],
+				actions: [btn("Issue key", { icon: "plus", cls: "outline sm", onClick: () => issueKey(user, renderKeys, user.role === "owner" ? vault.accounts.filter((a) => a.ownerId === user.id) : vault.accounts, vault.providers) })],
 				flush: true,
 				body: keysHost,
 			}),
 		),
 	);
+	root.append(catalogueCard);
 
 	// ----- recent -----
 	root.append(
@@ -326,16 +352,42 @@ async function detail(ctx, id) {
 	setDirty(false);
 }
 
-function issueKey(user, after, accounts) {
+function issueKey(user, after, accounts, providers) {
 	let label = "";
 	const scope = new Set();
 	const err = h("div", { class: "error", role: "alert" });
+	const accountGroups = h("div", { style: { display: "grid", gap: "14px" } });
+	function renderScopes(value = "") {
+		const query = value.trim().toLowerCase();
+		accountGroups.replaceChildren();
+		for (const provider of providers) {
+			const label = providerLabel(provider);
+			const matches = accounts.filter((a) => a.providerId === provider.id && (!query || [a.label, label.main, label.source].some((text) => text?.toLowerCase().includes(query))));
+			if (!matches.length) continue;
+			accountGroups.append(h("div", null,
+				h("div", { class: "ink-3", style: { marginBottom: "8px" }, title: provider.id }, [label.main, label.source].filter(Boolean).join(" · ")),
+				h("div", { style: { display: "grid", gap: "10px" } }, matches.map((a) => {
+					const control = toggle(scope.has(a.id), (enabled) => enabled ? scope.add(a.id) : scope.delete(a.id), a.label);
+					control.title = a.id;
+					control.value = a.id;
+					control.style.textAlign = "left";
+					return control;
+				})),
+			));
+		}
+		if (!accountGroups.childElementCount) accountGroups.append(h("p", { class: "ink-3" }, query ? "No accounts match." : "No accounts available."));
+	}
+	renderScopes();
+	const accountScope = h("div", null,
+		accounts.length > 8 ? search("Filter accounts by provider or label", renderScopes, { "aria-label": "Filter account scope" }) : null,
+		accountGroups,
+	);
 	dialog({
 		title: `Issue a key for ${user.handle}`,
 		sub: "Inference only; this key never signs in to the dashboard. A scope narrows current grants, never expands them.",
 		body: [
 			field("Label", input({ placeholder: "Client or deployment name", autofocus: true, onInput: (e) => (label = e.target.value) })),
-			field("Account scope", h("div", { class: "row wrap" }, accounts.map((a) => toggle(false, (enabled) => enabled ? scope.add(a.id) : scope.delete(a.id), `${a.providerId} · ${a.label}`))), user.role === "owner" ? "An owner key requires at least one owned account." : "Optional. No selection means all currently authorized accounts."),
+			field("Account scope", accountScope, user.role === "owner" ? "An owner key requires at least one owned account." : "Optional. No selection means all currently authorized accounts."),
 			err,
 		],
 		actions: (close) => [

@@ -36,9 +36,50 @@ C's concrete interface is `Evaluate(context.Context, ScriptInput) (ScriptProposa
 
 The Lua chunk sees a fresh deeply read-only `input` table (nested arrays use Lua's one-based indexes). Only plain booleans, finite numbers, bounded strings and read-only tables are supplied. A whitelist of pure base helpers plus pure table/string/math helpers is exposed; no Go userdata, channels, closures over authority or writable ledger references cross the seam. Each evaluation gets a fresh state. No mutation can persist to another request.
 
-Return exactly one plain table: `{stageId = "configured-stage", accountId = "eligible-account"}`. Keys must be exactly those two; values must be nonempty bounded strings. No metatable-dependent conversion, executable values, unknown keys, model override, terminal override or budget override is accepted. C proposed the smaller stage/account-only form; we retain it instead of inventing another terminal policy surface. If no authorized stage is eligible, C's configured terminal policy remains authoritative.
+The original selector interface is retained: return exactly one plain table `{stageId = "configured-stage", accountId = "eligible-account"}`. Keys must be exactly those two; values must be nonempty bounded strings. No metatable-dependent conversion, executable values, unknown keys, model override or terminal override is accepted. If no authorized stage is eligible, the configured terminal remains authoritative.
 
 F validates syntax, result shape and membership in the supplied eligible candidates. C must still check current grants, account-owner/key scope, provider/model exposure, health, budget and transactional reservations against its authoritative store. Script output is only a preference among valid candidates, never a privileged decision. Simulation uses the same optional evaluator without usage writes. Administrator-only virtual-model persistence runs bounded syntax validation on save; runtime and invalid-output errors remain visible in simulation/inference, with no secret-bearing dumps. D uses the same optional `script` field and displays errors from real endpoints.
+
+### Named boolean and numeric pool policies
+
+Stages may add `lua: {eligible: "reported_room", perAccount: "available_share", cap: "pool_share"}`. Each field is optional; an omitted function uses the built-in behavior. Names are simple Lua identifiers of at most 64 characters and refer to functions in the same `VirtualModel.script` source. A policy-only chunk defines the functions and returns nothing. A chunk can also retain its exact stage/account selector return, which must survive all callback reductions.
+
+- `eligible(ctx)` runs per authorized, healthy, metered candidate and returns exactly one **boolean**. `false` excludes that account.
+- `perAccount(ctx)` runs per candidate and returns exactly one **finite number in 0..1**. It is an absolute share of the stage's configured local window before grant scaling, not tokens or percent points: `0.05` means 5%.
+- `cap(ctx)` runs once per eligible stage and returns the same finite 0..1 units for the whole stage. It has no `ctx.account` or `ctx.window`.
+
+Every configured function runs in the existing confined worker, including numeric functions for candidates whose condition is false. Invalid types, multiple/missing return values, NaN/infinity, out-of-range fractions, missing functions and runtime errors reject the route with a stage/function diagnostic. The effective budgets are `min(static ceiling, returned fraction) * grant.allotment`. Zero is a valid exclusion. The transaction reserves against these exact reduced budgets and all existing in-flight reservations; it never trusts a larger script value.
+
+`ctx` contains read-only `asked`, `protocol`, `userId`, `request`, `stage` and `allotment`. Account callbacks also receive `account`, `window`, `used` and `budget`. `stage.total` and candidate `used` are real usage/reservation fractions; `stage.cap` and candidate `budget` are hard ceilings already scaled by the grant. `window` is the selected **local configured budget meter**. `account.providerWindows` are **separate native reports**; inspect their `known` flags before interpreting `used`. Missing/unknown/expired reporting is not zero usage and does not establish that a plan has no five-hour window. No vendor plan is inferred, and native percentages never supply a token denominator.
+
+For example, deliberately prefer accounts with a *reported* five-hour window below 80%, with a calculated local allocation:
+
+```lua
+function reported_room(ctx)
+  for _, w in ipairs(ctx.account.providerWindows or {}) do
+    if w.kind == "5h" and w.known then return w.used < 0.8 end
+  end
+  return false -- Unknown is explicitly excluded, not assumed unlimited.
+end
+
+function available_share(ctx)
+  for _, w in ipairs(ctx.account.providerWindows or {}) do
+    if w.kind == "5h" and w.known then
+      return math.min(0.05, (1 - w.used) * 0.1)
+    end
+  end
+  return 0
+end
+
+function pool_share(ctx)
+  return 0.15
+end
+```
+
+Add a later built-in stage if unknown-reporting accounts should remain an explicit fallback. Static draw order still chooses among candidates admitted by the functions. Current model/account/key grants, local denominators and hard ceilings remain authoritative; neither a true condition nor a result of 1 widens them. Source-backed virtual-only models cannot escape their meters through direct selectors or an unbudgeted passthrough terminal.
+
+The existing Virtual models editor separates **Hard budget ceilings** from **Pool policy**, gives each function an explicit built-in/Lua choice, and supplies the example without overwriting existing source. Save validates syntax; **Try it** calls the same functions as execution and reservation rechecks without recording or reserving usage. The administrator's decision trail shows conditions, calculated fractions and effective grant-scaled ceilings. Member HTTP projections omit named Lua configuration and policy-bearing trails, including effective cap/candidate values; the shared renderer requires an explicit administrator flag to show callback results. This is a narrow guard for the new policy data, not the broader member-only dashboard/role/key migration: pre-existing non-Lua stage visibility and self-issued keys are unchanged. A simulation is not a reservation: a concurrent request can consume capacity before inference is admitted.
+
 
 ## Administrator and embedding interface
 
@@ -57,7 +98,7 @@ end
 error("no eligible stage candidate")
 ```
 
-The snapshot's `accounts` list supplies only scoped `{accountId, providerId, state, windows}` records; each window has `{kind, known, used, resetsAt}`. Check `known` before interpreting `used`: unknown quota is not zero. `stages` supplies `{stageId, model, total, cap, candidates, skipped?}`; candidates have `{accountId, used, budget}`. Array indexes start at one. Available helpers are `assert`, `error`, `tonumber`, `tostring`, `type`, `select`, `next`, `pairs`, `ipairs`, math excluding random/randomseed, string excluding dump, and the table helpers. Input tables reject assignment and mutation through table helpers; local tables remain writable. Table iteration order is not a routing guarantee; use ordered `ipairs` arrays when order matters.
+The snapshot's `accounts` list supplies only scoped `{accountId, providerId, state, sourceId?, windows, providerWindows}` records; each window has `{kind, known, used, resetsAt}`. `windows` are configured local meters and `providerWindows` are native reports. Check `known` before interpreting `used`: unknown quota is not zero. `stages` supplies `{stageId, model, total, cap, candidates, skipped?, lua?, allotment, window}`; candidates have `{accountId, used, budget}`. Array indexes start at one. Available helpers are `assert`, `error`, `tonumber`, `tostring`, `type`, `select`, `next`, `pairs`, `ipairs`, math excluding random/randomseed, string excluding dump, and the table helpers. Input tables reject assignment and mutation through table helpers; local tables remain writable. Table iteration order is not a routing guarantee; use ordered `ipairs` arrays when order matters.
 
 The protocol labels are `openai` (Chat Completions), `openai-response` (Responses), and `claude` (Messages). For example, a script may inspect `input.request.messages[1].content` for Chat Completions/Messages or `input.request.input` for Responses before choosing among eligible candidates. Message content can be structured; scripts must handle the real request shape instead of assuming every content value is text. The same read-only and total-size limits apply to nested request data.
 

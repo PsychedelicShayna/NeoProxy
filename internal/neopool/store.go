@@ -11,11 +11,17 @@ import (
 )
 
 type Store struct {
-	db      *sql.DB
-	manager *coreauth.Manager
-	mu      sync.Mutex
-	changed chan struct{}
-	now     func() time.Time
+	db                *sql.DB
+	manager           *coreauth.Manager
+	mu                sync.Mutex
+	changed           chan struct{}
+	now               func() time.Time
+	sourceMu          sync.Mutex
+	sourceLifecycleMu sync.Mutex
+	sourceFactory     func(string) coreauth.ProviderExecutor
+	sourcePublish     func(context.Context, Source) error
+	sourceCancel      context.CancelFunc
+	sourceDone        chan struct{}
 }
 
 func New(db *sql.DB, manager *coreauth.Manager) (*Store, error) {
@@ -42,6 +48,11 @@ func New(db *sql.DB, manager *coreauth.Manager) (*Store, error) {
  estimated INTEGER NOT NULL DEFAULT 0, state TEXT NOT NULL CHECK(state IN ('reserved','settled','released')), per_account REAL NOT NULL, cap REAL NOT NULL, shared INTEGER NOT NULL, created_at INTEGER NOT NULL);
  CREATE INDEX IF NOT EXISTS neo_pool_usage ON neo_pool_attempts(virtual_model_id,stage_id,window_kind,account_id,starts_at,user_id);
  CREATE TABLE IF NOT EXISTS neo_pool_logins (state TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES neo_users(id), provider_id TEXT NOT NULL, created_at INTEGER NOT NULL);
+ CREATE TABLE IF NOT EXISTS neo_pool_sources (
+ id TEXT PRIMARY KEY, label TEXT NOT NULL, url TEXT NOT NULL UNIQUE, bearer TEXT NOT NULL,
+ owner_id TEXT NOT NULL REFERENCES neo_users(id), admin_id TEXT NOT NULL REFERENCES neo_users(id), enabled INTEGER NOT NULL DEFAULT 1,
+ status TEXT NOT NULL DEFAULT 'pending', checked_at INTEGER NOT NULL DEFAULT 0,
+ account_count INTEGER NOT NULL DEFAULT 0, model_count INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0);
  `)
 	if err != nil {
 		return nil, fmt.Errorf("migrate account pools: %w", err)
