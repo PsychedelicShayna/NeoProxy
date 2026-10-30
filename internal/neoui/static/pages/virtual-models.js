@@ -6,7 +6,7 @@
 
 import { h, icon, fmtPct, fmtAgo, plural, clear } from "../lib/dom.js";
 import { neo, onChange, ApiError } from "../lib/client.js";
-import { pageHead, card, btn, badge, avatar, servedName, chainRail, inspector, section, field, input, select, seg, toggle, modelPicker, trail, ring, kv, confirm, toast, empty, spinner, errorState, drawLabel } from "../lib/components.js";
+import { pageHead, card, btn, badge, avatar, servedName, chainRail, inspector, section, field, input, select, seg, toggle, modelPicker, trail, ring, kv, confirm, toast, empty, spinner, errorState, drawLabel, search, vmIdentity, vmSearchText } from "../lib/components.js";
 
 export async function render(ctx) {
 	if (ctx.params[0]) return editor(ctx, ctx.params[0]);
@@ -17,56 +17,78 @@ export async function render(ctx) {
 
 async function catalogue(ctx) {
 	const { root } = ctx;
-	root.append(
-		pageHead({
-			title: "Virtual models",
-			desc: "Names you serve that are not any provider's model. Each is a chain: stages that draw from pooled accounts in measured sips, a demotion when a stage is spent, and a clear end.",
-			actions: [btn("New virtual model", { icon: "plus", cls: "primary", onClick: () => ctx.navigate("virtual-models/new") })],
-		}),
-	);
+	let query = "", limit = 25;
+	const summary = h("span", { class: "ink-3", role: "status", "aria-live": "polite" });
+	root.append(pageHead({
+		title: "Virtual models",
+		desc: "Names users ask for. Shared models have generated 1:1 routes; custom chains appear alongside them.",
+		actions: [
+			search("Search by provider, model or name", (value) => { query = value.trim().toLowerCase(); limit = 25; paint(); }),
+			btn("New virtual model", { icon: "plus", cls: "primary", onClick: () => ctx.navigate("virtual-models/new") }),
+		],
+	}));
 	const host = h("div");
-	root.append(host, spinner());
+	root.append(summary, host, spinner());
 	let vms, models, vault, users, usage;
 	try {
 		[vms, models, vault, users, usage] = await Promise.all([neo.virtualModels(), neo.models(), neo.vault(), neo.users(), neo.usage()]);
-	} catch (e) {
-		root.lastChild.replaceWith(errorState(e, () => ctx.rerender()));
+	} catch (error) {
+		root.lastChild.replaceWith(errorState(error, () => ctx.rerender()));
 		return;
 	}
 	root.lastChild.remove();
-	if (!vms.length) {
-		host.append(card({ body: empty({ icon: "route", title: "No virtual models yet", hint: "Create one to give users a name like neoproxy/default that you decide the meaning of.", action: btn("New virtual model", { icon: "plus", cls: "primary", onClick: () => ctx.navigate("virtual-models/new") }) }) }));
-		return;
-	}
-	const usageFor = (s, a) => {
-		let n = 0;
-		for (const u of Object.values(usage)) n += u?.[vmFor(s)?.id]?.[s.id]?.[a.id] ?? 0;
-		return n;
-	};
 	const stageOwner = new Map();
-	for (const vm of vms) for (const s of vm.stages) stageOwner.set(s.id + vm.id, vm);
-	const vmFor = (s) => vms.find((vm) => vm.stages.includes(s));
-	for (const vm of vms) {
-		const granted = users.filter((u) => u.grants.some((g) => g.virtualModel === vm.id));
-		const recentLimited = 0;
-		host.append(
-			card({
+	for (const vm of vms) for (const stage of vm.stages) stageOwner.set(stage, vm.id);
+	const usageFor = (stage, account) => {
+		let used = 0;
+		for (const userUsage of Object.values(usage)) used += userUsage?.[stageOwner.get(stage)]?.[stage.id]?.[account.id] ?? 0;
+		return used;
+	};
+	function paint() {
+		if (!vms) return;
+		clear(host);
+		const matches = vms.filter((vm) => !query || vmSearchText(vm, models, vault.providers).includes(query));
+		summary.textContent = `Showing ${Math.min(limit, matches.length)} of ${matches.length} matching virtual models · ${vms.length} total`;
+		if (!matches.length) {
+			host.append(card({ body: empty({
+				icon: "route",
+				title: vms.length ? "No virtual models match" : "No virtual models yet",
+				hint: vms.length ? "Search by the upstream model, provider, source or served name." : "Create a name like neoproxy/default and choose its stages.",
+			}) }));
+			return;
+		}
+		for (const vm of matches.slice(0, limit)) {
+			const granted = users.filter((user) => user.grants.some((grant) => grant.virtualModel === vm.id));
+			const author = users.find((user) => user.id === vm.updatedBy || user.handle === vm.updatedBy)?.handle ?? "an administrator";
+			const node = card({
 				title: h("span", { class: "row" }, servedName(vm.served, { virtual: true })),
-				sub: vm.description,
+				sub: vmIdentity(vm, models, vault.providers),
 				actions: [
-					h("span", { class: "row", style: { gap: "2px", marginRight: "6px" } }, granted.slice(0, 5).map((u) => avatar(u, "sm")), granted.length > 5 ? h("span", { class: "ink-3", style: { fontSize: "12px", marginLeft: "4px" } }, `+${granted.length - 5}`) : null),
+					h("span", { class: "row", style: { gap: "2px", marginRight: "6px" } }, granted.slice(0, 5).map((user) => avatar(user, "sm")), granted.length > 5 ? h("span", { class: "ink-3", style: { fontSize: "12px", marginLeft: "4px" } }, `+${granted.length - 5}`) : null),
 					btn("Edit", { icon: "arrowRight", cls: "outline sm", onClick: () => ctx.navigate(`virtual-models/${vm.id}`) }),
 				],
-				body: chainRail(vm, { models, accounts: vault.accounts, usageFor }),
+				body: chainRail(vm, { models, providers: vault.providers, accounts: vault.accounts, usageFor }),
 				foot: [
-					h("span", null, `Granted to ${granted.length ? granted.map((u) => u.handle).join(", ") : "nobody yet"}`),
+					h("span", null, `Granted to ${granted.length ? granted.map((user) => user.handle).join(", ") : "nobody yet"}`),
 					h("span", { class: "spacer" }),
-					h("span", { class: "ink-3" }, `Updated ${fmtAgo(vm.updatedAt)} by ${vm.updatedBy}`),
+					h("span", { class: "ink-3", title: vm.updatedBy }, `Updated ${fmtAgo(vm.updatedAt)} by ${author}`),
 				],
-			}),
-		);
+			});
+			node.dataset.vm = vm.id;
+			host.append(node);
+		}
+		if (matches.length > limit) host.append(btn("Show 25 more", {
+			cls: "outline sm",
+			onClick: () => {
+				const next = matches[limit].id;
+				limit += 25;
+				paint();
+				host.querySelector(`[data-vm="${CSS.escape(next)}"] .btn`)?.focus();
+			},
+		}));
 	}
-	const off = onChange((w) => w === "virtual-models" && ctx.rerender());
+	paint();
+	const off = onChange((what) => what === "virtual-models" && ctx.rerender());
 	return () => off();
 }
 
@@ -74,22 +96,28 @@ async function catalogue(ctx) {
 
 const newStage = (model) => ({ id: `s${Math.random().toString(36).slice(2, 7)}`, model, accounts: "all", draw: "least-used", perAccount: 0.05, cap: 0.2, window: "week", per: "user", effort: null });
 
-const luaPoolExample = `function reported_room(ctx)
+const luaPoolExample = `-- Gateway window kinds may be namespaced, e.g. "zai:tokens:5h".
+local function five_hour_used(ctx)
+  local worst = nil
   for _, w in ipairs(ctx.account.providerWindows or {}) do
-    if w.kind == "5h" and w.known then
-      return w.used < 0.8
+    local kind = w.kind
+    if w.known and (kind == "5h" or string.sub(kind, -3) == ":5h") then
+      if worst == nil or w.used > worst then worst = w.used end
     end
   end
-  return false -- This policy deliberately excludes unknown reporting.
+  return worst -- nil means there is no known five-hour report.
+end
+
+function reported_room(ctx)
+  local used = five_hour_used(ctx)
+  if used == nil then return false end
+  return used < 0.8
 end
 
 function available_share(ctx)
-  for _, w in ipairs(ctx.account.providerWindows or {}) do
-    if w.kind == "5h" and w.known then
-      return math.min(0.05, (1 - w.used) * 0.1)
-    end
-  end
-  return 0
+  local used = five_hour_used(ctx)
+  if used == nil then return 0 end
+  return math.min(0.05, (1 - used) * 0.1)
 end
 
 function pool_share(ctx)
@@ -114,7 +142,8 @@ async function editor(ctx, id) {
 
 	const draft = structuredClone(vm);
 	let dirty = isNew;
-	let selected = draft.stages[0]?.id ?? null; // stage id or "terminal"
+	let selected = matchMedia("(max-width: 900px)").matches ? null : draft.stages[0]?.id ?? null;
+	let inspectorOpen = selected !== null;
 	let simUser = users.find((u) => u.role === "member" && u.state === "active")?.id ?? users[0]?.id;
 	let simResult = null;
 	const errors = {};
@@ -184,18 +213,33 @@ async function editor(ctx, id) {
 	let scriptInput, scriptField;
 	const scriptHint = "Maximum 16 KiB. Save validates syntax. Try it checks named functions, return types and routing with the selected user's current grants. No files, network, modules or credentials. Errors fail closed; no silent fallback.";
 	const isScriptError = (e) => e instanceof ApiError && (["neoproxy_script", "neoproxy_script_error"].includes(e.body?.error?.code) || /\b(?:script|Lua)\b/i.test(e.message));
+	function scriptMessage(message) {
+		let readable = String(message);
+		draft.stages.forEach((stage, index) => {
+			const name = models.find((model) => model.id === stage.model)?.display ?? "Unavailable model";
+			readable = readable.replaceAll(`stage "${stage.id}"`, `Stage ${index + 1} (${name})`);
+		});
+		return readable;
+	}
 	function setScriptError(message) {
 		if (!scriptInput) return;
 		scriptInput.setAttribute("aria-invalid", String(Boolean(message)));
 		const hint = scriptField.querySelector(".hint, .error");
 		hint.className = message ? "error" : "hint";
-		hint.textContent = message || scriptHint;
+		hint.textContent = message ? scriptMessage(message) : scriptHint;
+		hint.title = message || "";
 	}
 	function editScript() {
+		if (matchMedia("(max-width: 900px)").matches && inspectorOpen) {
+			inspectorOpen = false;
+			renderRail();
+			ctx.setInspector(null);
+		}
 		scriptInput?.focus();
 		scriptInput?.scrollIntoView({ block: "center", behavior: "smooth" });
 	}
 	if (ctx.session.role === "admin") {
+		const reportedKinds = [...new Set(vault.accounts.flatMap((account) => (account.providerWindows ?? []).map((window) => window.kind)))].sort();
 		scriptInput = h("textarea", {
 			class: "textarea mono", rows: 9, spellcheck: "false", "aria-label": "Lua routing script",
 			placeholder: "Leave empty for standard routing",
@@ -213,10 +257,11 @@ async function editor(ctx, id) {
 				h("details", { style: { marginTop: "12px", maxWidth: "76ch" } },
 					h("summary", null, "Function contracts & a reported-window example"),
 					h("p", { class: "hint" }, "eligible(ctx) returns true or false per account. perAccount(ctx) returns a window fraction, not tokens or percent points: 0.05 means 5%. cap(ctx) returns the whole stage's fraction and has no account argument. Each stage names its functions; these names are yours to choose."),
-					h("p", { class: "hint" }, "ctx.request, ctx.stage, ctx.allotment and (for account functions) ctx.account, ctx.window, ctx.used, ctx.budget are read-only. account.windows / ctx.window are configured local budget meters. account.providerWindows are separately reported native quotas. Check known before using used; missing or unknown reporting does not mean there is no five-hour limit."),
+					h("p", { class: "hint" }, "ctx.request, ctx.stage, ctx.allotment and (for account functions) ctx.account, ctx.window, ctx.used, ctx.budget are read-only. account.windows / ctx.window are configured local budget meters. account.providerWindows are separately reported native quotas. Check known before using used. Their kind names may be namespaced (provider:metric:window), so match the window suffix; unknown reporting does not mean there is no five-hour limit."),
 					h("p", { class: "hint" }, "Lua limits can only reduce the static ceilings below; the user's allotment scales both. Static health, model/key/account scopes and atomic token reservations still win. Standard draw order chooses among accounts whose condition is true."),
 					h("pre", { class: "mono", style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, luaPoolExample),
-					h("p", { class: "hint" }, "This example accepts only a reported five-hour window below 80% used. It allocates up to 5% of the configured local window per account and caps the stage at 15%, always within your hard ceilings. Unknown reporting is deliberately excluded. Add a later built-in stage if you want an explicit fallback for unknown accounts."),
+					h("p", { class: "hint" }, "This example accepts an account only when a known five-hour report (kind 5h or ending in :5h, such as zai:tokens:5h) is below 80% used. Allocation shrinks as the most-constrained report fills, up to 5% of the local window; the stage cap is 15%. Unknown reports are excluded on purpose. Add a later built-in stage if you want those accounts as a fallback."),
+					reportedKinds.length ? h("p", { class: "hint" }, `Kinds your accounts report right now: ${reportedKinds.join(", ")}`) : null,
 					btn("Use example on selected stage", { cls: "outline sm", onClick: () => {
 						const stage = draft.stages.find((s) => s.id === selected);
 						if (!stage) { toast("Select a stage first.", "warn"); return; }
@@ -252,6 +297,7 @@ async function editor(ctx, id) {
 		railHost.append(
 			chainRail(draft, {
 				models,
+				providers: vault.providers,
 				accounts: vault.accounts,
 				usageFor,
 				lit,
@@ -260,7 +306,8 @@ async function editor(ctx, id) {
 				allot: 1,
 				onSelect: (s) => {
 					selected = s === "terminal" ? "terminal" : s.id;
-					renderRail();
+					inspectorOpen = true;
+					renderRail(selected);
 					renderInspector();
 				},
 				onAdd: addStage,
@@ -279,7 +326,7 @@ async function editor(ctx, id) {
 			}),
 		);
 		if (focusStage) railHost.querySelector(`[data-stage="${CSS.escape(focusStage)}"]`)?.focus({ preventScroll: true });
-		railHost.querySelector('.node[aria-selected="true"]')?.scrollIntoView({ inline: "nearest", block: "nearest" });
+		if (focusStage) railHost.querySelector(`[data-stage="${CSS.escape(focusStage)}"]`)?.scrollIntoView({ inline: "nearest", block: "nearest" });
 		const t = document.getElementById("vm-title");
 		if (t && !isNew) {
 			clear(t);
@@ -293,8 +340,9 @@ async function editor(ctx, id) {
 		const s = newStage(candidate.id);
 		draft.stages.push(s);
 		selected = s.id;
+		inspectorOpen = true;
 		setDirty();
-		renderRail();
+		renderRail(selected);
 		renderInspector();
 		runSim();
 	}
@@ -372,9 +420,11 @@ async function editor(ctx, id) {
 			simHost.replaceChildren(trail(result, { models, accounts: vault.accounts, users, admin: ctx.session.role === "admin" }));
 		} catch (e) {
 			if (generation !== simGeneration || !simHost.isConnected) return;
-			simHost.replaceChildren(isScriptError(e)
-				? empty({ icon: "info", title: "Routing script result rejected", hint: e.message, action: scriptInput ? btn("Edit script", { cls: "outline", onClick: editScript }) : null })
-				: errorState(e, runSim));
+			const failure = isScriptError(e)
+				? empty({ icon: "info", title: "Routing script result rejected", hint: scriptMessage(e.message), action: scriptInput ? btn("Edit script", { cls: "outline", onClick: editScript }) : null })
+				: errorState(e, runSim);
+			failure.title = e.message;
+			simHost.replaceChildren(failure);
 		}
 		renderRail();
 	}
@@ -401,11 +451,13 @@ async function editor(ctx, id) {
 
 	// ----- inspector -----
 	function renderInspector() {
-		if (!selected) return ctx.setInspector(null);
-		if (selected === "terminal") return ctx.setInspector(terminalInspector());
-		const s = draft.stages.find((x) => x.id === selected);
-		if (!s) return ctx.setInspector(null);
-		ctx.setInspector(stageInspector(s));
+		if (!inspectorOpen || !selected) return ctx.setInspector(null);
+		const stageId = selected;
+		const stage = draft.stages.find((item) => item.id === stageId);
+		if (stageId !== "terminal" && !stage) return ctx.setInspector(null);
+		ctx.setInspector(stageId === "terminal" ? terminalInspector() : stageInspector(stage), {
+			restoreFocus: () => railHost.querySelector(`[data-stage="${CSS.escape(stageId)}"]`)?.focus({ preventScroll: true }),
+		});
 	}
 	function stageInspector(s) {
 		const idx = draft.stages.indexOf(s);
@@ -501,7 +553,7 @@ async function editor(ctx, id) {
 			title: `Stage ${idx + 1} · ${model?.display ?? s.model}`,
 			sub: `${drawLabel(s.draw, chosen().length)} · ${fmtPct(s.perAccount, null)} each, ${fmtPct(s.cap, null)} cap · ${s.window}`,
 			onClose: () => {
-				selected = null;
+				inspectorOpen = false;
 				renderRail();
 				ctx.setInspector(null);
 			},
@@ -519,6 +571,7 @@ async function editor(ctx, id) {
 							if (changedProvider) s.accounts = "all";
 							update();
 							renderInspector();
+							document.querySelector(`.inspector .picker [data-model="${CSS.escape(m.id)}"]`)?.focus();
 						},
 					}),
 					h("div", { class: "hint", style: { marginTop: "6px", fontSize: "12px", color: "var(--ink-3)" } }, "Only providers the core holds and you serve. Hidden providers and models do not appear."),
@@ -608,6 +661,7 @@ async function editor(ctx, id) {
 					onClick: () => {
 						draft.stages = draft.stages.filter((x) => x !== s);
 						selected = draft.stages[0]?.id ?? null;
+						inspectorOpen = selected !== null;
 						update();
 						renderInspector();
 					},
@@ -645,7 +699,7 @@ async function editor(ctx, id) {
 			title: "When every stage is spent",
 			sub: "The chain's end",
 			onClose: () => {
-				selected = null;
+				inspectorOpen = false;
 				renderRail();
 				ctx.setInspector(null);
 			},
@@ -689,6 +743,7 @@ async function editor(ctx, id) {
 			if (invalid || !draft.script?.trim()) {
 				setScriptError(invalid ? "Each Lua policy needs a simple function name (without quotes or parentheses)." : "This stage uses Lua functions. Add their source above, or choose Built-in in the stage.");
 				selected = stage.id;
+				inspectorOpen = true;
 				renderInspector();
 				editScript();
 				return;
@@ -729,14 +784,4 @@ async function editor(ctx, id) {
 	renderRail();
 	renderInspector();
 	runSim();
-	const esc = (e) => {
-		if (e.target?.closest?.("input,textarea,select")) return;
-		if (e.key === "Escape" && selected) {
-			selected = null;
-			renderRail();
-			ctx.setInspector(null);
-		}
-	};
-	document.addEventListener("keydown", esc);
-	return () => document.removeEventListener("keydown", esc);
 }

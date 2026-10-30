@@ -80,12 +80,12 @@ func (s *Store) EnsureSourceModels(ctx context.Context, source neopool.Source) e
 		}
 		definition := VirtualModel{
 			Name:        name,
-			Description: source.Label + " · " + model.Name + ". Shared through NeoPi; configure an account day token meter and grant this model to users before use.",
+			Description: model.Name + " via " + source.Label,
 			Stages: []Stage{{
 				ID: "source", Model: model.ID, Accounts: AccountScope{All: true},
 				Draw: "least-used", PerAccount: 1, Cap: 1, Window: "day", Per: "user",
 			}},
-			Terminal: Terminal{Kind: "limit", Message: "Shared source unavailable, outside key scope or local day budget. Configure the account meter and model grant in Account pools and Users."},
+			Terminal: Terminal{Kind: "limit", Message: "This shared model is unavailable for your key right now (outside its account scope or local budget). Ask your NeoProxy admin."},
 		}
 		if err = validateIndexed(definition, *inventory, principal); err != nil {
 			return err

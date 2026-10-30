@@ -22,11 +22,12 @@ func AccountID(engineAuthID string) string {
 }
 
 type Provider struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Vendor  string `json:"vendor"`
-	Kind    string `json:"kind"`
-	Exposed bool   `json:"exposed"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Vendor      string `json:"vendor"`
+	Kind        string `json:"kind"`
+	SourceLabel string `json:"sourceLabel,omitempty"`
+	Exposed     bool   `json:"exposed"`
 }
 type Model struct {
 	ID          string   `json:"id"`

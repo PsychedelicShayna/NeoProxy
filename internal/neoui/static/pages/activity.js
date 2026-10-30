@@ -73,7 +73,7 @@ export async function render(ctx) {
 		tableHost.append(
 			table(
 				[
-					{ key: "t", label: "Time", render: (r) => h("span", { class: "mono ink-3" }, fmtTime(r.at)), sortBy: (r) => r.at },
+					{ key: "t", label: "Time", render: (r) => h("span", { class: "mono ink-3", dataset: { request: r.id } }, fmtTime(r.at)), sortBy: (r) => r.at },
 					...(mine ? [] : [{ key: "who", label: "User", render: (r) => { const u = users.find((x) => x.id === r.userId); return h("span", { class: "row" }, avatar(u ?? { handle: "?" }, "sm"), u?.handle ?? r.userId); }, sortBy: (r) => r.userId }]),
 					{ key: "client", label: "Client", clip: true, width: "12%", render: (r) => h("span", { class: "ink-2", title: r.client }, r.client) },
 					{ key: "asked", label: "Asked for", clip: true, width: "26%", render: (r) => servedName(r.asked, { virtual: r.asked.split("/").length === 2 }), sortBy: (r) => r.asked },
@@ -128,6 +128,10 @@ export async function render(ctx) {
 					mine ? null : btn("Open user", { icon: "user", cls: "outline", onClick: () => ctx.navigate(`users/${r.userId}`) }),
 				],
 			}),
+			{ restoreFocus: () => {
+				const row = tableHost.querySelector(`[data-request="${CSS.escape(r.id)}"]`)?.closest("tr");
+				(row ?? tableHost.querySelector(".table-scroll") ?? toolbar.querySelector("input"))?.focus({ preventScroll: true });
+			} },
 		);
 	}
 
@@ -136,13 +140,4 @@ export async function render(ctx) {
 		const r = rows.find((x) => x.id === selectedId) ?? (await neo.request(selectedId).catch(() => null));
 		if (r) open(r);
 	}
-	const esc = (e) => {
-		if (e.key === "Escape" && selectedId && !e.target?.closest?.("input,select,textarea")) {
-			selectedId = null;
-			renderTable();
-			ctx.setInspector(null);
-		}
-	};
-	document.addEventListener("keydown", esc);
-	return () => document.removeEventListener("keydown", esc);
 }

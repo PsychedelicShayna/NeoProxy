@@ -63,6 +63,7 @@ func (s *Store) Snapshot(ctx context.Context) (Snapshot, error) {
 			if account.SourceID != "" {
 				p.Kind = "neopi-gateway"
 				p.Vendor = a.Attributes["neopi_provider"]
+				p.SourceLabel = a.Attributes["neopi_source_label"]
 				p.Name = a.Attributes["neopi_source_label"] + " · " + p.Vendor
 			}
 			var exposed bool

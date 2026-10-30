@@ -89,11 +89,12 @@ export async function render(ctx) {
 			);
 			for (const a of accs) {
 				const d = drawers(a.id);
+				const names = [...new Set(d.map((x) => x.vm.name))];
 				tree.append(
 					h(
 						"button",
 						{ type: "button", class: "li clickable", "aria-selected": String(selected.id === a.id), style: { paddingLeft: "32px" }, onClick: () => open(a) },
-						h("div", { class: "lt" }, h("div", { class: "main row" }, h("code", null, a.label), h("span", { class: "ink-3", style: { fontWeight: 400 } }, a.plan)), h("div", { class: "sub" }, d.length ? `drawn by ${[...new Set(d.map((x) => x.vm.name))].join(", ")}` : "no virtual model draws from this account")),
+						h("div", { class: "lt" }, h("div", { class: "main row" }, h("code", null, a.label), h("span", { class: "ink-3", style: { fontWeight: 400 } }, a.plan)), h("div", { class: "sub", title: names.join(", ") }, names.length ? `drawn by ${plural(names.length, "virtual model")}` : "no virtual model draws from this account")),
 						windowsRow(a.windows),
 						h("div", { style: { width: "130px", textAlign: "right" } }, accountState(a)),
 					),

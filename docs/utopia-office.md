@@ -103,6 +103,20 @@ a working shared source is available; never copy the broker's refresh tokens.
    accounts. No source model can bypass its virtual route through direct
    provider access. Without a configured local budget and grant, it does not run.
 
+On **Models**, the search narrows both provider models and virtual names; the
+All / Served / Hidden switch applies only to provider models. Virtual results
+start at 25, with **Show 25 more**. In a user's **Catalogue**, search before
+granting: the first 20 ungranted matches appear with their upstream model, vendor
+and source identity. Exact upstream model names remain searchable even when the
+stable generated selector is shortened. Account scopes group human account
+labels under the gateway's canonical vendor slug and source, with a filter when
+there are more than eight accounts; filtering does not change selected scopes.
+
+New source routes use identity-only descriptions (`<model> via <source>`) and
+direct unavailable-key callers to their NeoProxy admin. Discovery does not
+backfill older descriptions or terminal messages, replace administrator-edited
+routes, or rename existing served selectors.
+
 Connections persist with ownership and meters in the existing private
 `data/neoproxy.sqlite` (or `NEOPROXY_DATA_DIR/neoproxy.sqlite`). The bearer is
 write-only in the dashboard, never exported in account inventory or engine auth

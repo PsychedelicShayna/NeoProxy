@@ -276,7 +276,11 @@ export function table(columns, rows, { onRow, selectedKey, keyOf = (r) => r.id, 
 						"aria-selected": selectedKey !== undefined ? String(selectedKey === key) : null,
 						onClick: onRow ? () => onRow(r) : null,
 						tabindex: onRow ? 0 : null,
-						onKeydown: onRow ? (e) => e.key === "Enter" && onRow(r) : null,
+						onKeydown: onRow ? (event) => {
+							if (event.target !== event.currentTarget || (event.key !== "Enter" && event.key !== " ")) return;
+							event.preventDefault();
+							onRow(r);
+						} : null,
 					},
 					columns.map((c) => h("td", { class: `${c.num ? "num" : ""} ${c.wrap ? "wrap" : ""} ${c.clip ? "clip" : ""}` }, c.render(r))),
 				),
@@ -400,86 +404,133 @@ export function errorState(err, retry) {
 	return empty({ icon: "info", title: "Could not load", hint: err?.message ?? String(err), action: retry ? btn("Try again", { icon: "refresh", cls: "outline", onClick: retry }) : null });
 }
 
+// Catalogue responses are snapshots; share their id indexes across large lists.
+const catalogueIndexes = new WeakMap();
+function catalogueIndex(rows) {
+	let index = catalogueIndexes.get(rows);
+	if (!index) {
+		index = new Map(rows.map((row) => [row.id, row]));
+		catalogueIndexes.set(rows, index);
+	}
+	return index;
+}
+
+export function providerLabel(provider) {
+	if (!provider) return { main: "Unavailable provider", source: "" };
+	return {
+		main: provider.kind === "neopi-gateway" ? provider.vendor || "Shared provider" : provider.name,
+		source: provider.sourceLabel || "",
+	};
+}
+
+export function vmIdentity(vm, models, providers) {
+	const stages = vm.stages ?? [];
+	if (stages.length !== 1) return `${stages.length} stages`;
+	const model = catalogueIndex(models).get(stages[0].model);
+	const provider = catalogueIndex(providers).get(model?.providerId ?? stages[0].model.split("/")[0]);
+	const label = providerLabel(provider);
+	return `${model?.display ?? model?.name ?? "Unavailable model"} · ${label.main}${label.source ? ` · ${label.source}` : ""}`;
+}
+
+export function vmSearchText(vm, models, providers) {
+	const modelIndex = catalogueIndex(models);
+	const providerIndex = catalogueIndex(providers);
+	const parts = [vm.name, vm.served, vm.description];
+	for (const stage of vm.stages ?? []) {
+		const model = modelIndex.get(stage.model);
+		const label = providerLabel(providerIndex.get(model?.providerId ?? stage.model.split("/")[0]));
+		parts.push(stage.model, model?.display, model?.name, label.main, label.source);
+	}
+	return parts.filter(Boolean).join(" ").toLowerCase();
+}
+
 // ---------- provider → model picker ----------
 
 // Never a flat list: a provider column (with account counts) and the models of
 // the selected provider. `models` and `providers` are the catalogue; `accounts`
 // gives per-provider counts.
 export function modelPicker({ providers, models, accounts, value, onPick, onlyExposed = true }) {
-	let providerId = value ? value.split("/")[0] : providers.find((p) => p.exposed)?.id;
+	const availableProviders = providers.filter((p) => !onlyExposed || p.exposed);
+	const providerIds = new Set(availableProviders.map((p) => p.id));
+	const availableModels = models.filter((m) => providerIds.has(m.providerId) && (!onlyExposed || m.exposed));
+	const accountCounts = new Map();
+	for (const account of accounts) {
+		if (account.state === "healthy") accountCounts.set(account.providerId, (accountCounts.get(account.providerId) ?? 0) + 1);
+	}
+	let providerId = value ? value.split("/")[0] : availableProviders[0]?.id;
 	let query = "";
 	const el = h("div", { class: "picker" });
-	const left = h("div", { class: "p-col", role: "listbox", "aria-label": "Providers" });
-	const right = h("div", { class: "p-col", role: "listbox", "aria-label": "Models" });
-	el.append(left, right);
-	const render = () => {
+	const left = h("div", { class: "p-col", role: "group", "aria-label": "Providers" });
+	const right = h("div", { class: "p-col", role: "group", "aria-label": "Models" });
+	const filter = h("input", {
+		class: "input picker-filter",
+		type: "search",
+		placeholder: "Search all providers and models",
+		"aria-label": "Search all providers and models",
+		onInput: (event) => {
+			query = event.target.value.trim().toLowerCase();
+			render();
+		},
+	});
+	el.append(filter, left, right);
+	const focusItem = (kind, id) => {
+		if (el.isConnected) el.querySelector(`[data-${kind}="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+	};
+	function render(focusKind, focusId) {
+		const leftScroll = left.scrollTop;
 		clear(left);
 		clear(right);
-		for (const p of providers) {
-			if (onlyExposed && !p.exposed) continue;
-			const n = accounts.filter((a) => a.providerId === p.id && a.state === "healthy").length;
-			left.append(
-				h(
-					"button",
-					{
-						type: "button",
-						class: `p-item ${n === 0 ? "disabled" : ""}`,
-						role: "option",
-						"aria-selected": String(p.id === providerId),
-						onClick: () => {
-							providerId = p.id;
-							render();
-						},
-					},
-					p.name,
-					h("span", { class: "spacer" }),
-					h("span", { class: "count" }, `${n}`),
-				),
-			);
+		const matches = new Map();
+		for (const model of availableModels) {
+			if (query && !`${model.display} ${model.name} ${model.id}`.toLowerCase().includes(query)) continue;
+			let list = matches.get(model.providerId);
+			if (!list) matches.set(model.providerId, list = []);
+			list.push(model);
 		}
-		const filter = h("input", {
-			class: "input",
-			type: "search",
-			placeholder: "Filter models",
-			value: query,
-			style: { marginBottom: "6px", height: "28px" },
-			onInput: (e) => {
-				query = e.target.value;
-				renderModels();
-			},
-		});
-		right.append(filter);
-		const list = h("div");
-		right.append(list);
-		const renderModels = () => {
-			clear(list);
-			const q = query.toLowerCase();
-			for (const m of models) {
-				if (m.providerId !== providerId) continue;
-				if (onlyExposed && !m.exposed) continue;
-				if (q && !m.display.toLowerCase().includes(q) && !m.name.includes(q)) continue;
-				list.append(
-					h(
-						"button",
-						{
-							type: "button",
-							class: "p-item",
-							role: "option",
-							"aria-selected": String(m.id === value),
-							onClick: () => {
-								value = m.id;
-								onPick(m);
-								render();
-							},
-						},
-						h("span", { class: "name", title: m.id }, m.display),
-					),
-				);
+		const shownProviders = availableProviders.filter((p) => !query || matches.has(p.id));
+		if (!shownProviders.some((p) => p.id === providerId)) providerId = shownProviders[0]?.id;
+		const groups = new Map();
+		for (const provider of shownProviders) {
+			const label = providerLabel(provider);
+			const group = label.source || "This proxy";
+			if (!groups.has(group)) groups.set(group, []);
+			groups.get(group).push({ provider, label });
+		}
+		for (const [group, entries] of groups) {
+			left.append(h("div", { class: "p-group" }, group));
+			for (const { provider, label } of entries) {
+				const healthy = accountCounts.get(provider.id) ?? 0;
+				const count = query ? matches.get(provider.id).length : healthy;
+				left.append(h("button", {
+					type: "button",
+					class: `p-item ${healthy ? "" : "disabled"}`,
+					"aria-pressed": String(provider.id === providerId),
+					dataset: { provider: provider.id },
+					title: `${label.main}${label.source ? ` · ${label.source}` : ""} · ${healthy} healthy accounts · ${provider.id}`,
+					onClick: () => {
+						providerId = provider.id;
+						render("provider", provider.id);
+					},
+				}, h("span", { class: "name" }, label.main), h("span", { class: "count", title: query ? "Matching models" : "Healthy accounts" }, String(count))));
 			}
-			if (!list.children.length) list.append(h("div", { class: "empty", style: { padding: "20px" } }, h("div", { class: "hint" }, "No models match")));
-		};
-		renderModels();
-	};
+		}
+		for (const model of matches.get(providerId) ?? []) {
+			right.append(h("button", {
+				type: "button",
+				class: "p-item",
+				"aria-pressed": String(model.id === value),
+				dataset: { model: model.id },
+				onClick: () => {
+					value = model.id;
+					onPick(model);
+					render("model", model.id);
+				},
+			}, h("span", { class: "name", title: model.id }, model.display)));
+		}
+		if (!right.children.length) right.append(h("div", { class: "empty", style: { padding: "20px" } }, h("div", { class: "hint" }, "No models match")));
+		left.scrollTop = leftScroll;
+		if (focusKind) focusItem(focusKind, focusId);
+	}
 	render();
 	return el;
 }
@@ -489,7 +540,7 @@ export function modelPicker({ providers, models, accounts, value, onPick, onlyEx
 // Renders a virtual model's stages as a horizontal rail: request → stage… →
 // terminal. `lit` marks the stage a simulated request would land on;
 // `onSelect` makes nodes selectable; `onReorder` enables drag and Alt+Arrow keys.
-export function chainRail(vm, { models, accounts, usageFor, lit = null, selected = null, onSelect, onAdd, onReorder, compact = false, editor = false, allot = 1, accountLabel = (a) => a.label } = {}) {
+export function chainRail(vm, { models, providers, accounts, usageFor, lit = null, selected = null, onSelect, onAdd, onReorder, compact = false, editor = false, allot = 1, accountLabel = (a) => a.label } = {}) {
 	const rail = h("div", { class: `neo-chain ${compact ? "compact" : ""} ${editor ? "editor" : ""}`, role: "list" });
 	const link = (text) => h("div", { class: "link" }, icon("arrowRight", 14), text ? h("span", { class: "demote" }, text) : null);
 	const litIdx = lit ? (lit.stageIndex ?? vm.stages.length) : null;
@@ -505,6 +556,8 @@ export function chainRail(vm, { models, accounts, usageFor, lit = null, selected
 	vm.stages.forEach((s, i) => {
 		if (!(compact && i === 0)) rail.append(link(i === 0 ? null : "demote"));
 		const model = models.find((m) => m.id === s.model);
+		const provider = catalogueIndex(providers).get(model?.providerId ?? s.model.split("/")[0]);
+		const label = providerLabel(provider);
 		const pool = accounts.filter((a) => a.providerId === (model?.providerId ?? s.model.split("/")[0]) && (s.accounts === "all" || s.accounts.includes(a.id)));
 		const used = usageFor ? pool.reduce((n, a) => n + usageFor(s, a), 0) : 0;
 		const cap = s.cap * allot;
@@ -543,7 +596,7 @@ export function chainRail(vm, { models, accounts, usageFor, lit = null, selected
 				s.per === "all" ? h("span", { title: "One budget shared by everyone granted" }, "shared") : null,
 				s.effort ? h("span", { class: "badge violet" }, s.effort) : null,
 			),
-			h("div", { class: "n-model" }, model?.display ?? s.model, h("span", { class: "prov" }, servedName(`neoproxy/${s.model}`))),
+			h("div", { class: "n-model", title: s.model }, model?.display ?? "Unavailable model", h("span", { class: "prov" }, provider?.kind === "neopi-gateway" ? `${label.main}${label.source ? ` · ${label.source}` : ""}` : provider ? servedName(`neoproxy/${s.model}`) : label.main)),
 			compact
 				? null
 				: h(
@@ -655,11 +708,13 @@ export function trail(decision, { models, accounts, users, admin = false }) {
 			else if (t.skipped === "unhealthy") why = "skipped: no eligible healthy, metered account in the pool";
 			else if (t.skipped === "script") why = "skipped: the routing script selected another stage";
 			else if (t.skipped === "lua-cap") why = `skipped: Lua stage cap reached (${fmtPct(t.total, null)} of ${fmtPct(t.cap, null)})`;
-			else if (t.skipped === "lua-policy") why = "skipped: Lua conditions excluded the accounts or their calculated allocation is spent";
+			else if (t.skipped === "lua-policy") why = t.policy?.accounts?.length && t.policy.accounts.every((a) => !a.eligible)
+				? "skipped: every account's Lua condition returned false"
+				: t.policy ? "skipped: the calculated Lua allocation is spent for every eligible account" : "skipped: Lua policy did not allow an account";
 			else if (t.skipped) why = `skipped: ${t.skipped}`;
 			else if (t.chosen) why = `selected ${accName(t.chosen)} · ${fmtPct(t.total, null)} of ${fmtPct(t.cap, null)} cap used${decision.outcome !== "ok" ? ` · request ${decision.outcome}` : ""}`;
 			else why = "no account selected";
-			const policy = admin && t.policy ? h("details", { style: { marginTop: "6px" } },
+			const policy = admin && t.policy ? h("details", { open: t.skipped?.startsWith("lua"), style: { marginTop: "6px" } },
 				h("summary", null, "Lua policy results"),
 				t.policy.cap !== undefined ? h("div", { class: "why" }, `Calculated stage cap: ${fmtPct(t.policy.cap, null)} before grant scaling; effective ceiling ${fmtPct(t.cap, null)}.`) : null,
 				t.policy.accounts.map((a) => {
