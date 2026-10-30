@@ -82,12 +82,24 @@ func evaluateWorker(request workerWireRequest) (response workerResponse) {
 		return workerResponse{Error: "invalid snapshot"}
 	}
 	readonly := make(map[*lua.LTable]*lua.LTable)
-	state.SetGlobal("input", toLua(state, snapshot, readonly))
+	inputValue := toLua(state, snapshot, readonly)
+	state.SetGlobal("input", inputValue)
 	configureIteration(state, readonly)
 	configureTable(state, readonly)
 	state.Push(fn)
 	if err = state.PCall(0, lua.MultRet, nil); err != nil {
 		return workerResponse{Error: "runtime: " + err.Error()}
+	}
+	var input policySnapshot
+	if err = json.Unmarshal(request.Input, &input); err != nil {
+		return workerResponse{Error: "invalid policy snapshot"}
+	}
+	policies, configured, err := evaluatePolicies(state, input, inputValue, readonly)
+	if err != nil {
+		return workerResponse{Error: err.Error()}
+	}
+	if configured && state.GetTop() == 0 {
+		return workerResponse{Proposal: neoroute.ScriptProposal{Policies: policies}}
 	}
 	if state.GetTop() != 1 {
 		return workerResponse{Error: "invalid output: return exactly one stage/account table"}
@@ -96,7 +108,7 @@ func evaluateWorker(request workerWireRequest) (response workerResponse) {
 	if !ok || table.Metatable != lua.LNil {
 		return workerResponse{Error: "invalid output: expected a plain table"}
 	}
-	var proposal neoroute.ScriptProposal
+	proposal := neoroute.ScriptProposal{Policies: policies}
 	fields := 0
 	invalid := false
 	table.ForEach(func(key, value lua.LValue) {

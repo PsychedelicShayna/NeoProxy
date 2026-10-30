@@ -74,6 +74,28 @@ async function catalogue(ctx) {
 
 const newStage = (model) => ({ id: `s${Math.random().toString(36).slice(2, 7)}`, model, accounts: "all", draw: "least-used", perAccount: 0.05, cap: 0.2, window: "week", per: "user", effort: null });
 
+const luaPoolExample = `function reported_room(ctx)
+  for _, w in ipairs(ctx.account.providerWindows or {}) do
+    if w.kind == "5h" and w.known then
+      return w.used < 0.8
+    end
+  end
+  return false -- This policy deliberately excludes unknown reporting.
+end
+
+function available_share(ctx)
+  for _, w in ipairs(ctx.account.providerWindows or {}) do
+    if w.kind == "5h" and w.known then
+      return math.min(0.05, (1 - w.used) * 0.1)
+    end
+  end
+  return 0
+end
+
+function pool_share(ctx)
+  return 0.15
+end`;
+
 async function editor(ctx, id) {
 	const { root } = ctx;
 	const isNew = id === "new";
@@ -160,8 +182,8 @@ async function editor(ctx, id) {
 		}),
 	);
 	let scriptInput, scriptField;
-	const scriptHint = "Save before simulating. No OS, filesystem, network or module access. Scripts cannot override grants, ownership, exposure, health or budgets. Invalid syntax/runtime results are backend errors.";
-	const isScriptError = (e) => e instanceof ApiError && (e.body?.error?.code === "neoproxy_script" || /^(invalid )?script:/i.test(e.message));
+	const scriptHint = "Maximum 16 KiB. Save validates syntax. Try it checks named functions, return types and routing with the selected user's current grants. No files, network, modules or credentials. Errors fail closed; no silent fallback.";
+	const isScriptError = (e) => e instanceof ApiError && (["neoproxy_script", "neoproxy_script_error"].includes(e.body?.error?.code) || /\b(?:script|Lua)\b/i.test(e.message));
 	function setScriptError(message) {
 		if (!scriptInput) return;
 		scriptInput.setAttribute("aria-invalid", String(Boolean(message)));
@@ -184,9 +206,31 @@ async function editor(ctx, id) {
 		hint.id = `${scriptInput.id}-hint`;
 		scriptInput.setAttribute("aria-describedby", hint.id);
 		root.append(card({
-			title: "Routing script · optional",
-			sub: "Lua source (maximum 16 KiB). Empty uses the standard chain. Read-only global input contains asked, protocol, userId, request, virtualModel, stages and account health. Inspect input.request.messages or input.request.input for the client's payload. Return exactly {stageId='s', accountId='a'} to propose an eligible candidate.",
-			body: scriptField,
+			title: "Lua pool policy · optional",
+			sub: "Use built-in routing unless you need a condition or a calculated budget. Choose Lua functions in each stage below; define them once here. Existing selector scripts may still return {stageId='s', accountId='a'}.",
+			body: [
+				scriptField,
+				h("details", { style: { marginTop: "12px", maxWidth: "76ch" } },
+					h("summary", null, "Function contracts & a reported-window example"),
+					h("p", { class: "hint" }, "eligible(ctx) returns true or false per account. perAccount(ctx) returns a window fraction, not tokens or percent points: 0.05 means 5%. cap(ctx) returns the whole stage's fraction and has no account argument. Each stage names its functions; these names are yours to choose."),
+					h("p", { class: "hint" }, "ctx.request, ctx.stage, ctx.allotment and (for account functions) ctx.account, ctx.window, ctx.used, ctx.budget are read-only. account.windows / ctx.window are configured local budget meters. account.providerWindows are separately reported native quotas. Check known before using used; missing or unknown reporting does not mean there is no five-hour limit."),
+					h("p", { class: "hint" }, "Lua limits can only reduce the static ceilings below; the user's allotment scales both. Static health, model/key/account scopes and atomic token reservations still win. Standard draw order chooses among accounts whose condition is true."),
+					h("pre", { class: "mono", style: { whiteSpace: "pre-wrap", overflowWrap: "anywhere" } }, luaPoolExample),
+					h("p", { class: "hint" }, "This example accepts only a reported five-hour window below 80% used. It allocates up to 5% of the configured local window per account and caps the stage at 15%, always within your hard ceilings. Unknown reporting is deliberately excluded. Add a later built-in stage if you want an explicit fallback for unknown accounts."),
+					btn("Use example on selected stage", { cls: "outline sm", onClick: () => {
+						const stage = draft.stages.find((s) => s.id === selected);
+						if (!stage) { toast("Select a stage first.", "warn"); return; }
+						if (draft.script?.trim()) { toast("The source is not empty. Copy the example functions and name them in the stage; existing source was not replaced.", "warn"); return; }
+						draft.script = luaPoolExample;
+						stage.lua = { eligible: "reported_room", perAccount: "available_share", cap: "pool_share" };
+						scriptInput.value = draft.script;
+						setScriptError(null);
+						setDirty();
+						renderInspector();
+						editScript();
+					} }),
+				),
+			],
 		}));
 	}
 
@@ -325,7 +369,7 @@ async function editor(ctx, id) {
 			const result = await neo.simulate({ asked: vm.served, userId: simUser, protocol: simProtocol, request: payload });
 			if (generation !== simGeneration || !simHost.isConnected) return;
 			simResult = result;
-			simHost.replaceChildren(trail(result, { models, accounts: vault.accounts, users }));
+			simHost.replaceChildren(trail(result, { models, accounts: vault.accounts, users, admin: ctx.session.role === "admin" }));
 		} catch (e) {
 			if (generation !== simGeneration || !simHost.isConnected) return;
 			simHost.replaceChildren(isScriptError(e)
@@ -393,7 +437,7 @@ async function editor(ctx, id) {
 			);
 			for (const a of all) {
 				const on = s.accounts === "all" || s.accounts.includes(a.id);
-				const w = a.windows.find((x) => x.kind === s.window) ?? a.windows[0];
+				const w = a.windows.find((x) => x.kind === s.window);
 				accountsSection.append(
 					h(
 						"label",
@@ -410,7 +454,7 @@ async function editor(ctx, id) {
 								update();
 							},
 						}),
-						ring({ used: w?.used ?? 0, size: 24, label: false, title: `${fmtPct(w?.used ?? 0)} of the ${w?.kind} window used by everyone` }),
+						ring({ used: w?.known ? w.used : null, size: 24, label: false, title: w?.known ? `${fmtPct(w.used)} of the configured ${w.kind} window used by everyone` : `No known configured ${s.window} budget window; native quota reporting is separate` }),
 						h("div", { class: "lt", style: { flex: 1, minWidth: 0 } }, h("div", { style: { fontWeight: 500 } }, h("code", null, a.label)), h("div", { class: "ink-3", style: { fontSize: "12px" } }, `${a.plan} · ${a.state}`)),
 						h("span", { class: "num ink-3", style: { fontSize: "12px" } }, `${fmtPct(usageFor(s, a), null)} by this stage`),
 					),
@@ -418,6 +462,40 @@ async function editor(ctx, id) {
 			}
 		};
 		renderAccounts();
+		const luaControl = (key, label, builtin, suggested, hint) => {
+			const enabled = Boolean(s.lua && Object.hasOwn(s.lua, key));
+			const functionInput = input({
+				mono: true, value: s.lua?.[key] ?? "", placeholder: suggested,
+				maxLength: 64, pattern: "[A-Za-z_][A-Za-z0-9_]{0,63}",
+				onInput: (e) => {
+					s.lua[key] = e.target.value.trim();
+					const valid = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(s.lua[key]);
+					e.target.setAttribute("aria-invalid", String(!valid));
+					functionHint.textContent = valid ? hint : "Use a function name: letters, digits and underscores; do not include quotes or ().";
+					functionHint.className = valid ? "hint" : "error";
+					update();
+				},
+			});
+			const functionHint = h("div", { class: "hint" }, hint);
+			const functionField = h("div", { class: enabled ? "" : "hidden" }, field("Function name", functionInput), functionHint);
+			functionHint.id = `${functionInput.id}-policy-hint`;
+			functionInput.setAttribute("aria-describedby", functionHint.id);
+			return field(label, h("div", null,
+				select([{ value: "builtin", label: builtin }, { value: "lua", label: "Lua function" }], enabled ? "lua" : "builtin", (mode) => {
+					if (mode === "lua") {
+						s.lua ??= {};
+						s.lua[key] = functionInput.value.trim() || suggested;
+						functionInput.value = s.lua[key];
+					} else {
+						delete s.lua?.[key];
+						if (s.lua && Object.keys(s.lua).length === 0) delete s.lua;
+					}
+					functionField.classList.toggle("hidden", mode !== "lua");
+					update();
+				}),
+				functionField,
+			));
+		};
 		const pct = (v) => Number((v * 100).toPrecision(15));
 		return inspector({
 			title: `Stage ${idx + 1} · ${model?.display ?? s.model}`,
@@ -462,7 +540,7 @@ async function editor(ctx, id) {
 					),
 				),
 				section(
-					"Budget",
+					"Hard budget ceilings",
 					h(
 						"div",
 						{ class: "grid c2" },
@@ -496,6 +574,14 @@ async function editor(ctx, id) {
 							},
 						),
 					),
+				),
+				section(
+					"Pool policy",
+					h("p", { class: "hint" }, "Built-in choices need no Lua source. A Lua condition filters accounts; numeric functions reduce the hard ceilings above. The draw order still applies."),
+					luaControl("eligible", "Account condition", "Built-in · all eligible accounts", "reported_room", "Must return a boolean. false excludes this account; missing or unknown native windows remain unknown."),
+					luaControl("perAccount", "Per-account allocation", `Built-in · ${pct(s.perAccount)}% ceiling`, "available_share", "Must return a finite fraction from 0 to 1. 0.05 = 5% of this stage's local window, before grant scaling."),
+					luaControl("cap", "Whole-stage cap", `Built-in · ${pct(s.cap)}% ceiling`, "pool_share", "Must return a finite fraction from 0 to 1. Called once per stage with ctx.stage and ctx.request; no ctx.account."),
+					btn("Edit Lua source", { cls: "outline sm", onClick: editScript }),
 				),
 				section(
 					"Effort",
@@ -540,7 +626,7 @@ async function editor(ctx, id) {
 					"Fall through to",
 					modelPicker({
 						providers: vault.providers,
-						models,
+						models: models.filter((m) => !m.virtualOnly),
 						accounts: vault.accounts,
 						value: t.model ?? null,
 						onPick: (m) => {
@@ -550,7 +636,7 @@ async function editor(ctx, id) {
 							runSim();
 						},
 					}),
-					"Served without a budget or a separate direct-access grant; the model must be exposed and have a healthy account.",
+					"Served without a budget or a separate direct-access grant. Source-backed models require a metered stage and are not offered here.",
 				),
 			);
 		};
@@ -596,6 +682,17 @@ async function editor(ctx, id) {
 			renderIdentityErrors();
 			nameInput.focus();
 			return;
+		}
+		for (const stage of draft.stages) {
+			if (!stage.lua) continue;
+			const invalid = Object.values(stage.lua).some((name) => !/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(name));
+			if (invalid || !draft.script?.trim()) {
+				setScriptError(invalid ? "Each Lua policy needs a simple function name (without quotes or parentheses)." : "This stage uses Lua functions. Add their source above, or choose Built-in in the stage.");
+				selected = stage.id;
+				renderInspector();
+				editScript();
+				return;
+			}
 		}
 		try {
 			const saved = await neo.saveVirtualModel(draft);

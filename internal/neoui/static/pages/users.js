@@ -237,11 +237,11 @@ async function detail(ctx, id) {
 	root.append(
 		card({
 			title: "Direct provider access",
-			sub: "Off for members by design: they reach providers only through virtual models. Turn a provider on to let this user ask for neoproxy/<provider>/<model> directly, with no budget but the account's own window.",
+			sub: "Local providers can be made directly accessible. NeoPi sources always use their granted virtual models and explicit local budgets; they cannot be enabled here.",
 			body: h(
 				"div",
 				{ class: "row wrap", style: { paddingTop: "4px", gap: "10px 18px" } },
-				vault.providers.map((p) =>
+				vault.providers.filter((p) => p.kind !== "neopi-gateway").map((p) =>
 					toggle(draft.providerAccess.includes(p.id), (v) => {
 						draft.providerAccess = v ? [...draft.providerAccess, p.id] : draft.providerAccess.filter((x) => x !== p.id);
 						setDirty();

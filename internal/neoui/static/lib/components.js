@@ -641,7 +641,7 @@ function wireDrag(node, rail, vm, onReorder) {
 
 // ---------- trail ----------
 
-export function trail(decision, { models, accounts, users }) {
+export function trail(decision, { models, accounts, users, admin = false }) {
 	const steps = [];
 	const modelName = (id) => models.find((m) => m.id === id)?.display ?? id;
 	const accName = (id) => accounts.find((a) => a.id === id)?.label ?? "an account in the pool";
@@ -654,10 +654,21 @@ export function trail(decision, { models, accounts, users }) {
 			else if (t.skipped === "per-account") why = "skipped: every account at its per-account budget";
 			else if (t.skipped === "unhealthy") why = "skipped: no eligible healthy, metered account in the pool";
 			else if (t.skipped === "script") why = "skipped: the routing script selected another stage";
+			else if (t.skipped === "lua-cap") why = `skipped: Lua stage cap reached (${fmtPct(t.total, null)} of ${fmtPct(t.cap, null)})`;
+			else if (t.skipped === "lua-policy") why = "skipped: Lua conditions excluded the accounts or their calculated allocation is spent";
 			else if (t.skipped) why = `skipped: ${t.skipped}`;
 			else if (t.chosen) why = `selected ${accName(t.chosen)} · ${fmtPct(t.total, null)} of ${fmtPct(t.cap, null)} cap used${decision.outcome !== "ok" ? ` · request ${decision.outcome}` : ""}`;
 			else why = "no account selected";
-			steps.push(h("div", { class: `step ${cls}` }, h("div", { class: "n" }, `${t.index + 1}`), h("div", null, h("div", { class: "what" }, modelName(t.model)), h("div", { class: "why" }, why))));
+			const policy = admin && t.policy ? h("details", { style: { marginTop: "6px" } },
+				h("summary", null, "Lua policy results"),
+				t.policy.cap !== undefined ? h("div", { class: "why" }, `Calculated stage cap: ${fmtPct(t.policy.cap, null)} before grant scaling; effective ceiling ${fmtPct(t.cap, null)}.`) : null,
+				t.policy.accounts.map((a) => {
+					const candidate = t.candidates.find((c) => c.accountId === a.accountId);
+					return h("div", { class: "why", style: { marginTop: "4px" } },
+						`${accName(a.accountId)}: condition ${a.eligible ? "true" : "false"}${a.limit !== undefined ? `; calculated allocation ${fmtPct(a.limit, null)} before grant scaling` : ""}; ${candidate ? `effective budget ${fmtPct(candidate.budget, null)}, used ${fmtPct(candidate.used, null)}` : "not an eligible candidate"}.`);
+				}),
+			) : null;
+			steps.push(h("div", { class: `step ${cls}` }, h("div", { class: "n" }, `${t.index + 1}`), h("div", null, h("div", { class: "what" }, modelName(t.model)), h("div", { class: "why" }, why), policy)));
 		} else if (t.kind === "terminal") {
 			const passthrough = t.terminal.kind === "passthrough";
 			const title = passthrough ? "Fall through" : t.terminal.kind === "queue" ? "Queued" : "Limit error";

@@ -73,6 +73,13 @@ func TestHTTPEnforcesOwnedInventoryAndMutationAuthority(t *testing.T) {
 		{"admin", "PATCH", "/v8/neo/vault/providers/codex", `{"exposed":false}`, false, 403},
 		{"user-a", "GET", "/v8/neo/owner/stats?userId=owner-b", "", false, 403},
 		{"", "GET", "/v8/neo/vault", "", false, 401},
+		{"", "GET", "/v8/neo/vault/sources", "", false, 401},
+		{"user-a", "GET", "/v8/neo/vault/sources", "", false, 403},
+		{"owner-a", "POST", "/v8/neo/vault/sources", `{"label":"forged","url":"http://127.0.0.1","bearer":"injected","enabled":true}`, true, 403},
+		{"owner-a", "PUT", "/v8/neo/vault/sources/other", `{"enabled":false}`, true, 403},
+		{"owner-a", "DELETE", "/v8/neo/vault/sources/other", "", true, 403},
+		{"user-a", "POST", "/v8/neo/vault/sources/other/sync", `{}`, true, 403},
+		{"admin", "POST", "/v8/neo/vault/sources", `{"label":"forged","url":"http://127.0.0.1","bearer":"injected","enabled":true}`, false, 403},
 	}
 	for _, check := range checks {
 		w = request(check.user, check.method, check.path, check.body, check.csrf)

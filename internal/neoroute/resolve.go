@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -153,6 +154,11 @@ func directDecision(asked, model string, state routeState, vm string, trail []Tr
 		d.Reason = "unknown-model"
 		return d
 	}
+	if m.VirtualOnly {
+		d.Reason = "no-provider-access"
+		d.Message = "This model is available only through a metered virtual-model stage"
+		return d
+	}
 	if checkAccess && !slices.Contains(state.principal.ProviderAccess, m.ProviderID) {
 		d.Reason = "no-provider-access"
 		d.Trail = append(d.Trail, TrailStep{Kind: "denied", ProviderID: m.ProviderID})
@@ -250,6 +256,7 @@ func decide(req Request, state routeState, after int, proposal *ScriptProposal) 
 	var resetsAt int64
 	for index, st := range vm.Stages {
 		tr, candidates, reset := evaluateStage(state, vm, st, index, allot)
+		tr, candidates = applyPolicy(tr, candidates, st, allot, proposal)
 		if reset > 0 && (resetsAt == 0 || reset < resetsAt) {
 			resetsAt = reset
 		}
@@ -274,7 +281,7 @@ func decide(req Request, state routeState, after int, proposal *ScriptProposal) 
 		case "alternate":
 			chosen = int(state.cursors[st.ID] % int64(len(candidates)))
 		}
-		if proposal != nil {
+		if proposal != nil && proposal.StageID != "" {
 			if proposal.StageID != st.ID {
 				tr.Skipped = "script"
 				trail = append(trail, tr)
@@ -295,7 +302,7 @@ func decide(req Request, state routeState, after int, proposal *ScriptProposal) 
 		trail = append(trail, tr)
 		return Decision{Outcome: "ok", VirtualModel: vm.ID, StageIndex: &index, StageID: st.ID, Model: st.Model, AccountID: candidates[chosen].ID, Effort: st.Effort, Trail: trail}
 	}
-	if proposal != nil {
+	if proposal != nil && proposal.StageID != "" {
 		return Decision{Outcome: "error", VirtualModel: vm.ID, Reason: "invalid-script-proposal", Trail: trail}
 	}
 	trail = append(trail, TrailStep{Kind: "terminal", Terminal: &vm.Terminal})
@@ -330,15 +337,18 @@ func (s *Store) choose(ctx context.Context, req Request, state routeState, after
 				tr.Skipped = "upstream-error"
 				tr.Candidates = nil
 			}
-			input.Stages = append(input.Stages, ScriptStage{StageID: st.ID, Model: st.Model, Candidates: tr.Candidates, Total: tr.Total, Cap: tr.Cap, Skipped: tr.Skipped})
+			input.Stages = append(input.Stages, ScriptStage{StageID: st.ID, Model: st.Model, Candidates: tr.Candidates, Total: tr.Total, Cap: tr.Cap, Skipped: tr.Skipped, Lua: st.Lua, Allotment: allot, Window: st.Window})
 		}
 		for _, a := range state.snapshot.Accounts {
 			if !accountAllowed(state.principal, a) {
 				continue
 			}
-			account := ScriptAccount{AccountID: a.ID, ProviderID: a.ProviderID, State: a.State, Windows: make([]ScriptWindow, 0, len(a.Windows))}
+			account := ScriptAccount{AccountID: a.ID, ProviderID: a.ProviderID, State: a.State, SourceID: a.SourceID, Windows: make([]ScriptWindow, 0, len(a.Windows)), ProviderWindows: make([]ScriptWindow, 0, len(a.ProviderWindows))}
 			for _, w := range a.Windows {
-				account.Windows = append(account.Windows, ScriptWindow{Kind: w.Kind, Known: w.Known, Used: w.Used, ResetsAt: w.ResetsAt})
+				account.Windows = append(account.Windows, scriptWindow(w, state.at))
+			}
+			for _, w := range a.ProviderWindows {
+				account.ProviderWindows = append(account.ProviderWindows, scriptWindow(w, state.at))
 			}
 			input.Accounts = append(input.Accounts, account)
 		}
@@ -356,6 +366,9 @@ func (s *Store) choose(ctx context.Context, req Request, state routeState, after
 		if err != nil {
 			return Decision{}, state, scriptError(state.vm.ID, err.Error())
 		}
+		if err = validatePolicies(p, input); err != nil {
+			return Decision{}, state, scriptError(state.vm.ID, err.Error())
+		}
 		proposal = &p
 		// Evaluation is outside every database transaction. Reload authority and
 		// inventory after it: a script cannot freeze a grant or account's health.
@@ -363,7 +376,7 @@ func (s *Store) choose(ctx context.Context, req Request, state routeState, after
 		if err != nil {
 			return Decision{}, state, err
 		}
-		if fresh.vm == nil || fresh.vm.ID != state.vm.ID || fresh.vm.UpdatedAt != state.vm.UpdatedAt || fresh.vm.Script != state.vm.Script {
+		if fresh.vm == nil || !reflect.DeepEqual(fresh.vm, state.vm) {
 			return Decision{}, fresh, scriptError(state.vm.ID, "virtual model changed during script evaluation")
 		}
 		fresh.blocked = state.blocked
@@ -432,7 +445,7 @@ func (s *Store) Models(ctx context.Context) ([]string, error) {
 		}
 	}
 	for _, m := range state.snapshot.Models {
-		if m.Exposed && providerVisible(state.snapshot, m.ProviderID) && slices.Contains(state.principal.ProviderAccess, m.ProviderID) {
+		if !m.VirtualOnly && m.Exposed && providerVisible(state.snapshot, m.ProviderID) && slices.Contains(state.principal.ProviderAccess, m.ProviderID) {
 			for _, a := range state.snapshot.Accounts {
 				if a.ProviderID == m.ProviderID && accountAllowed(state.principal, a) && accountSupports(a, m.ID) {
 					out = append(out, m.Served)

@@ -29,26 +29,29 @@ type Provider struct {
 	Exposed bool   `json:"exposed"`
 }
 type Model struct {
-	ID         string   `json:"id"`
-	ProviderID string   `json:"providerId"`
-	Name       string   `json:"name"`
-	Display    string   `json:"display"`
-	Served     string   `json:"served"`
-	Tags       []string `json:"tags"`
-	Context    int      `json:"context"`
-	Exposed    bool     `json:"exposed"`
+	ID          string   `json:"id"`
+	ProviderID  string   `json:"providerId"`
+	Name        string   `json:"name"`
+	Display     string   `json:"display"`
+	Served      string   `json:"served"`
+	Tags        []string `json:"tags"`
+	Context     int      `json:"context"`
+	VirtualOnly bool     `json:"virtualOnly,omitempty"`
+	Exposed     bool     `json:"exposed"`
 }
 type Account struct {
-	ID            string   `json:"id"`
-	EngineAuthID  string   `json:"-"`
-	ProviderID    string   `json:"providerId"`
-	OwnerID       string   `json:"ownerId"`
-	Label         string   `json:"label"`
-	Plan          string   `json:"plan"`
-	State         string   `json:"state"`
-	CooldownUntil int64    `json:"cooldownUntil,omitempty"`
-	ModelIDs      []string `json:"modelIds"`
-	Windows       []Window `json:"windows"`
+	ID              string   `json:"id"`
+	EngineAuthID    string   `json:"-"`
+	ProviderID      string   `json:"providerId"`
+	OwnerID         string   `json:"ownerId"`
+	Label           string   `json:"label"`
+	Plan            string   `json:"plan"`
+	State           string   `json:"state"`
+	CooldownUntil   int64    `json:"cooldownUntil,omitempty"`
+	SourceID        string   `json:"sourceId,omitempty"`
+	ProviderWindows []Window `json:"providerWindows,omitempty"`
+	ModelIDs        []string `json:"modelIds"`
+	Windows         []Window `json:"windows"`
 }
 
 // Window describes a locally configured token meter, NOT a claimed upstream quota.

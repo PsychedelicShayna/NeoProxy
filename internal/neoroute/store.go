@@ -130,26 +130,58 @@ func (s *Store) VirtualModel(ctx context.Context, id string) (VirtualModel, erro
 }
 
 var virtualName = regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`)
+var luaFunctionName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,63}$`)
 
 func finiteFraction(n float64) bool { return !math.IsNaN(n) && !math.IsInf(n, 0) && n >= 0 && n <= 1 }
+
+type validationInventory struct {
+	providers map[string]bool
+	models    map[string]*neopool.Model
+	served    map[string]bool
+	accounts  map[string]*neopool.Account
+}
+
+func indexValidationInventory(snap neopool.Snapshot) validationInventory {
+	index := validationInventory{
+		providers: make(map[string]bool, len(snap.Providers)),
+		models:    make(map[string]*neopool.Model, len(snap.Models)),
+		served:    make(map[string]bool, len(snap.Models)),
+		accounts:  make(map[string]*neopool.Account, len(snap.Accounts)),
+	}
+	for _, provider := range snap.Providers {
+		index.providers[provider.ID] = true
+	}
+	for i := range snap.Models {
+		model := &snap.Models[i]
+		index.models[model.ID] = model
+		if !model.VirtualOnly {
+			index.served[model.Served] = true
+		}
+	}
+	for i := range snap.Accounts {
+		account := &snap.Accounts[i]
+		index.accounts[account.ID] = account
+	}
+	return index
+}
 
 // Validate checks configuration against the live configured inventory. Hidden or
 // temporarily unhealthy accounts remain valid configuration but cannot execute.
 func Validate(v VirtualModel, snap neopool.Snapshot, p neo.Principal) error {
+	return validateIndexed(v, indexValidationInventory(snap), p)
+}
+
+func validateIndexed(v VirtualModel, inventory validationInventory, p neo.Principal) error {
 	if !virtualName.MatchString(v.Name) {
 		return fmt.Errorf("invalid virtual model name")
 	}
-	for _, provider := range snap.Providers {
-		if provider.ID == v.Name {
-			return fmt.Errorf("virtual name collides with provider")
-		}
+	if inventory.providers[v.Name] {
+		return fmt.Errorf("virtual name collides with provider")
 	}
-	models := make(map[string]neopool.Model, len(snap.Models))
-	for _, m := range snap.Models {
-		models[m.ID] = m
-		if m.ID == v.Name || m.Served == "neoproxy/"+v.Name {
-			return fmt.Errorf("virtual name collides with model")
-		}
+	models := inventory.models
+	// A virtual-only selector names this stored route, not a direct provider model.
+	if models[v.Name] != nil || inventory.served["neoproxy/"+v.Name] {
+		return fmt.Errorf("virtual name collides with model")
 	}
 	if len(v.Stages) == 0 || len(v.Stages) > 128 {
 		return fmt.Errorf("virtual model requires 1..128 stages")
@@ -177,6 +209,19 @@ func Validate(v VirtualModel, snap neopool.Snapshot, p neo.Principal) error {
 		if !finiteFraction(st.PerAccount) || !finiteFraction(st.Cap) {
 			return fmt.Errorf("stage budgets must be finite fractions")
 		}
+		if st.Lua != nil {
+			if strings.TrimSpace(v.Script) == "" {
+				return fmt.Errorf("stage %q Lua functions require Lua source", st.ID)
+			}
+			for _, name := range []string{st.Lua.Eligible, st.Lua.PerAccount, st.Lua.Cap} {
+				if name != "" && !luaFunctionName.MatchString(name) {
+					return fmt.Errorf("stage %q Lua function names must be simple identifiers (at most 64 characters)", st.ID)
+				}
+			}
+			if st.Lua.Eligible == "" && st.Lua.PerAccount == "" && st.Lua.Cap == "" {
+				return fmt.Errorf("stage %q Lua policy requires at least one function", st.ID)
+			}
+		}
 		if !slices.Contains([]string{"fill", "least-used", "alternate"}, st.Draw) {
 			return fmt.Errorf("invalid draw policy")
 		}
@@ -195,14 +240,8 @@ func Validate(v VirtualModel, snap neopool.Snapshot, p neo.Principal) error {
 				return fmt.Errorf("duplicate stage account")
 			}
 			ids[id] = true
-			found := false
-			for _, a := range snap.Accounts {
-				if a.ID == id && a.ProviderID == provider && accountAllowed(p, a) {
-					found = true
-					break
-				}
-			}
-			if !found {
+			account := inventory.accounts[id]
+			if account == nil || account.ProviderID != provider || !accountAllowed(p, *account) {
 				return fmt.Errorf("stage account is outside provider or ownership scope")
 			}
 		}
@@ -216,6 +255,9 @@ func Validate(v VirtualModel, snap neopool.Snapshot, p neo.Principal) error {
 	if v.Terminal.Kind == "passthrough" {
 		if _, err := validateModel(v.Terminal.Model); err != nil {
 			return err
+		}
+		if models[v.Terminal.Model].VirtualOnly {
+			return fmt.Errorf("source-backed models require a metered stage, not an unbudgeted passthrough terminal")
 		}
 	}
 	return nil

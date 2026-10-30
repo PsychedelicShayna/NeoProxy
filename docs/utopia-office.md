@@ -76,12 +76,60 @@ permit authenticated remote management on that private bind. Dashboard user
 sessions, owner permissions and scoped inference keys remain separate from the
 operator credential. Never give an inference client the operator secret.
 
-Provision an independent engine-owned provider credential. An access-only lease
-can prove an inference path, but its expiry does not prove durable refresh.
-Complete provider consent normally; do not reuse a competing broker's refresh
-authority. Assign the resulting account to its owner, configure explicitly named
-local metered windows, create the desired virtual model and grant it to the
-member identity used by the agent. A local token meter is not a vendor quota.
+There are two credential paths. A local provider login is managed and refreshed
+by NeoProxy. A shared NeoPi source instead leaves provider credentials and refresh
+authority with NeoPi's canonical broker. Independent Codex login is optional when
+a working shared source is available; never copy the broker's refresh tokens.
+
+### Share logged-in NeoPi accounts
+
+1. Start NeoPi's authenticated auth gateway against its existing broker. Use its
+   gateway bearer, not a provider API key or a NeoProxy inference key. Prefer
+   HTTPS, or carry loopback HTTP over an authenticated private tunnel.
+2. As an organization administrator, open **Core & vault → Connect NeoPi / manage
+   pools**, then **Connect NeoPi**. Enter a source name, gateway URL (an optional
+   `/v1` suffix is accepted), bearer and default owner for newly discovered
+   accounts. Source credentials cannot be supplied or read by ordinary members
+   or account owners.
+3. The proxy discovers `/v1/models` and `/v1/neoproxy/accounts`. Each broker
+   credential becomes an independently selectable account. In **Account pools**,
+   configure an explicit **local day token budget** on the intended accounts.
+   Native provider percentages are shown separately: unknown or absent windows
+   do not establish unlimited usage or absence of a five-hour limit.
+4. The catalogue creates ordinary stored 1:1 virtual models named
+   `neoproxy/np-<model-slug>-<stable-id>`. Descriptions identify the source and
+   exact provider-qualified model. Edit these routes in **Virtual models**,
+   grant the intended models in **Users**, then issue a key scoped to the selected
+   accounts. No source model can bypass its virtual route through direct
+   provider access. Without a configured local budget and grant, it does not run.
+
+Connections persist with ownership and meters in the existing private
+`data/neoproxy.sqlite` (or `NEOPROXY_DATA_DIR/neoproxy.sqlite`). The bearer is
+write-only in the dashboard, never exported in account inventory or engine auth
+files. Changing a source URL requires entering a bearer again; redirects are not
+followed with the bearer. Restarting the proxy restores enabled connections.
+Discovery reconciles accounts and catalogue changes every 15 seconds; **Refresh
+accounts** requests an immediate check. Failed discovery removes that source's
+selectable accounts. A logged-out or disabled broker credential also fails closed
+at inference time, before the next inventory check. Every attempt forwards the
+selected `X-Neopi-Credential-Id`; gateway retries cannot silently use a sibling.
+
+**Disable** stops source inference without discarding connection settings.
+**Disconnect** forgets the source connection while retaining account ownership,
+meters, virtual routes and historical usage. Neither operation deletes a NeoPi
+credential or changes another local provider account. Existing temporary leases,
+native accounts and custom virtual models remain in service until their owner
+explicitly replaces them.
+
+Chat Completions, Responses and Messages clients use the existing translators,
+streaming and measured-account ledger. The current gateway source contract is
+HTTP/SSE: it does not advertise a downstream WebSocket endpoint. Native Codex
+WebSocket accounts remain on their existing executor path.
+
+For a local credential instead, complete the normal provider consent in this
+proxy, assign the account to its owner, configure explicit metered windows and
+grant a virtual model. An access-only lease may prove inference, but its expiry
+does not establish durable refresh. A local token meter is never a vendor quota.
 
 ## Native client and agent profile
 

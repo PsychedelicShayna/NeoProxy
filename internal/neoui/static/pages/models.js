@@ -78,7 +78,7 @@ export async function render(ctx) {
 	});
 	host.append(vmCard);
 
-	const treeCard = card({ title: "Provider models", sub: "Served as neoproxy/<provider>/<model>. Hide a provider to remove all of its models at once.", flush: true, body: h("div", { class: "tree" }) });
+	const treeCard = card({ title: "Provider models", sub: "Local providers may have direct selectors. NeoPi source models use the generated stored virtual names shown below. Hiding a provider disables all routes that draw from it.", flush: true, body: h("div", { class: "tree" }) });
 	host.append(treeCard);
 	const tree = treeCard.querySelector(".tree");
 
@@ -118,9 +118,9 @@ export async function render(ctx) {
 						},
 						h("span", { class: "caret" }, icon("chevronDown", 14)),
 						p.name,
-						h("span", { class: "ink-3", style: { fontWeight: 400 } }, `neoproxy/${p.id}/…`),
+						h("span", { class: "ink-3", style: { fontWeight: 400 } }, p.kind === "neopi-gateway" ? "virtual models only" : `neoproxy/${p.id}/…`),
 					),
-					h("div", { class: "meta" }, h("span", null, `${all.filter((m) => m.exposed).length} of ${plural(all.length, "model")}`), h("span", null, plural(accs.length, "account")), h("span", null, `${plural(users.filter((u) => u.providerAccess.includes(p.id)).length, "user")} direct`)),
+					h("div", { class: "meta" }, h("span", null, `${all.filter((m) => m.exposed).length} of ${plural(all.length, "model")}`), h("span", null, plural(accs.length, "account")), h("span", null, p.kind === "neopi-gateway" ? "grant virtual models in Users" : `${plural(users.filter((u) => u.providerAccess.includes(p.id)).length, "user")} direct`)),
 					toggle(p.exposed, async (v) => {
 						await neo.setProviderExposed(p.id, v);
 						p.exposed = v;

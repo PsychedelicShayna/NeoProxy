@@ -210,6 +210,11 @@ Stage {
   window: "5h" | "day" | "week" | "month",
   per: "user" | "all",     // whether the budget is per granted user or shared by all
   effort: null | "low" | "medium" | "high" | "max"   // force the reasoning effort; null = caller's choice
+  lua?: {                 // named functions defined in VirtualModel.script
+    eligible?: string,    // function(ctx) -> boolean, per authorized account
+    perAccount?: string,  // function(ctx) -> finite 0..1 window fraction
+    cap?: string          // function(ctx) -> finite 0..1 stage fraction
+  }
 }
 
 Terminal {
@@ -283,12 +288,34 @@ answer chunk is delivered, subsequent errors terminate that stream; they do not
 restart the chain. `X-NeoProxy-Request-ID` identifies the persisted request record.
 
 A configured `script` is limited to 16 KiB, requires an installed evaluator, and
-cannot silently fall back to the ordinary chain on an evaluator error. Scripts
-receive credential-free value snapshots and may propose only a stage/account pair.
-The resolver reloads current authority after evaluation and validates the proposal
-against current grants, account/key scope, exposure, health and budgets before
-the same transactional reservation. Saving scripts requires an organization-admin
-dashboard session; ordinary member views do not expose the source.
+cannot silently fall back to the ordinary chain on an evaluator error. A stage's
+optional `lua` object names boolean eligibility and numeric allocation/cap
+functions in that source. `eligible(ctx)` runs per currently authorized candidate;
+false removes that account. `perAccount(ctx)` runs per candidate and `cap(ctx)`
+once per stage. Numeric results must be finite fractions in 0..1 (0.05 = 5%),
+before grant scaling. Effective limits are `min(static ceiling, Lua result) ×
+allotment`; the real ledger reserves these effective limits atomically, including
+in-flight usage. Lua cannot restore an excluded account or raise a hard ceiling.
+
+Callback `ctx` is deeply read-only and contains `asked`, `protocol`, `userId`,
+`request`, `stage`, `allotment`; account functions also receive `account`,
+`window` (the configured local budget window), `used` and `budget` (grant-scaled
+stage usage and hard per-account budget). `account.providerWindows` are separate
+honest native reports, never local token denominators. Unknown/missing/expired
+reports are not unused quota or proof that a vendor has no five-hour window.
+There are no credentials, files, network or ambient provider-plan assumptions.
+
+Policy-only chunks define functions without a return. Existing selector chunks
+may still return exactly `{stageId, accountId}`; when combined with callbacks,
+that selection must survive the reduced eligible set. Static stages retain their
+draw order. Wrong types, nonfinite/out-of-range limits, missing functions and
+runtime errors fail closed with stage/function diagnostics, rather than trying a
+different route. The resolver reloads current authority after evaluation and
+uses the same callbacks in simulation, execution and reservation rechecks.
+Saving requires an organization-admin dashboard session and validates syntax;
+Try it validates behavior against the saved model and selected user's real
+grants. Simulation makes no token reservation or promise about a later request's
+capacity. Ordinary member views do not expose source.
 
 
 ## Users
@@ -352,7 +379,7 @@ Decision {
   trail: TrailStep[]
 }
 TrailStep =
-  | { kind: "stage", index, stageId, model, total, cap, candidates: [{accountId, used, budget}], chosen?: accountId, skipped?: "cap" | "per-account" | "unhealthy" | "upstream-error" | "script", failureStatus?: number }
+  | { kind: "stage", index, stageId, model, total, cap, candidates: [{accountId, used, budget}], chosen?: accountId, skipped?: "cap" | "per-account" | "unhealthy" | "upstream-error" | "script" | "lua-policy" | "lua-cap", failureStatus?: number, policy?: {stageId, cap?: number, accounts: [{accountId, eligible: boolean, limit?: number}]} }
   | { kind: "terminal", terminal: Terminal }
   | { kind: "direct", model, accountId }
   | { kind: "denied", providerId? , virtualModel? }

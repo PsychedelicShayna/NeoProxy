@@ -111,7 +111,7 @@ export async function render(ctx) {
 				},
 				body: [
 					section("Outcome", h("div", { class: "row" }, outcomeBadge(r.outcome), r.decision.effort ? badge(`effort ${r.decision.effort}`, "violet") : null, r.stream ? badge("stream") : null)),
-					section("How it was routed", trail(r.decision, { models, accounts: mine ? [] : vault.accounts, users })),
+					section("How it was routed", trail(r.decision, { models, accounts: mine ? [] : vault.accounts, users, admin: !mine })),
 					section(
 						"Request",
 						kv([

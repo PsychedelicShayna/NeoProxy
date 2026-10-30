@@ -128,3 +128,72 @@ func TestSimulationHTTPPassesSafeRequestAndHonestScriptError(t *testing.T) {
 		}
 	}
 }
+
+func TestHTTPPoolPolicyDetailsAreAdministratorOnly(t *testing.T) {
+	f := newRouteFixture(t, "fill")
+	f.route.SetScriptHook(testScript{evaluate: func(_ context.Context, input ScriptInput) (ScriptProposal, error) {
+		cap, limit := 0.2, 0.1
+		result := ScriptPolicyResult{StageID: "s0", Cap: &cap}
+		for _, candidate := range input.Stages[0].Candidates {
+			result.Accounts = append(result.Accounts, ScriptAccountPolicy{AccountID: candidate.AccountID, Eligible: true, Limit: &limit})
+		}
+		return ScriptProposal{Policies: []ScriptPolicyResult{result}}, nil
+	}})
+	f.vm.Script = "configured"
+	f.vm.Stages[0].Lua = &LuaPolicy{Eligible: "private_condition", PerAccount: "private_allocation", Cap: "private_cap"}
+	f.save(t)
+	member, err := f.identity.CreateUser(t.Context(), neo.UserInput{
+		Handle: "policy-member", Role: neo.RoleMember, State: "active",
+		Password: "member-test-password-123", Grants: []neo.Grant{{VirtualModel: f.vm.ID, Allotment: 1}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	principal, err := f.identity.PrincipalForUser(t.Context(), member.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	execution, err := f.route.Run(neo.WithPrincipal(t.Context(), principal), boundedRequest(false), successful)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := execution.Headers.Get("X-NeoProxy-Request-ID")
+	_, memberToken, err := f.identity.Login(t.Context(), member.Handle, "member-test-password-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, adminToken, err := f.identity.Login(t.Context(), "captain", "a-test-password-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	router := gin.New()
+	f.route.RegisterRoutes(router.Group("/v8/neo", neo.NewHTTP(f.identity).SessionMiddleware()))
+	for _, viewer := range []struct {
+		name, token string
+		admin       bool
+	}{
+		{"member", memberToken, false}, {"admin", adminToken, true},
+	} {
+		for _, endpoint := range []struct{ method, path, body, marker string }{
+			{"GET", "/requests", "", `"policy"`},
+			{"GET", "/requests/" + id, "", `"policy"`},
+			{"POST", "/simulate", `{"asked":"neoproxy/route","userId":"` + member.ID + `"}`, `"policy"`},
+			{"GET", "/virtual-models", "", `"private_condition"`},
+			{"GET", "/virtual-models/" + f.vm.ID, "", `"private_condition"`},
+		} {
+			request := httptest.NewRequest(endpoint.method, "/v8/neo"+endpoint.path, strings.NewReader(endpoint.body))
+			request.Header.Set("Content-Type", "application/json")
+			request.Header.Set("X-Neoproxy-CSRF", "1")
+			request.AddCookie(&http.Cookie{Name: "neoproxy_session", Value: viewer.token})
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, request)
+			if recorder.Code != http.StatusOK || strings.Contains(recorder.Body.String(), endpoint.marker) != viewer.admin {
+				t.Fatalf("%s %s policy projection: %d %s", viewer.name, endpoint.path, recorder.Code, recorder.Body.String())
+			}
+		}
+	}
+	// Serving a member projection must never redact the persisted admin record.
+	if record := loadRecord(t, f, id); record.Decision.Trail[0].Policy == nil {
+		t.Fatal("member projection erased the administrator's stored policy results")
+	}
+}

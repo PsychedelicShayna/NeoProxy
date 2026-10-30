@@ -62,6 +62,31 @@ func routeHTTPError(c *gin.Context, err error) {
 	}
 	c.JSON(status, gin.H{"error": gin.H{"message": message, "code": code}})
 }
+
+// Keep this slice's new Lua configuration/results administrator-only. Existing
+// stage visibility is a separate member-projection migration.
+func withoutLuaConfiguration(vm VirtualModel) VirtualModel {
+	vm.Script = ""
+	for i := range vm.Stages {
+		vm.Stages[i].Lua = nil
+	}
+	return vm
+}
+
+func policyDecisionForViewer(d Decision, p neo.Principal) Decision {
+	if p.IsAdmin() {
+		return d
+	}
+	for _, step := range d.Trail {
+		if step.Policy != nil || step.Skipped == "lua-policy" || step.Skipped == "lua-cap" {
+			// Effective caps and candidate budgets also contain callback results;
+			// removing only the policy object would still disclose those numbers.
+			d.Trail = []TrailStep{}
+			break
+		}
+	}
+	return d
+}
 func (s *Store) listVirtuals(c *gin.Context) {
 	p, ok := sessionPrincipal(c)
 	if !ok {
@@ -77,7 +102,7 @@ func (s *Store) listVirtuals(c *gin.Context) {
 		if p.IsAdmin() {
 			out = append(out, vm)
 		} else if _, granted := grantFor(p, vm.ID); granted {
-			vm.Script = ""
+			vm = withoutLuaConfiguration(vm)
 			out = append(out, vm)
 		}
 	}
@@ -98,7 +123,7 @@ func (s *Store) getVirtual(c *gin.Context) {
 			c.JSON(404, gin.H{"error": gin.H{"message": "Not found"}})
 			return
 		}
-		vm.Script = ""
+		vm = withoutLuaConfiguration(vm)
 	}
 	c.JSON(200, vm)
 }
@@ -181,7 +206,7 @@ func (s *Store) simulateHTTP(c *gin.Context) {
 		routeHTTPError(c, err)
 		return
 	}
-	c.JSON(200, d)
+	c.JSON(200, policyDecisionForViewer(d, p))
 }
 func (s *Store) usageHTTP(c *gin.Context) {
 	p, ok := sessionPrincipal(c)
@@ -309,6 +334,7 @@ func (s *Store) requestsHTTP(c *gin.Context) {
 			routeHTTPError(c, err)
 			return
 		}
+		record.Decision = policyDecisionForViewer(record.Decision, p)
 		out = append(out, record)
 	}
 	if err = rows.Err(); err != nil {
@@ -333,7 +359,13 @@ func (s *Store) requestHTTP(c *gin.Context) {
 		routeHTTPError(c, err)
 		return
 	}
-	c.Data(200, "application/json", raw)
+	var record RequestRecord
+	if err := json.Unmarshal(raw, &record); err != nil {
+		routeHTTPError(c, err)
+		return
+	}
+	record.Decision = policyDecisionForViewer(record.Decision, p)
+	c.JSON(200, record)
 }
 
 // ModelsHTTP returns the OpenAI shape shared by all three day-one entry protocols.
