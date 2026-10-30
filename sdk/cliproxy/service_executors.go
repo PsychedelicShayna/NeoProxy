@@ -284,6 +284,14 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 	if a.Disabled {
 		return
 	}
+	if a.Attributes["neopi_source_id"] != "" {
+		if current, ok := s.coreManager.Executor(a.Provider); ok {
+			if source, ok := current.(*executor.NeoPiExecutor); ok {
+				s.coreManager.RegisterExecutor(source.WithConfig(cfg))
+				return
+			}
+		}
+	}
 	if compatProviderKey, _, isCompat := openAICompatInfoFromAuth(a); isCompat {
 		if compatProviderKey == "" {
 			compatProviderKey = strings.ToLower(strings.TrimSpace(a.Provider))

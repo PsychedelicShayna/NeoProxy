@@ -24,6 +24,15 @@ func NewNeoPiExecutor(provider string, cfg *config.Config, prepare func(context.
 	return &NeoPiExecutor{OpenAICompatExecutor: NewOpenAICompatExecutor(provider, cfg), prepare: prepare}
 }
 
+// WithConfig applies reloaded payload rules without losing the live source
+// authority and credential resolver. Executing requests retain their old instance.
+func (e *NeoPiExecutor) WithConfig(cfg *config.Config) *NeoPiExecutor {
+	if e.cfg == cfg {
+		return e
+	}
+	return NewNeoPiExecutor(e.provider, cfg, e.prepare)
+}
+
 func (e *NeoPiExecutor) selected(ctx context.Context, a *coreauth.Auth, model string, opts coreexecutor.Options) (*coreauth.Auth, error) {
 	if a == nil || opts.Metadata[coreexecutor.PinnedAuthMetadataKey] != a.ID {
 		return nil, statusErr{code: http.StatusForbidden, msg: "NeoPi source requires an account-scoped virtual model"}

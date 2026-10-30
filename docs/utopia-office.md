@@ -113,6 +113,9 @@ accounts** requests an immediate check. Failed discovery removes that source's
 selectable accounts. A logged-out or disabled broker credential also fails closed
 at inference time, before the next inventory check. Every attempt forwards the
 selected `X-Neopi-Credential-Id`; gateway retries cannot silently use a sibling.
+Configuration reloads preserve the source's live credential resolver while
+applying the updated payload rules. They do not replace a shared-source executor
+with a generic provider client or bypass source and key revocation checks.
 
 **Disable** stops source inference without discarding connection settings.
 **Disconnect** forgets the source connection while retaining account ownership,
