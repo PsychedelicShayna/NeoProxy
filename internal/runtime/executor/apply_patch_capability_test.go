@@ -14,7 +14,7 @@ func TestApplyPatchActualExecutors(t *testing.T) {
 		NewGeminiExecutor(cfg), NewGeminiInteractionsExecutor(cfg), NewGeminiVertexExecutor(cfg),
 		NewAntigravityExecutor(cfg), NewAIStudioExecutor(cfg, "aistudio", nil), NewDevinExecutor(cfg),
 		NewKimiExecutor(cfg), NewCodexExecutor(cfg), NewCodexWebsocketsExecutor(cfg), NewCodexAutoExecutor(cfg),
-		NewXAIExecutor(cfg), NewMetaExecutor(cfg),
+		NewXAIExecutor(cfg), NewNeoPiResponsesExecutor("meta", cfg),
 	} {
 		support, okSupport := exec.(coreauth.ApplyPatchSupport)
 		if !okSupport || !support.SupportsApplyPatch() {

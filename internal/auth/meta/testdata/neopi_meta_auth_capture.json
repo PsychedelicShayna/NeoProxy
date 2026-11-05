@@ -1,0 +1,1537 @@
+{
+  "source": "NeoPi OWN muse-code login + usage, api-key logins",
+  "userAgent": "npi/18.14.0",
+  "device": {
+    "device_code": "device-code-fake",
+    "user_code": "ABCD-EFGH",
+    "verification_uri": "https://www.meta.com/device",
+    "verification_uri_complete": "https://www.meta.com/device?code=ABCD-EFGH",
+    "interval": 1,
+    "expires_in": 600
+  },
+  "token": {
+    "access_token": "dca:account-token-fake",
+    "token_type": "bearer"
+  },
+  "keyActive": {
+    "api_key": "LLM|minted-key",
+    "user_email": "Shay@Example.Invalid",
+    "user_id": "meta-user-1",
+    "is_subs_active": true,
+    "subs_tier_name": "Pro",
+    "subs_tier_id": "tier-pro",
+    "subs_usage": {
+      "window": {
+        "used_percent": 12.5,
+        "resets_at": "2026-11-04T20:00:00Z",
+        "window_duration_mins": 300
+      },
+      "weekly": {
+        "used_percent": 40,
+        "resets_at": 1793836800
+      }
+    }
+  },
+  "logins": [
+    {
+      "name": "active",
+      "replies": {
+        "/oidc/device/authorization/": {
+          "body": {
+            "device_code": "device-code-fake",
+            "user_code": "ABCD-EFGH",
+            "verification_uri": "https://www.meta.com/device",
+            "verification_uri_complete": "https://www.meta.com/device?code=ABCD-EFGH",
+            "interval": 1,
+            "expires_in": 600
+          }
+        },
+        "/oidc/device/token/": [
+          {
+            "status": 400,
+            "body": {
+              "error": "authorization_pending"
+            }
+          },
+          {
+            "body": {
+              "access_token": "dca:account-token-fake",
+              "token_type": "bearer"
+            }
+          }
+        ],
+        "/muse-code/key": {
+          "body": {
+            "api_key": "LLM|minted-key",
+            "user_email": "Shay@Example.Invalid",
+            "user_id": "meta-user-1",
+            "is_subs_active": true,
+            "subs_tier_name": "Pro",
+            "subs_tier_id": "tier-pro",
+            "subs_usage": {
+              "window": {
+                "used_percent": 12.5,
+                "resets_at": "2026-11-04T20:00:00Z",
+                "window_duration_mins": 300
+              },
+              "weekly": {
+                "used_percent": 40,
+                "resets_at": 1793836800
+              }
+            }
+          }
+        }
+      },
+      "events": [
+        {
+          "progress": "Requesting device authorization..."
+        },
+        {
+          "auth": {
+            "url": "https://www.meta.com/device?code=ABCD-EFGH",
+            "userCode": "ABCD-EFGH",
+            "instructions": "Enter code: ABCD-EFGH"
+          }
+        },
+        {
+          "progress": "Waiting for device authorization..."
+        }
+      ],
+      "result": {
+        "access": "{\"oauthAccessToken\":\"dca:account-token-fake\",\"apiKey\":\"LLM|minted-key\"}",
+        "refresh": "",
+        "expires": 8640000000000000,
+        "accountId": "meta-user-1",
+        "email": "shay@example.invalid"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/authorization/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "26",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "client_id=1031625952748946"
+        },
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/token/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "121",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=1031625952748946&device_code=device-code-fake"
+        },
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/token/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "121",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=1031625952748946&device_code=device-code-fake"
+        },
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "16",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{\"onboard\":true}"
+        }
+      ]
+    },
+    {
+      "name": "inactive",
+      "replies": {
+        "/oidc/device/authorization/": {
+          "body": {
+            "device_code": "device-code-fake",
+            "user_code": "ABCD-EFGH",
+            "verification_uri": "https://www.meta.com/device",
+            "verification_uri_complete": "https://www.meta.com/device?code=ABCD-EFGH",
+            "interval": 1,
+            "expires_in": 600
+          }
+        },
+        "/oidc/device/token/": {
+          "body": {
+            "access_token": "dca:account-token-fake",
+            "token_type": "bearer"
+          }
+        },
+        "/muse-code/key": {
+          "body": {
+            "api_key": "LLM|minted-key",
+            "user_email": "Shay@Example.Invalid",
+            "user_id": "meta-user-1",
+            "is_subs_active": false,
+            "subs_tier_name": "Pro",
+            "subs_tier_id": "tier-pro",
+            "subs_usage": {
+              "window": {
+                "used_percent": 12.5,
+                "resets_at": "2026-11-04T20:00:00Z",
+                "window_duration_mins": 300
+              },
+              "weekly": {
+                "used_percent": 40,
+                "resets_at": 1793836800
+              }
+            }
+          }
+        }
+      },
+      "events": [
+        {
+          "progress": "Requesting device authorization..."
+        },
+        {
+          "auth": {
+            "url": "https://www.meta.com/device?code=ABCD-EFGH",
+            "userCode": "ABCD-EFGH",
+            "instructions": "Enter code: ABCD-EFGH"
+          }
+        },
+        {
+          "progress": "Waiting for device authorization..."
+        }
+      ],
+      "error": "invalid_grant: Muse Code subscription is inactive",
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/authorization/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "26",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "client_id=1031625952748946"
+        },
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/token/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "121",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=1031625952748946&device_code=device-code-fake"
+        },
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "16",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{\"onboard\":true}"
+        }
+      ]
+    },
+    {
+      "name": "payment-required",
+      "replies": {
+        "/oidc/device/authorization/": {
+          "body": {
+            "device_code": "device-code-fake",
+            "user_code": "ABCD-EFGH",
+            "verification_uri": "https://www.meta.com/device",
+            "verification_uri_complete": "https://www.meta.com/device?code=ABCD-EFGH",
+            "interval": 1,
+            "expires_in": 600
+          }
+        },
+        "/oidc/device/token/": {
+          "body": {
+            "access_token": "dca:account-token-fake",
+            "token_type": "bearer"
+          }
+        },
+        "/muse-code/key": {
+          "body": {
+            "is_subs_active": true,
+            "require_payment": true,
+            "action_url": "https://www.meta.com/pay",
+            "user_email": "a@b.invalid"
+          }
+        }
+      },
+      "events": [
+        {
+          "progress": "Requesting device authorization..."
+        },
+        {
+          "auth": {
+            "url": "https://www.meta.com/device?code=ABCD-EFGH",
+            "userCode": "ABCD-EFGH",
+            "instructions": "Enter code: ABCD-EFGH"
+          }
+        },
+        {
+          "progress": "Waiting for device authorization..."
+        }
+      ],
+      "error": "Muse Code subscription is required: https://www.meta.com/pay",
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/authorization/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "26",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "client_id=1031625952748946"
+        },
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/token/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "121",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=1031625952748946&device_code=device-code-fake"
+        },
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "16",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{\"onboard\":true}"
+        }
+      ]
+    },
+    {
+      "name": "missing-key",
+      "replies": {
+        "/oidc/device/authorization/": {
+          "body": {
+            "device_code": "device-code-fake",
+            "user_code": "ABCD-EFGH",
+            "verification_uri": "https://www.meta.com/device",
+            "verification_uri_complete": "https://www.meta.com/device?code=ABCD-EFGH",
+            "interval": 1,
+            "expires_in": 600
+          }
+        },
+        "/oidc/device/token/": {
+          "body": {
+            "access_token": "dca:account-token-fake",
+            "token_type": "bearer"
+          }
+        },
+        "/muse-code/key": {
+          "body": {
+            "user_email": "a@b.invalid",
+            "is_subs_active": true
+          }
+        }
+      },
+      "events": [
+        {
+          "progress": "Requesting device authorization..."
+        },
+        {
+          "auth": {
+            "url": "https://www.meta.com/device?code=ABCD-EFGH",
+            "userCode": "ABCD-EFGH",
+            "instructions": "Enter code: ABCD-EFGH"
+          }
+        },
+        {
+          "progress": "Waiting for device authorization..."
+        }
+      ],
+      "error": "Muse Code key response is missing api_key",
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/authorization/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "26",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "client_id=1031625952748946"
+        },
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/token/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "121",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=1031625952748946&device_code=device-code-fake"
+        },
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "16",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{\"onboard\":true}"
+        }
+      ]
+    },
+    {
+      "name": "key-http-error",
+      "replies": {
+        "/oidc/device/authorization/": {
+          "body": {
+            "device_code": "device-code-fake",
+            "user_code": "ABCD-EFGH",
+            "verification_uri": "https://www.meta.com/device",
+            "verification_uri_complete": "https://www.meta.com/device?code=ABCD-EFGH",
+            "interval": 1,
+            "expires_in": 600
+          }
+        },
+        "/oidc/device/token/": {
+          "body": {
+            "access_token": "dca:account-token-fake",
+            "token_type": "bearer"
+          }
+        },
+        "/muse-code/key": {
+          "status": 429,
+          "body": {
+            "error": "rate limited"
+          }
+        }
+      },
+      "events": [
+        {
+          "progress": "Requesting device authorization..."
+        },
+        {
+          "auth": {
+            "url": "https://www.meta.com/device?code=ABCD-EFGH",
+            "userCode": "ABCD-EFGH",
+            "instructions": "Enter code: ABCD-EFGH"
+          }
+        },
+        {
+          "progress": "Waiting for device authorization..."
+        }
+      ],
+      "error": "Muse Code key exchange failed: 429 {\"error\":\"rate limited\"}",
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/authorization/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "26",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "client_id=1031625952748946"
+        },
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/token/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "121",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=1031625952748946&device_code=device-code-fake"
+        },
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "16",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{\"onboard\":true}"
+        }
+      ]
+    },
+    {
+      "name": "denied",
+      "replies": {
+        "/oidc/device/authorization/": {
+          "body": {
+            "device_code": "device-code-fake",
+            "user_code": "ABCD-EFGH",
+            "verification_uri": "https://www.meta.com/device",
+            "verification_uri_complete": "https://www.meta.com/device?code=ABCD-EFGH",
+            "interval": 1,
+            "expires_in": 600
+          }
+        },
+        "/oidc/device/token/": {
+          "status": 400,
+          "body": {
+            "error": "access_denied"
+          }
+        }
+      },
+      "events": [
+        {
+          "progress": "Requesting device authorization..."
+        },
+        {
+          "auth": {
+            "url": "https://www.meta.com/device?code=ABCD-EFGH",
+            "userCode": "ABCD-EFGH",
+            "instructions": "Enter code: ABCD-EFGH"
+          }
+        },
+        {
+          "progress": "Waiting for device authorization..."
+        }
+      ],
+      "error": "muse-code device authorization was denied",
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/authorization/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "26",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "client_id=1031625952748946"
+        },
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/token/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "121",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=1031625952748946&device_code=device-code-fake"
+        }
+      ]
+    },
+    {
+      "name": "device-error",
+      "replies": {
+        "/oidc/device/authorization/": {
+          "status": 500,
+          "body": {
+            "error": "boom"
+          }
+        }
+      },
+      "events": [
+        {
+          "progress": "Requesting device authorization..."
+        }
+      ],
+      "error": "muse-code device authorization failed: 500 {\"error\":\"boom\"}",
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://auth.meta.com/oidc/device/authorization/",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "26",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "auth.meta.com",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "client_id=1031625952748946"
+        }
+      ]
+    }
+  ],
+  "usage": [
+    {
+      "name": "windows",
+      "replies": {
+        "/muse-code/key": {
+          "body": {
+            "api_key": "LLM|minted-key",
+            "user_email": "Shay@Example.Invalid",
+            "user_id": "meta-user-1",
+            "is_subs_active": true,
+            "subs_tier_name": "Pro",
+            "subs_tier_id": "tier-pro",
+            "subs_usage": {
+              "window": {
+                "used_percent": 12.5,
+                "resets_at": "2026-11-04T20:00:00Z",
+                "window_duration_mins": 300
+              },
+              "weekly": {
+                "used_percent": 40,
+                "resets_at": 1793836800
+              }
+            }
+          }
+        }
+      },
+      "report": {
+        "provider": "muse-code",
+        "fetchedAt": 0,
+        "limits": [
+          {
+            "id": "300m",
+            "label": "5 Hours",
+            "scope": {
+              "provider": "muse-code",
+              "accountId": "meta-user-1",
+              "tier": "Pro",
+              "windowId": "300m",
+              "shared": true
+            },
+            "window": {
+              "id": "300m",
+              "label": "5 Hours",
+              "durationMs": 18000000,
+              "resetsAt": 1793822400000
+            },
+            "amount": {
+              "used": 12.5,
+              "limit": 100,
+              "remaining": 87.5,
+              "usedFraction": 0.125,
+              "remainingFraction": 0.875,
+              "unit": "percent"
+            },
+            "status": "ok"
+          },
+          {
+            "id": "1w",
+            "label": "Weekly",
+            "scope": {
+              "provider": "muse-code",
+              "accountId": "meta-user-1",
+              "tier": "Pro",
+              "windowId": "1w",
+              "shared": true
+            },
+            "window": {
+              "id": "1w",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1793836800000
+            },
+            "amount": {
+              "used": 40,
+              "limit": 100,
+              "remaining": 60,
+              "usedFraction": 0.4,
+              "remainingFraction": 0.6,
+              "unit": "percent"
+            },
+            "status": "ok"
+          }
+        ],
+        "metadata": {
+          "source": "api.meta.ai/muse-code/key",
+          "email": "shay@example.invalid",
+          "accountId": "meta-user-1",
+          "tier": "Pro"
+        },
+        "raw": {
+          "user_email": "Shay@Example.Invalid",
+          "user_id": "meta-user-1",
+          "is_subs_active": true,
+          "subs_tier_name": "Pro",
+          "subs_tier_id": "tier-pro",
+          "subs_usage": {
+            "window": {
+              "used_percent": 12.5,
+              "resets_at": "2026-11-04T20:00:00Z",
+              "window_duration_mins": 300
+            },
+            "weekly": {
+              "used_percent": 40,
+              "resets_at": 1793836800
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "2",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{}"
+        }
+      ]
+    },
+    {
+      "name": "idle-default",
+      "replies": {
+        "/muse-code/key": {
+          "body": {
+            "api_key": "LLM|minted-key",
+            "user_id": "meta-user-1",
+            "user_email": "shay@example.invalid",
+            "is_subs_active": true,
+            "subs_tier_name": "Pro"
+          }
+        }
+      },
+      "report": {
+        "provider": "muse-code",
+        "fetchedAt": 0,
+        "limits": [
+          {
+            "id": "300m",
+            "label": "5 Hours",
+            "scope": {
+              "provider": "muse-code",
+              "accountId": "meta-user-1",
+              "tier": "Pro",
+              "windowId": "300m",
+              "shared": true
+            },
+            "window": {
+              "id": "300m",
+              "label": "5 Hours",
+              "durationMs": 18000000
+            },
+            "amount": {
+              "used": 0,
+              "limit": 100,
+              "remaining": 100,
+              "usedFraction": 0,
+              "remainingFraction": 1,
+              "unit": "percent"
+            },
+            "status": "ok",
+            "notes": [
+              "Idle: no request has opened this window"
+            ]
+          }
+        ],
+        "metadata": {
+          "source": "api.meta.ai/muse-code/key",
+          "email": "shay@example.invalid",
+          "accountId": "meta-user-1",
+          "tier": "Pro"
+        },
+        "raw": {
+          "user_id": "meta-user-1",
+          "user_email": "shay@example.invalid",
+          "is_subs_active": true,
+          "subs_tier_name": "Pro"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "2",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{}"
+        }
+      ]
+    },
+    {
+      "name": "idle-with-previous",
+      "replies": {
+        "/muse-code/key": {
+          "body": {
+            "api_key": "LLM|minted-key",
+            "user_id": "meta-user-1",
+            "is_subs_active": true
+          }
+        }
+      },
+      "previous": {
+        "provider": "muse-code",
+        "fetchedAt": 1,
+        "limits": [
+          {
+            "id": "300m",
+            "label": "5 Hours",
+            "scope": {
+              "provider": "muse-code"
+            },
+            "window": {
+              "id": "300m",
+              "label": "5 Hours",
+              "durationMs": 18000000
+            },
+            "amount": {
+              "used": 10,
+              "limit": 100,
+              "usedFraction": 0.1,
+              "unit": "percent"
+            },
+            "status": "ok"
+          },
+          {
+            "id": "1w",
+            "label": "Weekly",
+            "scope": {
+              "provider": "muse-code"
+            },
+            "window": {
+              "id": "1w",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 4102444800000
+            },
+            "amount": {
+              "used": 40,
+              "limit": 100,
+              "usedFraction": 0.4,
+              "unit": "percent"
+            },
+            "status": "ok"
+          }
+        ]
+      },
+      "report": {
+        "provider": "muse-code",
+        "fetchedAt": 0,
+        "limits": [
+          {
+            "id": "300m",
+            "label": "5 Hours",
+            "scope": {
+              "provider": "muse-code",
+              "accountId": "meta-user-1",
+              "windowId": "300m",
+              "shared": true
+            },
+            "window": {
+              "id": "300m",
+              "label": "5 Hours",
+              "durationMs": 18000000
+            },
+            "amount": {
+              "used": 0,
+              "limit": 100,
+              "remaining": 100,
+              "usedFraction": 0,
+              "remainingFraction": 1,
+              "unit": "percent"
+            },
+            "status": "ok",
+            "notes": [
+              "Idle: no request has opened this window"
+            ]
+          },
+          {
+            "id": "1w",
+            "label": "Weekly",
+            "scope": {
+              "provider": "muse-code",
+              "accountId": "meta-user-1",
+              "windowId": "1w",
+              "shared": true
+            },
+            "window": {
+              "id": "1w",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 4102444800000
+            },
+            "amount": {
+              "used": 40,
+              "limit": 100,
+              "remaining": 60,
+              "usedFraction": 0.4,
+              "remainingFraction": 0.6,
+              "unit": "percent"
+            },
+            "status": "ok",
+            "notes": [
+              "Carried from the last reported usage; later usage not visible"
+            ]
+          }
+        ],
+        "metadata": {
+          "source": "api.meta.ai/muse-code/key",
+          "email": "cred@example.invalid",
+          "accountId": "meta-user-1"
+        },
+        "raw": {
+          "user_id": "meta-user-1",
+          "is_subs_active": true
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "2",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{}"
+        }
+      ]
+    },
+    {
+      "name": "inactive",
+      "replies": {
+        "/muse-code/key": {
+          "body": {
+            "api_key": "LLM|minted-key",
+            "user_email": "Shay@Example.Invalid",
+            "user_id": "meta-user-1",
+            "is_subs_active": false,
+            "subs_tier_name": "Pro",
+            "subs_tier_id": "tier-pro",
+            "subs_usage": {
+              "window": {
+                "used_percent": 12.5,
+                "resets_at": "2026-11-04T20:00:00Z",
+                "window_duration_mins": 300
+              },
+              "weekly": {
+                "used_percent": 40,
+                "resets_at": 1793836800
+              }
+            }
+          }
+        }
+      },
+      "error": "403 Muse Code subscription is inactive",
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "2",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{}"
+        }
+      ]
+    },
+    {
+      "name": "unauthorized",
+      "replies": {
+        "/muse-code/key": {
+          "status": 401,
+          "body": {
+            "error": "bad token"
+          }
+        }
+      },
+      "error": "401 Muse Code key exchange failed: 401 {\"error\":\"bad token\"}",
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "2",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{}"
+        }
+      ]
+    },
+    {
+      "name": "server-error",
+      "replies": {
+        "/muse-code/key": {
+          "status": 500,
+          "body": {
+            "error": "oops"
+          }
+        }
+      },
+      "report": null,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "2",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{}"
+        }
+      ]
+    },
+    {
+      "name": "payment-required",
+      "replies": {
+        "/muse-code/key": {
+          "body": {
+            "is_subs_active": true,
+            "require_payment": true
+          }
+        }
+      },
+      "report": null,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://api.meta.ai/muse-code/key",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer dca:account-token-fake",
+            "connection": "keep-alive",
+            "content-length": "2",
+            "content-type": "application/json",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14",
+            "x-api-version": "1.0.0"
+          },
+          "body": "{}"
+        }
+      ]
+    }
+  ],
+  "apiKeyLogins": [
+    {
+      "provider": "meta",
+      "name": "ok",
+      "events": [
+        {
+          "auth": {
+            "url": "https://developer.meta.com/ai/",
+            "instructions": "Create or copy your key from the Meta Model API dashboard"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Meta Model API key",
+            "placeholder": "Model API key"
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "result": "pasted-key",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.meta.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "meta",
+      "name": "rejected",
+      "events": [
+        {
+          "auth": {
+            "url": "https://developer.meta.com/ai/",
+            "instructions": "Create or copy your key from the Meta Model API dashboard"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Meta Model API key",
+            "placeholder": "Model API key"
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "error": "401 Meta Model API API key validation failed (401): {\"error\":{\"message\":\"Invalid API key\"}}",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.meta.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "meta",
+      "name": "server-error",
+      "events": [
+        {
+          "auth": {
+            "url": "https://developer.meta.com/ai/",
+            "instructions": "Create or copy your key from the Meta Model API dashboard"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Meta Model API key",
+            "placeholder": "Model API key"
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "error": "503 Meta Model API API key validation failed (503): {\"error\":\"down\"}",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.meta.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.meta.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "meta",
+      "name": "empty",
+      "events": [
+        {
+          "auth": {
+            "url": "https://developer.meta.com/ai/",
+            "instructions": "Create or copy your key from the Meta Model API dashboard"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Meta Model API key",
+            "placeholder": "Model API key"
+          }
+        }
+      ],
+      "error": "API key is required",
+      "requests": []
+    },
+    {
+      "provider": "sakana",
+      "name": "ok",
+      "events": [
+        {
+          "auth": {
+            "url": "https://console.sakana.ai/api-keys",
+            "instructions": "Copy your API key from the Sakana AI console"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Sakana AI API key",
+            "placeholder": "sk-..."
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "result": "pasted-key",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.sakana.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.sakana.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "sakana",
+      "name": "rejected",
+      "events": [
+        {
+          "auth": {
+            "url": "https://console.sakana.ai/api-keys",
+            "instructions": "Copy your API key from the Sakana AI console"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Sakana AI API key",
+            "placeholder": "sk-..."
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "error": "401 Sakana AI API key validation failed (401): {\"error\":{\"message\":\"Invalid API key\"}}",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.sakana.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.sakana.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "sakana",
+      "name": "server-error",
+      "events": [
+        {
+          "auth": {
+            "url": "https://console.sakana.ai/api-keys",
+            "instructions": "Copy your API key from the Sakana AI console"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Sakana AI API key",
+            "placeholder": "sk-..."
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "error": "503 Sakana AI API key validation failed (503): {\"error\":\"down\"}",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.sakana.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.sakana.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "sakana",
+      "name": "empty",
+      "events": [
+        {
+          "auth": {
+            "url": "https://console.sakana.ai/api-keys",
+            "instructions": "Copy your API key from the Sakana AI console"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Sakana AI API key",
+            "placeholder": "sk-..."
+          }
+        }
+      ],
+      "error": "API key is required",
+      "requests": []
+    },
+    {
+      "provider": "abliteration",
+      "name": "ok",
+      "events": [
+        {
+          "auth": {
+            "url": "https://abliteration.ai/console",
+            "instructions": "Copy your API key from the Abliteration console"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Abliteration API key",
+            "placeholder": "ak_..."
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "result": "pasted-key",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.abliteration.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.abliteration.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "abliteration",
+      "name": "rejected",
+      "events": [
+        {
+          "auth": {
+            "url": "https://abliteration.ai/console",
+            "instructions": "Copy your API key from the Abliteration console"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Abliteration API key",
+            "placeholder": "ak_..."
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "error": "401 Abliteration API key validation failed (401): {\"error\":{\"message\":\"Invalid API key\"}}",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.abliteration.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.abliteration.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "abliteration",
+      "name": "server-error",
+      "events": [
+        {
+          "auth": {
+            "url": "https://abliteration.ai/console",
+            "instructions": "Copy your API key from the Abliteration console"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Abliteration API key",
+            "placeholder": "ak_..."
+          }
+        },
+        {
+          "progress": "Validating API key..."
+        }
+      ],
+      "error": "503 Abliteration API key validation failed (503): {\"error\":\"down\"}",
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://api.abliteration.ai/v1/models",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer pasted-key",
+            "connection": "keep-alive",
+            "host": "api.abliteration.ai",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "provider": "abliteration",
+      "name": "empty",
+      "events": [
+        {
+          "auth": {
+            "url": "https://abliteration.ai/console",
+            "instructions": "Copy your API key from the Abliteration console"
+          }
+        },
+        {
+          "prompt": {
+            "message": "Paste your Abliteration API key",
+            "placeholder": "ak_..."
+          }
+        }
+      ],
+      "error": "API key is required",
+      "requests": []
+    }
+  ]
+}
