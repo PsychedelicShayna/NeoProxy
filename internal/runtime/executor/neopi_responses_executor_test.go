@@ -67,7 +67,7 @@ func TestNeoPiResponsesExecutorServesMetaKeyAsNeoPi(t *testing.T) {
 	if recorded.headers.Get("x-api-version") != "" {
 		t.Errorf("Model API requests must not carry Muse Code's x-api-version")
 	}
-	want := `{"model":"muse-spark-1.3","input":[{"role":"user","content":[{"type":"input_text","text":"hi"}]}],"stream":true,"prompt_cache_key":"cache-1","store":false,"include":["reasoning.encrypted_content"],"reasoning":{"effort":"high","summary":"auto"}}`
+	want := `{"model":"muse-spark-1.3","input":[{"type":"message","role":"user","content":[{"type":"input_text","text":"hi"}]}],"stream":true,"prompt_cache_key":"cache-1","store":false,"include":["reasoning.encrypted_content"],"reasoning":{"effort":"high","summary":"auto"}}`
 	if recorded.body != want {
 		t.Errorf("body\ngot  %s\nwant %s", recorded.body, want)
 	}
