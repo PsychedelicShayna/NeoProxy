@@ -13,21 +13,17 @@ import (
 func TestBuildMetaAuthRecord_PreservesSubscriptionMetadata_Issue6117(t *testing.T) {
 	bundle := &metaauth.MetaAuthBundle{
 		Email: "user@example.com",
-		Name:  "Test User",
 		TokenData: &metaauth.TokenData{
 			AccessToken: "dca:access-token",
 			TokenType:   "Bearer",
-			ExpiresIn:   3600,
 		},
 		MintedKey: &metaauth.MintedKeyResponse{
-			APIKey:           "LLM|minted-key",
-			BaseURL:          "https://api.meta.ai/v1",
-			UserEmail:        "user@example.com",
-			UserFullName:     "Test User",
-			SubsTierName:     "High Usage",
-			SubsTierID:       "high_usage",
-			IsSubsActive:     true,
-			HasPaymentMethod: true,
+			APIKey:       "LLM|minted-key",
+			UserEmail:    "user@example.com",
+			UserID:       "meta-user",
+			SubsTierName: "High Usage",
+			SubsTierID:   "high_usage",
+			IsSubsActive: true,
 		},
 	}
 	tokenStorage := metaauth.NewMetaAuth(nil).CreateTokenStorage(bundle)
@@ -60,21 +56,17 @@ func TestBuildMetaAuthRecord_SavesToDiskWithSubscriptionMetadata_Issue6117(t *te
 
 	bundle := &metaauth.MetaAuthBundle{
 		Email: "user@example.com",
-		Name:  "Test User",
 		TokenData: &metaauth.TokenData{
 			AccessToken: "dca:access-token",
 			TokenType:   "Bearer",
-			ExpiresIn:   3600,
 		},
 		MintedKey: &metaauth.MintedKeyResponse{
-			APIKey:           "LLM|minted-key",
-			BaseURL:          "https://api.meta.ai/v1",
-			UserEmail:        "user@example.com",
-			UserFullName:     "Test User",
-			SubsTierName:     "High Usage",
-			SubsTierID:       "high_usage",
-			IsSubsActive:     true,
-			HasPaymentMethod: true,
+			APIKey:       "LLM|minted-key",
+			UserEmail:    "user@example.com",
+			UserID:       "meta-user",
+			SubsTierName: "High Usage",
+			SubsTierID:   "high_usage",
+			IsSubsActive: true,
 		},
 	}
 	tokenStorage := metaauth.NewMetaAuth(nil).CreateTokenStorage(bundle)

@@ -168,9 +168,6 @@ func publishCatalogBytes(data []byte) ([]string, error) {
 		return nil, errValidate
 	}
 	old := getModels()
-	if len(parsed.Meta) == 0 && old != nil {
-		parsed.Meta = old.Meta
-	}
 	changed := detectChangedProviders(old, &parsed)
 	modelsCatalogStore.mu.Lock()
 	modelsCatalogStore.data = &parsed
