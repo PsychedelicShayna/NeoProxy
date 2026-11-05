@@ -59,6 +59,11 @@ func newAccessFixture(t *testing.T) *accessFixture {
 			_, _ = w.Write([]byte(`{"error":{"message":"Incorrect API key provided: sk-bad"}}`))
 			return
 		}
+		if r.URL.Path == "/v1/auth/key" {
+			// OpenRouter's key check (NeoPi's paste-key validate-url).
+			_, _ = w.Write([]byte(`{"data":{"label":"synthetic"}}`))
+			return
+		}
 		if r.URL.Path != "/v1/models" {
 			w.WriteHeader(http.StatusNotFound)
 			return

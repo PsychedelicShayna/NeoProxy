@@ -194,7 +194,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	case "nous-portal":
 		models = applyExcludedModels(nousModelsForAuth(ctx, cfg, a), excluded)
 	case "meta":
-		models = registry.GetMetaModels()
+		models = s.registerNeoPiDiscovered(metaDiscoveryFor(a), a)
 		if entry := resolveConfigMetaKeyForConfig(cfg, a); entry != nil {
 			if len(entry.Models) > 0 {
 				models = buildMetaConfigModels(entry)
@@ -250,7 +250,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 					return false
 				}
 				isCompatAuth = true
-				ms := buildOpenAICompatibilityConfigModels(compat)
+				ms := s.neoPiResponsesModelsFor(a, s.compatModelsForAuth(a, compat))
 				if providerKey == "" {
 					providerKey = "openai-compatibility"
 				}
@@ -276,7 +276,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 					if providerKey == "" {
 						providerKey = "openai-compatibility"
 					}
-					ms := cached.models
+					ms := s.neoPiResponsesModelsFor(a, cached.models)
 					if len(ms) > 0 {
 						ms = s.appendPluginModels(providerKey, ms, nil)
 						published = s.registerResolvedModelsForAuthFenced(a, fence, providerKey, applyModelPrefixes(ms, a.Prefix, cfg.ForceModelPrefix))
@@ -844,6 +844,19 @@ func buildConfiguredModelInfo(model modelEntry, ownedBy, modelType string, creat
 		info.IsCompat = compatModel.GetIsCompat()
 	}
 	return info
+}
+
+// compatModelsForAuth returns the models one openai-compatibility entry serves:
+// NeoPi's OpenRouter roster for an OpenRouter entry, else the configured list.
+func (s *Service) compatModelsForAuth(a *coreauth.Auth, compat *config.OpenAICompatibility) []*ModelInfo {
+	if compat != nil && registry.IsOpenRouterBaseURL(compat.BaseURL) {
+		models := s.registerNeoPiDiscovered(openRouterDiscovery, a)
+		for _, model := range models {
+			model.OwnedBy = compat.Name
+		}
+		return models
+	}
+	return buildOpenAICompatibilityConfigModels(compat)
 }
 
 func buildOpenAICompatibilityConfigModels(compat *config.OpenAICompatibility) []*ModelInfo {

@@ -34,6 +34,8 @@ func (h *Handler) StartOAuthV8(c *gin.Context) {
 		h.RequestMetaToken(c)
 	case "zai":
 		h.RequestZaiToken(c)
+	case "openrouter":
+		h.RequestOpenRouterToken(c)
 	case "cursor":
 		h.RequestCursorToken(c)
 	case "nous-portal":

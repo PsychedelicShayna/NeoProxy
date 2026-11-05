@@ -51,6 +51,8 @@ type NeoPiThinking struct {
 	// EffortRouting maps an effort (or "off") to the wire id that serves it.
 	EffortRouting map[string]string `json:"effortRouting,omitempty"`
 	DefaultLevel  string            `json:"defaultLevel,omitempty"`
+	// PrefixBinding is ThinkingConfig.prefixBinding.
+	PrefixBinding bool `json:"prefixBinding,omitempty"`
 }
 
 // NeoPiAnthropicCompat is the resolved compat NeoPi's Anthropic Messages
@@ -141,6 +143,14 @@ type NeoPiCompat struct {
 	ClampOutputToModelMax                        bool              `json:"clampOutputToModelMax"`
 	RejectRootObjectUnion                        bool              `json:"rejectRootObjectUnion"`
 	PromptCacheSessionHeader                     string            `json:"promptCacheSessionHeader,omitempty"`
+	// CacheControlFormat is "anthropic" for Anthropic models behind OpenRouter.
+	CacheControlFormat string `json:"cacheControlFormat,omitempty"`
+	// StripImageInput drops image parts for models that reject them.
+	StripImageInput bool `json:"stripImageInput"`
+	// ToolSchemaFlavor is "moonshot-mfjs" for Moonshot-family tool schemas.
+	ToolSchemaFlavor string `json:"toolSchemaFlavor,omitempty"`
+	// RetryWithoutStrictOnGrammarError retries once without strict tools on a grammar-size failure.
+	RetryWithoutStrictOnGrammarError bool `json:"retryWithoutStrictOnGrammarError"`
 }
 
 // Clone deep-copies the record so registry readers cannot alias its maps.

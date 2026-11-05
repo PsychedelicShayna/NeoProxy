@@ -14,7 +14,10 @@ import (
 	"time"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/anthropicnpi"
+	openrouterauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/openrouter"
 	zaiauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/zai"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/openaiwire"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
@@ -84,10 +87,17 @@ func listUpstreamModels(ctx context.Context, style, base, key string) ([]string,
 		return nil, nil, accessErr(http.StatusBadRequest, "The base URL is not a valid address.")
 	}
 	req.Header = header
-	req.Header.Set("Accept", "application/json")
-	// Some providers sit behind bot protection that rejects Go's default
-	// User-Agent with a 403 page (Nous Portal does), which would read as a bad key.
-	req.Header.Set("User-Agent", "NeoProxy")
+	if registry.ResponsesProviderForBaseURL(base) != "" {
+		// NeoPi's models-endpoint validation (validateApiKeyAgainstModelsEndpoint):
+		// fetch's default Accept and Bun's User-Agent, nothing else.
+		req.Header.Set("Accept", "*/*")
+		req.Header.Set("User-Agent", openaiwire.BunUserAgent)
+	} else {
+		req.Header.Set("Accept", "application/json")
+		// Some providers sit behind bot protection that rejects Go's default
+		// User-Agent with a 403 page (Nous Portal does), which would read as a bad key.
+		req.Header.Set("User-Agent", "NeoProxy")
+	}
 	resp, err := accessHTTPClient.Do(req)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) || strings.Contains(err.Error(), "Client.Timeout") {
@@ -172,6 +182,12 @@ func listUpstreamModels(ctx context.Context, style, base, key string) ([]string,
 func validateCatalogKey(ctx context.Context, info ProviderInfo, base, preferred, key string) (string, []string, map[string]modelRoute, error) {
 	if info.ID == "zai" {
 		return zaiauth.CodingPlanBaseURL, nil, nil, validateZaiKey(ctx, key)
+	}
+	if info.ID == "openrouter" {
+		// NeoPi validates an OpenRouter key against /auth/key: /models answers
+		// 200 for any bearer, so listing models proves nothing. The roster is
+		// discovered at runtime, so no model list is stored.
+		return base, nil, nil, validateOpenRouterKey(ctx, base, key)
 	}
 	candidates := []string{base}
 	if regions := catalogRegions(info.ID); len(regions) > 0 {
@@ -291,4 +307,25 @@ func accountModelRoutes(routes map[string]modelRoute) map[string]coreauth.Accoun
 		out[id] = coreauth.AccountModelRoute{Dialect: route.dialect, BaseURL: route.baseURL}
 	}
 	return out
+}
+
+// validateOpenRouterKey is NeoPi's paste-key validate-url for OpenRouter:
+// GET <base>/auth/key authenticates the key, sent as NeoPi's own fetch sends it.
+func validateOpenRouterKey(ctx context.Context, base, key string) error {
+	svc := openrouterauth.NewService(accessHTTPClient)
+	svc.KeyURL = strings.TrimRight(base, "/") + "/auth/key"
+	err := svc.ValidateKey(ctx, key)
+	var rejected *openrouterauth.ValidationError
+	switch {
+	case err == nil:
+		return nil
+	case !errors.As(err, &rejected):
+		return accessErr(http.StatusBadGateway, "Could not reach OpenRouter to check the key. Try again in a moment.")
+	case rejected.Status == http.StatusUnauthorized || rejected.Status == http.StatusForbidden:
+		return &AccessError{Status: http.StatusBadRequest, keyRejected: true, Message: fmt.Sprintf("OpenRouter rejected this key (HTTP %d). Check that the whole key was pasted and that it is still active.", rejected.Status)}
+	case rejected.Status == http.StatusTooManyRequests:
+		return accessErr(http.StatusServiceUnavailable, "OpenRouter is rate-limiting requests right now (HTTP 429); the key itself was not rejected. Wait a minute and try again.")
+	default:
+		return accessErr(http.StatusBadGateway, "OpenRouter answered HTTP %d when checking the key. Try again in a moment.", rejected.Status)
+	}
 }

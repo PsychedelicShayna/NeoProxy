@@ -121,14 +121,12 @@ func (a MetaAuthenticator) Login(ctx context.Context, cfg *config.Config, opts *
 	if tokenStorage.Email != "" {
 		metadata["email"] = tokenStorage.Email
 	}
-	if tokenStorage.Name != "" {
-		metadata["name"] = tokenStorage.Name
+	if tokenStorage.AccountID != "" {
+		metadata["account_id"] = tokenStorage.AccountID
 	}
 	if bundle.MintedKey != nil {
 		metadata["subs_tier_name"] = bundle.MintedKey.SubsTierName
 		metadata["subs_tier_id"] = bundle.MintedKey.SubsTierID
-		metadata["is_subs_active"] = bundle.MintedKey.IsSubsActive
-		metadata["has_payment_method"] = bundle.MintedKey.HasPaymentMethod
 	}
 
 	attrs := map[string]string{

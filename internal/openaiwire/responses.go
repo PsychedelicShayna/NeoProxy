@@ -44,6 +44,9 @@ type Options struct {
 	ServiceTier      string
 	ToolChoice       json.RawMessage
 	Include          []string
+	// DisableStrictTools is the strict-tools fallback: a provider that rejected
+	// strict schemas gets every tool without the flag.
+	DisableStrictTools bool
 }
 
 // FromResponses maps a downstream Responses body onto NeoPi's Context and
@@ -71,6 +74,7 @@ func FromResponses(body []byte, model *registry.NeoPiModel) (Context, Options) {
 			)})},
 		)}
 	}
+	ctx.Input = omitUnsupportedImages(ctx.Input, model)
 	for _, tool := range root.Get("tools").Array() {
 		ctx.Tools = append(ctx.Tools, json.RawMessage(tool.Raw))
 	}
@@ -114,7 +118,35 @@ func FromResponses(body []byte, model *registry.NeoPiModel) (Context, Options) {
 			opts.Include = append(opts.Include, value.String())
 		}
 	}
+	// streamSimple's clamp. The Meta, Sakana and Abliteration captures drive
+	// streamOpenAIResponses directly, below it, so only the openrouter captures
+	// (streamSimple) pin it.
+	if model != nil && model.Provider == "openrouter" {
+		normalizeMandatoryReasoning(model, &opts)
+	}
 	return ctx, opts
+}
+
+// normalizeMandatoryReasoning is normalizeMandatoryReasoningOptions: a
+// reasoning model whose endpoint cannot disable thinking
+// (thinking.requiresEffort) sends the lowest supported effort whenever the
+// caller asked for none, or asked to disable it.
+func normalizeMandatoryReasoning(model *registry.NeoPiModel, opts *Options) {
+	if model == nil || !model.Reasoning || model.Thinking == nil || !model.Thinking.RequiresEffort {
+		return
+	}
+	if opts.Effort != "" && !opts.DisableReasoning {
+		return
+	}
+	for _, effort := range []string{"minimal", "low", "medium", "high", "xhigh", "max"} {
+		if containsString(model.Thinking.Efforts, effort) {
+			opts.Effort, opts.DisableReasoning = effort, false
+			return
+		}
+	}
+	if len(model.Thinking.Efforts) > 0 {
+		opts.Effort, opts.DisableReasoning = model.Thinking.Efforts[0], false
+	}
 }
 
 // reasoningPolicy is the reasoning half of resolveOpenAICompatPolicy.
@@ -200,7 +232,13 @@ func resolveReasoningPolicy(model *registry.NeoPiModel, opts Options, toolChoice
 // body NeoPi streams for model.
 func BuildResponses(model *registry.NeoPiModel, ctx Context, opts Options) json.RawMessage {
 	compat := model.Compat
-	input := buildInput(ctx.Input, compat)
+	// The first policy pass decides whether replayed turns must carry reasoning.
+	first := resolveReasoningPolicy(model, opts, opts.ToolChoice, false)
+	canReconstruct := !compat.FilterReasoningHistory || compat.AllowsSyntheticReasoningContentForToolCalls
+	input := buildInput(ctx.Input, compat, reasoningReplay{
+		allTurns:  first.enabled && compat.RequiresReasoningContentForAllAssistantTurns && canReconstruct,
+		toolCalls: first.enabled && compat.RequiresReasoningContentForToolCalls && canReconstruct,
+	})
 	var instructions string
 	if len(ctx.SystemPrompts) > 0 {
 		if model.Reasoning && compat.SupportsDeveloperRole {
@@ -225,12 +263,19 @@ func BuildResponses(model *registry.NeoPiModel, ctx Context, opts Options) json.
 	if promptCacheKey != "" {
 		params.set("prompt_cache_key", jsjson.Marshal(promptCacheKey))
 	}
+	// OpenRouter's Responses wire carries the routing session for sticky upstream routing.
+	if sessionID := openRouterSessionID(compat, opts.SessionID); sessionID != "" {
+		params.set("session_id", jsjson.Marshal(sessionID))
+	}
 	params.set("store", jsjson.Marshal(false))
 	if compat.SupportsObfuscationOptOut {
 		params.set("stream_options", jsjson.Object(jsjson.Field{Name: "include_obfuscation", Value: jsjson.Marshal(false)}))
 	}
 	if len(opts.Include) > 0 {
 		params.set("include", jsjson.Marshal(uniqueStrings(opts.Include)))
+	}
+	if compat.CacheControlFormat == "anthropic" {
+		params.set("cache_control", jsjson.Object(jsjson.Field{Name: "type", Value: jsjson.Marshal("ephemeral")}))
 	}
 	if maxTokens, ok := outputTokens(model, opts.MaxTokens); ok {
 		params.set("max_output_tokens", jsjson.Marshal(maxTokens))
@@ -251,7 +296,7 @@ func BuildResponses(model *registry.NeoPiModel, ctx Context, opts Options) json.
 	}
 	var toolChoice json.RawMessage
 	if len(ctx.Tools) > 0 {
-		tools, emitted := convertTools(ctx.Tools, compat)
+		tools, emitted := convertTools(ctx.Tools, compat, compat.SupportsStrictMode && !opts.DisableStrictTools)
 		params.set("tools", jsjson.Marshal(tools))
 		if opts.ToolChoice != nil {
 			if choice := mapToolChoice(opts.ToolChoice, emitted, compat); choice != nil && len(tools) > 0 {
@@ -421,4 +466,13 @@ func containsString(values []string, value string) bool {
 		}
 	}
 	return false
+}
+
+// openRouterSessionID is getOpenRouterResponsesSessionId: the routing session
+// only exists on OpenRouter hosts.
+func openRouterSessionID(compat *registry.NeoPiCompat, sessionID string) string {
+	if !compat.IsOpenRouterHost {
+		return ""
+	}
+	return codexwire.NormalizeOpenRouterSessionID(sessionID)
 }

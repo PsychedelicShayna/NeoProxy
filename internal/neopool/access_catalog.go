@@ -152,7 +152,7 @@ func (s *ProviderSubscription) at(site string) *ProviderSubscription {
 }
 
 // providerCatalog lists only sign-ins whose engine handler exists
-// (management StartOAuthV8: claude, codex, antigravity, kimi, xai, grok-build, devin, meta, zai, cursor, nous-portal).
+// (management StartOAuthV8: claude, codex, antigravity, kimi, xai, grok-build, devin, meta, zai, openrouter, cursor, nous-portal).
 // gemini-cli, qwen and iflow have no handler and are therefore key-only or absent.
 var providerCatalog = []ProviderInfo{
 	{ID: "codex", Name: "ChatGPT / Codex", Vendor: "OpenAI", Hue: 165, Chroma: providerChroma, Methods: []string{"subscription", "apiKey"},
@@ -186,10 +186,11 @@ var providerCatalog = []ProviderInfo{
 		Plans:        []ProviderPlan{}},
 	{ID: "meta", Name: "Meta AI", Vendor: "Meta", Hue: 280, Chroma: providerChroma, Methods: []string{"subscription", "apiKey"},
 		Subscription: device("Opens Meta in a new tab and shows a code to confirm there."),
-		APIKey:       openAIKey("https://api.meta.ai/v1", "LLM|...", "https://llama.developer.meta.com/"),
+		APIKey:       openAIKey("https://api.meta.ai/v1", "LLM|...", "https://developer.meta.com/ai/"),
 		Plans:        []ProviderPlan{}, engine: "meta"},
-	{ID: "openrouter", Name: "OpenRouter", Vendor: "OpenRouter", Hue: 300, Chroma: providerChroma, Methods: []string{"apiKey"},
-		APIKey: openAIKey("https://openrouter.ai/api/v1", "sk-or-v1-...", "https://openrouter.ai/settings/keys"), Plans: []ProviderPlan{}},
+	{ID: "openrouter", Name: "OpenRouter", Vendor: "OpenRouter", Hue: 300, Chroma: providerChroma, Methods: []string{"subscription", "apiKey"},
+		Subscription: (&ProviderSubscription{Flow: "code", Note: "Opens OpenRouter's sign-in in a new tab. OpenRouter then redirects to a localhost:54549 address that will not load: copy that address (or the code in it) and paste it here. NeoProxy exchanges it for the durable API key NeoPi stores; it never expires."}).at("OpenRouter"),
+		APIKey:       openAIKey("https://openrouter.ai/api/v1", "sk-or-v1-...", "https://openrouter.ai/settings/keys"), Plans: []ProviderPlan{}},
 	{ID: "deepseek", Name: "DeepSeek", Vendor: "DeepSeek", Hue: 230, Chroma: providerChroma, Methods: []string{"apiKey"},
 		APIKey: openAIKey("https://api.deepseek.com/v1", "sk-...", "https://platform.deepseek.com/api_keys"), Plans: []ProviderPlan{}},
 	{ID: "groq", Name: "Groq", Vendor: "Groq", Hue: 25, Chroma: providerChroma, Methods: []string{"apiKey"},
@@ -226,7 +227,7 @@ var providerCatalog = []ProviderInfo{
 		Plans:        []ProviderPlan{},
 		dialectRules: openCodeDialectRules, sessionHeader: openCodeSessionHeader, headers: openCodeHeaders},
 	{ID: "sakana", Name: "Sakana AI", Vendor: "Sakana AI", Hue: 357, Chroma: providerChroma, Methods: []string{"apiKey"},
-		APIKey: openAIKey("https://api.sakana.ai/v1", "fish_...", "https://console.sakana.ai/api-keys"), Plans: []ProviderPlan{},
+		APIKey: openAIKey("https://api.sakana.ai/v1", "sk-...", "https://console.sakana.ai/api-keys"), Plans: []ProviderPlan{},
 		dialect: "responses"},
 	{ID: "abliteration", Name: "Abliteration", Vendor: "Abliteration", Hue: 57, Chroma: providerChroma, Methods: []string{"apiKey"},
 		APIKey: openAIKey("https://api.abliteration.ai/v1", "ak_...", "https://abliteration.ai/console"), Plans: []ProviderPlan{},

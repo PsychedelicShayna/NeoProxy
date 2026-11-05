@@ -643,7 +643,7 @@ func metaTokenFromAuth(auth *coreauth.Auth) string {
 // metaManagementPreparer applies the tool's proxy override only to acquisition.
 // The saved credential retains its configured proxy.
 type metaManagementPreparer struct {
-	executor *executor.MetaExecutor
+	executor *executor.NeoPiResponsesExecutor
 	proxyURL string
 }
 
@@ -677,7 +677,7 @@ func (h *Handler) resolveMetaToken(ctx context.Context, auth *coreauth.Auth, req
 	if h != nil {
 		cfg = h.cfg
 	}
-	preparer := metaManagementPreparer{executor: executor.NewMetaExecutor(cfg), proxyURL: requestProxyURL}
+	preparer := metaManagementPreparer{executor: executor.NewNeoPiResponsesExecutor("meta", cfg), proxyURL: requestProxyURL}
 	if !preparer.ShouldPrepareRequestAuth(auth) {
 		return "", nil
 	}
