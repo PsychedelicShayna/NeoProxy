@@ -372,6 +372,9 @@ func outputTokens(model *registry.NeoPiModel, requested *float64) (float64, bool
 		if model.MaxTokens > 0 {
 			value = float64(model.MaxTokens)
 		}
+	case model.Provider == "marineris" && model.MaxTokens > 0:
+		// streamSimple's default: options.maxTokens ?? model.maxTokens.
+		value = float64(model.MaxTokens)
 	default:
 		return 0, false
 	}

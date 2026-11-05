@@ -173,7 +173,7 @@ async function captureResponses(provider: string, apiKey: string, models: any[],
 		const efforts: string[] = model.thinking?.efforts ?? [];
 		const add = (name: string, turns: Turn[], options: any, extra: { system?: string[]; tools?: any[] } = {}) => {
 			const context: any = { ...(extra.system ? { systemPrompt: extra.system } : {}), messages: neopiTurns(model, turns), ...(extra.tools ? { tools: extra.tools } : {}) };
-			const downstream: any = { model: model.id, stream: true, input: turns.map(turn => (turn.kind === "user" ? input(turn.text ?? "") : turn.kind === "assistant" ? { role: "assistant", content: [{ type: "output_text", text: turn.text }] } : null)).filter(Boolean) };
+			const downstream: any = { model: model.id, stream: true, input: turns.map(turn => (turn.kind === "user" ? input(turn.text ?? "") : turn.kind === "assistant" ? { type: "message", role: "assistant", content: [{ type: "output_text", text: turn.text, annotations: [] }], status: "completed" } : null)).filter(Boolean) };
 			if (extra.system) downstream.instructions = extra.system.join("\n\n");
 			if (extra.tools) downstream.tools = extra.tools.map((t: any) => ({ type: "function", name: t.name, description: t.description, parameters: t.parameters, strict: false }));
 			if (options.maxTokens) downstream.max_output_tokens = options.maxTokens;

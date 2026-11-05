@@ -43,12 +43,16 @@ func ShapeResponses(model *registry.NeoPiModel, ctx Context, opts Options, acces
 			header.Set(name, key)
 		}
 	}
-	if model.Provider == "xai" || model.Provider == "xai-oauth" {
+	if model.Provider == "xai" || model.Provider == "xai-oauth" || model.Provider == "marineris" {
 		header.Set("User-Agent", NeoPiUserAgent)
 	} else {
 		header.Set("User-Agent", BunUserAgent)
 	}
 	header.Set("Authorization", "Bearer "+accessToken)
-	header.Set("X-Stainless-Timeout", firstEventTimeoutSeconds)
+	// A compat that disables the first-event timeout (local-network hosts)
+	// announces none.
+	if model.Compat.StreamFirstEventTimeoutMs == nil || *model.Compat.StreamFirstEventTimeoutMs > 0 {
+		header.Set("X-Stainless-Timeout", firstEventTimeoutSeconds)
+	}
 	return &Request{URL: baseURL + "/responses", Header: header, Body: BuildResponses(model, ctx, opts)}
 }

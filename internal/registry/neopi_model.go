@@ -226,6 +226,9 @@ type NeoPiCompat struct {
 	ClampOutputToModelMax                        bool              `json:"clampOutputToModelMax"`
 	RejectRootObjectUnion                        bool              `json:"rejectRootObjectUnion"`
 	PromptCacheSessionHeader                     string            `json:"promptCacheSessionHeader,omitempty"`
+	// StreamFirstEventTimeoutMs is the first-event watchdog NeoPi resolves for
+	// the host: 0 disables it (local-network servers); absent keeps the default.
+	StreamFirstEventTimeoutMs *int `json:"streamFirstEventTimeoutMs,omitempty"`
 }
 
 // Clone deep-copies the record so registry readers cannot alias its maps.

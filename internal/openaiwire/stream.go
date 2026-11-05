@@ -136,7 +136,12 @@ func isTransportFailure(err error) bool {
 func (t *Turn) attempt(ctx context.Context, body []byte, emit func([]byte) error) (live bool, err error) {
 	attemptCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	watchdog := time.AfterFunc(firstEventTimeout, cancel)
+	// NeoPi arms the pre-response timer only when it announces a timeout.
+	var armed *time.Timer
+	if t.Request.Header.Get("X-Stainless-Timeout") != "" {
+		armed = time.AfterFunc(firstEventTimeout, cancel)
+	}
+	watchdog := stopper{armed}
 	defer watchdog.Stop()
 	response, err := neopiretry.Do(attemptCtx, func(int) (*http.Response, error) {
 		request, errRequest := http.NewRequestWithContext(attemptCtx, http.MethodPost, t.Request.URL, bytes.NewReader(body))
@@ -274,5 +279,14 @@ func (t *Turn) attempt(ctx context.Context, body []byte, emit func([]byte) error
 			}
 			return live, errRead
 		}
+	}
+}
+
+// stopper stops a timer that may never have been armed.
+type stopper struct{ timer *time.Timer }
+
+func (s stopper) Stop() {
+	if s.timer != nil {
+		s.timer.Stop()
 	}
 }
