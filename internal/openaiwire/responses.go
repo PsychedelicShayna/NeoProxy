@@ -118,7 +118,12 @@ func FromResponses(body []byte, model *registry.NeoPiModel) (Context, Options) {
 			opts.Include = append(opts.Include, value.String())
 		}
 	}
-	normalizeMandatoryReasoning(model, &opts)
+	// streamSimple's clamp. The Meta, Sakana and Abliteration captures drive
+	// streamOpenAIResponses directly, below it, so only the openrouter captures
+	// (streamSimple) pin it.
+	if model != nil && model.Provider == "openrouter" {
+		normalizeMandatoryReasoning(model, &opts)
+	}
 	return ctx, opts
 }
 
