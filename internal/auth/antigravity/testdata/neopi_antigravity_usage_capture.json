@@ -1,0 +1,4401 @@
+{
+  "source": "NeoPi OWN antigravityUsageProvider.fetchUsage and antigravityRankingStrategy",
+  "now": 1800000000000,
+  "env": {
+    "PI_AI_ANTIGRAVITY_VERSION": "2.26.0",
+    "PI_AI_ANTIGRAVITY_OS": "linux",
+    "PI_AI_ANTIGRAVITY_ARCH": "amd64"
+  },
+  "windowDefaults": {
+    "primaryMs": 86400000,
+    "secondaryMs": 86400000
+  },
+  "fixtures": [
+    {
+      "name": "grouped-buckets",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "{\"groups\":[{\"displayName\":\"Gemini models\",\"buckets\":[{\"bucketId\":\"gemini-pro-5h\",\"displayName\":\"Five Hour Limit Remaining\",\"window\":\"WINDOW_5H\",\"remainingFraction\":0.8,\"resetTime\":\"2027-01-15T10:00:00.000Z\"},{\"bucketId\":\"gemini-pro-weekly\",\"displayName\":\"Weekly Limit Remaining\",\"window\":\"WINDOW_WEEKLY\",\"remainingFraction\":0.55,\"resetTime\":\"2027-01-18T08:00:00.000Z\"},{\"bucketId\":\"gemini-argon-weekly\",\"displayName\":\"Weekly Limit Remaining\",\"window\":\"WINDOW_WEEKLY\",\"remainingFraction\":0.95,\"resetTime\":\"2027-01-19T08:00:00.000Z\"},{\"bucketId\":\"gemini-hidden\",\"displayName\":\"Hidden\",\"window\":\"WINDOW_5H\",\"remainingFraction\":0.1,\"disabled\":true}]},{\"displayName\":\"Claude and GPT (third party)\",\"buckets\":[{\"bucketId\":\"3p-5h\",\"displayName\":\"5 hour limit\",\"window\":\"WINDOW_5H\",\"remainingFraction\":0.05,\"resetTime\":\"2027-01-15T09:00:00.000Z\"},{\"bucketId\":\"3p-weekly\",\"displayName\":\"Weekly Limit Remaining\",\"window\":\"WINDOW_WEEKLY\",\"remainingFraction\":0,\"resetTime\":\"2027-01-20T08:00:00.000Z\"}]},{\"displayName\":\"Other\",\"buckets\":[{\"bucketId\":\"misc-credits\",\"displayName\":\"Credits\",\"window\":\"WINDOW_MONTHLY\",\"remainingAmount\":\"250\"},{\"bucketId\":\"misc-empty\",\"displayName\":\"Empty\",\"remainingAmount\":0},{\"bucketId\":\"misc-bad\",\"displayName\":\"Bad amount\",\"remainingAmount\":\"abc\"},{\"displayName\":\"No ids\"}]},{\"displayName\":\"Gemini Ultra\",\"buckets\":[{\"bucketId\":\"ultra-day\",\"displayName\":\"Daily\",\"window\":\"WINDOW_DAILY\",\"remainingFraction\":1.5}]}]}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:anthropic:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800432000000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:openai:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800432000000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:3p-5h",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h",
+              "shared": true,
+              "sharedGroup": "3p-5h:5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.05,
+              "usedFraction": 0.95,
+              "remaining": 5,
+              "used": 95,
+              "limit": 100
+            },
+            "status": "warning"
+          },
+          {
+            "id": "google-antigravity:openai:default:3p-5h",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h",
+              "shared": true,
+              "sharedGroup": "3p-5h:5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.05,
+              "usedFraction": 0.95,
+              "remaining": 5,
+              "used": 95,
+              "limit": 100
+            },
+            "status": "warning"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-pro-weekly",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800259200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.55,
+              "usedFraction": 0.44999999999999996,
+              "remaining": 55.00000000000001,
+              "used": 44.99999999999999,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-pro-5h",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800007200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.8,
+              "usedFraction": 0.19999999999999996,
+              "remaining": 80,
+              "used": 19.999999999999996,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-argon-weekly",
+            "label": "Gemini (Argon)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800345600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.95,
+              "usedFraction": 0.050000000000000044,
+              "remaining": 95,
+              "used": 5.000000000000004,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:default:default:misc-credits",
+            "label": "Other",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "WINDOW_MONTHLY"
+            },
+            "window": {
+              "id": "WINDOW_MONTHLY",
+              "label": "Credits"
+            },
+            "amount": {
+              "unit": "unknown",
+              "remaining": 250
+            },
+            "status": "unknown"
+          },
+          {
+            "id": "google-antigravity:default:default:misc-empty",
+            "label": "Other",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "Empty"
+            },
+            "window": {
+              "id": "Empty",
+              "label": "Empty"
+            },
+            "amount": {
+              "unit": "unknown",
+              "remaining": 0
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:default:default:misc-bad",
+            "label": "Other",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "Bad amount"
+            },
+            "window": {
+              "id": "Bad amount",
+              "label": "Bad amount"
+            },
+            "amount": {
+              "unit": "unknown"
+            },
+            "status": "unknown"
+          },
+          {
+            "id": "google-antigravity:default:default:No ids",
+            "label": "Other",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "No ids"
+            },
+            "window": {
+              "id": "No ids",
+              "label": "No ids"
+            },
+            "amount": {
+              "unit": "unknown"
+            },
+            "status": "unknown"
+          },
+          {
+            "id": "google-antigravity:google:default:ultra-day",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 1,
+              "usedFraction": 0,
+              "remaining": 100,
+              "used": 0,
+              "limit": 100
+            },
+            "status": "ok"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly",
+              "google-antigravity:anthropic:default:3p-5h"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly",
+              "google-antigravity:anthropic:default:3p-5h"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-pro-weekly",
+              "google-antigravity:google:default:gemini-pro-5h",
+              "google-antigravity:google:default:gemini-argon-weekly",
+              "google-antigravity:google:default:ultra-day"
+            ],
+            "primary": "google-antigravity:google:default:gemini-pro-weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-pro-weekly",
+              "google-antigravity:google:default:gemini-pro-5h",
+              "google-antigravity:google:default:gemini-argon-weekly",
+              "google-antigravity:google:default:ultra-day"
+            ],
+            "primary": "google-antigravity:google:default:gemini-pro-weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-pro-weekly",
+              "google-antigravity:google:default:gemini-pro-5h",
+              "google-antigravity:google:default:gemini-argon-weekly",
+              "google-antigravity:google:default:ultra-day"
+            ],
+            "primary": "google-antigravity:google:default:gemini-pro-weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-pro-weekly",
+              "google-antigravity:google:default:gemini-pro-5h",
+              "google-antigravity:google:default:gemini-argon-weekly",
+              "google-antigravity:google:default:ultra-day"
+            ],
+            "primary": "google-antigravity:google:default:gemini-pro-weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-pro-weekly",
+              "google-antigravity:google:default:gemini-pro-5h",
+              "google-antigravity:google:default:gemini-argon-weekly",
+              "google-antigravity:google:default:ultra-day"
+            ],
+            "primary": "google-antigravity:google:default:gemini-pro-weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly",
+              "google-antigravity:openai:default:3p-5h"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly",
+              "google-antigravity:openai:default:3p-5h"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly",
+              "google-antigravity:openai:default:3p-5h"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:anthropic",
+            "limits": [
+              "google-antigravity:anthropic:default:3p-weekly",
+              "google-antigravity:anthropic:default:3p-5h"
+            ]
+          },
+          {
+            "blockScope": "counter:openai",
+            "limits": [
+              "google-antigravity:openai:default:3p-weekly",
+              "google-antigravity:openai:default:3p-5h"
+            ]
+          },
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:gemini-pro-weekly",
+              "google-antigravity:google:default:gemini-pro-5h",
+              "google-antigravity:google:default:gemini-argon-weekly",
+              "google-antigravity:google:default:ultra-day"
+            ]
+          },
+          {
+            "blockScope": "counter:default",
+            "limits": [
+              "google-antigravity:default:default:misc-credits",
+              "google-antigravity:default:default:misc-empty",
+              "google-antigravity:default:default:misc-bad",
+              "google-antigravity:default:default:No ids"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "flat-buckets",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "{\"buckets\":[{\"bucketId\":\"gemini-flash-5h\",\"displayName\":\"5h\",\"window\":\"5h\",\"remainingFraction\":0.25,\"resetTime\":\"2027-01-15T08:30:00.000Z\"},{\"bucketId\":\"gemini-flash-week\",\"displayName\":\"Weekly\",\"window\":\"week\",\"remainingFraction\":0.75,\"resetTime\":\"2027-01-17T08:00:00.000Z\"},{\"bucketId\":\"3p-weekly\",\"displayName\":\"7 day\",\"remainingFraction\":0.4,\"resetTime\":\"2027-01-21T08:00:00.000Z\"},{\"bucketId\":\"other\",\"remainingFraction\":-2},{\"bucketId\":\"stringy\",\"window\":\"x\",\"remainingFraction\":\"0.5\"}]}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:default:default:other",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "other"
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-flash-5h",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800001800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.25,
+              "usedFraction": 0.75,
+              "remaining": 25,
+              "used": 75,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800518400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:openai:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800518400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-flash-week",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800172800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.75,
+              "usedFraction": 0.25,
+              "remaining": 75,
+              "used": 25,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:default:default:stringy",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "x"
+            },
+            "window": {
+              "id": "x",
+              "label": "x"
+            },
+            "amount": {
+              "unit": "unknown"
+            },
+            "status": "unknown"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:default:default:other",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:default:default:other",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:default",
+            "limits": [
+              "google-antigravity:default:default:other",
+              "google-antigravity:default:default:stringy"
+            ]
+          },
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ]
+          },
+          {
+            "blockScope": "counter:anthropic",
+            "limits": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ]
+          },
+          {
+            "blockScope": "counter:openai",
+            "limits": [
+              "google-antigravity:openai:default:3p-weekly"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "empty-summary-falls-back-to-legacy",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "{\"groups\":[{\"displayName\":\"x\",\"buckets\":[]}]}"
+        },
+        {
+          "status": 200,
+          "body": "{\"models\":{\"gemini-3-pro\":{\"displayName\":\"Gemini 3 Pro\",\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"dailyQuotaInfo\":{\"remainingFraction\":0.5,\"resetTime\":\"2027-01-15T13:00:00.000Z\"},\"weeklyQuotaInfo\":{\"remainingFraction\":0.9,\"resetTime\":\"2027-01-18T08:00:00.000Z\"}},\"gemini-3-flash\":{\"apiProvider\":\"API_PROVIDER_GOOGLE_GEMINI\",\"dailyQuotaInfos\":[{\"remainingFraction\":0.3,\"resetTime\":\"2027-01-15T14:00:00.000Z\"}],\"weeklyQuotaInfos\":[{\"resetTime\":\"2027-01-17T08:00:00.000Z\"}]},\"tab_flash_lite_preview\":{\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"quotaInfo\":{\"remainingFraction\":1}},\"claude-sonnet-4-6\":{\"apiProvider\":\"API_PROVIDER_ANTHROPIC_VERTEX\",\"quotaInfos\":[{\"remainingFraction\":0.7,\"resetTime\":\"2027-01-17T08:00:00.000Z\"},{\"remainingFraction\":0.2,\"resetTime\":\"2027-01-15T12:00:00.000Z\"}]},\"gpt-oss-120b\":{\"modelProvider\":\"MODEL_PROVIDER_OPENAI\",\"quotaInfoByTier\":{\"g1-pro-tier\":{\"remainingFraction\":1},\"Free\":[{\"resetTime\":\"2027-01-15T09:00:00.000Z\"},null]}},\"mystery-model\":{\"quotaInfoByWindow\":{\"WINDOW_5H\":{\"remainingFraction\":0.6,\"resetTime\":\"2027-01-15T09:00:00.000Z\"},\"weekly_limit\":[{\"remainingFraction\":0.35,\"resetTime\":\"2027-01-21T08:00:00.000Z\"}]},\"quotaInfosByWindow\":{\"7 day\":{\"remainingFraction\":0.45},\"24h\":{\"remainingFraction\":0.65,\"resetTime\":\"garbage\"}},\"quotaInfo\":[{\"windowId\":\"WINDOW_UNKNOWN\",\"windowLabel\":\"Custom\",\"remainingFraction\":0.15,\"resetTime\":\"2027-01-15T20:00:00.000Z\"},{\"remainingFraction\":\"0.5\",\"resetTime\":\"2027-01-01\"},{\"remainingFraction\":0.05,\"resetTime\":\"2027-01-15T12:00:00+02:00\"}]},\"empty-model\":{},\"null-quota\":{\"quotaInfo\":null}}}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:google:default:weekly",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800259200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:openai:free:daily",
+            "label": "Usage (OpenAI)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "tier": "Free",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:default:default:daily",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1798761600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:default:default:weekly",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800007200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.05,
+              "usedFraction": 0.95,
+              "remaining": 5,
+              "used": 95,
+              "limit": 100
+            },
+            "status": "warning"
+          },
+          {
+            "id": "google-antigravity:default:default:WINDOW_UNKNOWN",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "WINDOW_UNKNOWN"
+            },
+            "window": {
+              "id": "WINDOW_UNKNOWN",
+              "label": "Custom",
+              "resetsAt": 1800043200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.15,
+              "usedFraction": 0.85,
+              "remaining": 15,
+              "used": 85,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:daily",
+            "label": "Usage (Anthropic)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800014400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.2,
+              "usedFraction": 0.8,
+              "remaining": 20,
+              "used": 80,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:daily",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800018000000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.3,
+              "usedFraction": 0.7,
+              "remaining": 30,
+              "used": 70,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:default:default:5h",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.6,
+              "usedFraction": 0.4,
+              "remaining": 60,
+              "used": 40,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:weekly",
+            "label": "Usage (Anthropic)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800172800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.7,
+              "usedFraction": 0.30000000000000004,
+              "remaining": 70,
+              "used": 30.000000000000004,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:openai:g1-pro-tier:daily",
+            "label": "Usage (OpenAI)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "tier": "g1-pro-tier",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 1,
+              "usedFraction": 0,
+              "remaining": 100,
+              "used": 0,
+              "limit": 100
+            },
+            "status": "ok"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:daily",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:daily",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ]
+          },
+          {
+            "blockScope": "counter:openai",
+            "limits": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ]
+          },
+          {
+            "blockScope": "counter:default",
+            "limits": [
+              "google-antigravity:default:default:daily",
+              "google-antigravity:default:default:weekly",
+              "google-antigravity:default:default:WINDOW_UNKNOWN",
+              "google-antigravity:default:default:5h"
+            ]
+          },
+          {
+            "blockScope": "counter:anthropic",
+            "limits": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "summary-not-found-legacy",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 404,
+          "body": "nope"
+        },
+        {
+          "status": 200,
+          "body": "{\"models\":{\"gemini-3-pro\":{\"displayName\":\"Gemini 3 Pro\",\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"dailyQuotaInfo\":{\"remainingFraction\":0.5,\"resetTime\":\"2027-01-15T13:00:00.000Z\"},\"weeklyQuotaInfo\":{\"remainingFraction\":0.9,\"resetTime\":\"2027-01-18T08:00:00.000Z\"}},\"gemini-3-flash\":{\"apiProvider\":\"API_PROVIDER_GOOGLE_GEMINI\",\"dailyQuotaInfos\":[{\"remainingFraction\":0.3,\"resetTime\":\"2027-01-15T14:00:00.000Z\"}],\"weeklyQuotaInfos\":[{\"resetTime\":\"2027-01-17T08:00:00.000Z\"}]},\"tab_flash_lite_preview\":{\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"quotaInfo\":{\"remainingFraction\":1}},\"claude-sonnet-4-6\":{\"apiProvider\":\"API_PROVIDER_ANTHROPIC_VERTEX\",\"quotaInfos\":[{\"remainingFraction\":0.7,\"resetTime\":\"2027-01-17T08:00:00.000Z\"},{\"remainingFraction\":0.2,\"resetTime\":\"2027-01-15T12:00:00.000Z\"}]},\"gpt-oss-120b\":{\"modelProvider\":\"MODEL_PROVIDER_OPENAI\",\"quotaInfoByTier\":{\"g1-pro-tier\":{\"remainingFraction\":1},\"Free\":[{\"resetTime\":\"2027-01-15T09:00:00.000Z\"},null]}},\"mystery-model\":{\"quotaInfoByWindow\":{\"WINDOW_5H\":{\"remainingFraction\":0.6,\"resetTime\":\"2027-01-15T09:00:00.000Z\"},\"weekly_limit\":[{\"remainingFraction\":0.35,\"resetTime\":\"2027-01-21T08:00:00.000Z\"}]},\"quotaInfosByWindow\":{\"7 day\":{\"remainingFraction\":0.45},\"24h\":{\"remainingFraction\":0.65,\"resetTime\":\"garbage\"}},\"quotaInfo\":[{\"windowId\":\"WINDOW_UNKNOWN\",\"windowLabel\":\"Custom\",\"remainingFraction\":0.15,\"resetTime\":\"2027-01-15T20:00:00.000Z\"},{\"remainingFraction\":\"0.5\",\"resetTime\":\"2027-01-01\"},{\"remainingFraction\":0.05,\"resetTime\":\"2027-01-15T12:00:00+02:00\"}]},\"empty-model\":{},\"null-quota\":{\"quotaInfo\":null}}}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:google:default:weekly",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800259200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:openai:free:daily",
+            "label": "Usage (OpenAI)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "tier": "Free",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:default:default:daily",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1798761600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:default:default:weekly",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800007200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.05,
+              "usedFraction": 0.95,
+              "remaining": 5,
+              "used": 95,
+              "limit": 100
+            },
+            "status": "warning"
+          },
+          {
+            "id": "google-antigravity:default:default:WINDOW_UNKNOWN",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "WINDOW_UNKNOWN"
+            },
+            "window": {
+              "id": "WINDOW_UNKNOWN",
+              "label": "Custom",
+              "resetsAt": 1800043200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.15,
+              "usedFraction": 0.85,
+              "remaining": 15,
+              "used": 85,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:daily",
+            "label": "Usage (Anthropic)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800014400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.2,
+              "usedFraction": 0.8,
+              "remaining": 20,
+              "used": 80,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:daily",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800018000000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.3,
+              "usedFraction": 0.7,
+              "remaining": 30,
+              "used": 70,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:default:default:5h",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.6,
+              "usedFraction": 0.4,
+              "remaining": 60,
+              "used": 40,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:weekly",
+            "label": "Usage (Anthropic)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800172800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.7,
+              "usedFraction": 0.30000000000000004,
+              "remaining": 70,
+              "used": 30.000000000000004,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:openai:g1-pro-tier:daily",
+            "label": "Usage (OpenAI)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "tier": "g1-pro-tier",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 1,
+              "usedFraction": 0,
+              "remaining": 100,
+              "used": 0,
+              "limit": 100
+            },
+            "status": "ok"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:daily",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:daily",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ]
+          },
+          {
+            "blockScope": "counter:openai",
+            "limits": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ]
+          },
+          {
+            "blockScope": "counter:default",
+            "limits": [
+              "google-antigravity:default:default:daily",
+              "google-antigravity:default:default:weekly",
+              "google-antigravity:default:default:WINDOW_UNKNOWN",
+              "google-antigravity:default:default:5h"
+            ]
+          },
+          {
+            "blockScope": "counter:anthropic",
+            "limits": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "legacy-bare-google",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 400,
+          "body": "bad"
+        },
+        {
+          "status": 200,
+          "body": "{\"models\":{\"tab_jump_flash_lite_preview\":{\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"quotaInfo\":{\"remainingFraction\":1}},\"gemma-3\":{\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"quotaInfo\":{\"resetTime\":\"2027-01-15T09:00:00.000Z\"}}}}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:google:default:daily",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:daily",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:daily",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:daily",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:daily",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:daily",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:daily",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:daily",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:daily"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "legacy-empty-models",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "{}"
+        },
+        {
+          "status": 200,
+          "body": "{}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": []
+      },
+      "error": null
+    },
+    {
+      "name": "summary-transient-then-sandbox",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 503,
+          "body": "later"
+        },
+        {
+          "status": 200,
+          "body": "{\"buckets\":[{\"bucketId\":\"gemini-flash-5h\",\"displayName\":\"5h\",\"window\":\"5h\",\"remainingFraction\":0.25,\"resetTime\":\"2027-01-15T08:30:00.000Z\"},{\"bucketId\":\"gemini-flash-week\",\"displayName\":\"Weekly\",\"window\":\"week\",\"remainingFraction\":0.75,\"resetTime\":\"2027-01-17T08:00:00.000Z\"},{\"bucketId\":\"3p-weekly\",\"displayName\":\"7 day\",\"remainingFraction\":0.4,\"resetTime\":\"2027-01-21T08:00:00.000Z\"},{\"bucketId\":\"other\",\"remainingFraction\":-2},{\"bucketId\":\"stringy\",\"window\":\"x\",\"remainingFraction\":\"0.5\"}]}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:default:default:other",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "other"
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-flash-5h",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800001800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.25,
+              "usedFraction": 0.75,
+              "remaining": 25,
+              "used": 75,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800518400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:openai:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800518400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-flash-week",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800172800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.75,
+              "usedFraction": 0.25,
+              "remaining": 75,
+              "used": 25,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:default:default:stringy",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "x"
+            },
+            "window": {
+              "id": "x",
+              "label": "x"
+            },
+            "amount": {
+              "unit": "unknown"
+            },
+            "status": "unknown"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.sandbox.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:default:default:other",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:default:default:other",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:default",
+            "limits": [
+              "google-antigravity:default:default:other",
+              "google-antigravity:default:default:stringy"
+            ]
+          },
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ]
+          },
+          {
+            "blockScope": "counter:anthropic",
+            "limits": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ]
+          },
+          {
+            "blockScope": "counter:openai",
+            "limits": [
+              "google-antigravity:openai:default:3p-weekly"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "summary-rate-limited-everywhere-legacy-works",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 429,
+          "body": "slow"
+        },
+        {
+          "status": 500,
+          "body": "boom"
+        },
+        {
+          "status": 200,
+          "body": "{\"models\":{\"gemini-3-pro\":{\"displayName\":\"Gemini 3 Pro\",\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"dailyQuotaInfo\":{\"remainingFraction\":0.5,\"resetTime\":\"2027-01-15T13:00:00.000Z\"},\"weeklyQuotaInfo\":{\"remainingFraction\":0.9,\"resetTime\":\"2027-01-18T08:00:00.000Z\"}},\"gemini-3-flash\":{\"apiProvider\":\"API_PROVIDER_GOOGLE_GEMINI\",\"dailyQuotaInfos\":[{\"remainingFraction\":0.3,\"resetTime\":\"2027-01-15T14:00:00.000Z\"}],\"weeklyQuotaInfos\":[{\"resetTime\":\"2027-01-17T08:00:00.000Z\"}]},\"tab_flash_lite_preview\":{\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"quotaInfo\":{\"remainingFraction\":1}},\"claude-sonnet-4-6\":{\"apiProvider\":\"API_PROVIDER_ANTHROPIC_VERTEX\",\"quotaInfos\":[{\"remainingFraction\":0.7,\"resetTime\":\"2027-01-17T08:00:00.000Z\"},{\"remainingFraction\":0.2,\"resetTime\":\"2027-01-15T12:00:00.000Z\"}]},\"gpt-oss-120b\":{\"modelProvider\":\"MODEL_PROVIDER_OPENAI\",\"quotaInfoByTier\":{\"g1-pro-tier\":{\"remainingFraction\":1},\"Free\":[{\"resetTime\":\"2027-01-15T09:00:00.000Z\"},null]}},\"mystery-model\":{\"quotaInfoByWindow\":{\"WINDOW_5H\":{\"remainingFraction\":0.6,\"resetTime\":\"2027-01-15T09:00:00.000Z\"},\"weekly_limit\":[{\"remainingFraction\":0.35,\"resetTime\":\"2027-01-21T08:00:00.000Z\"}]},\"quotaInfosByWindow\":{\"7 day\":{\"remainingFraction\":0.45},\"24h\":{\"remainingFraction\":0.65,\"resetTime\":\"garbage\"}},\"quotaInfo\":[{\"windowId\":\"WINDOW_UNKNOWN\",\"windowLabel\":\"Custom\",\"remainingFraction\":0.15,\"resetTime\":\"2027-01-15T20:00:00.000Z\"},{\"remainingFraction\":\"0.5\",\"resetTime\":\"2027-01-01\"},{\"remainingFraction\":0.05,\"resetTime\":\"2027-01-15T12:00:00+02:00\"}]},\"empty-model\":{},\"null-quota\":{\"quotaInfo\":null}}}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:google:default:weekly",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800259200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:openai:free:daily",
+            "label": "Usage (OpenAI)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "tier": "Free",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:default:default:daily",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1798761600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:default:default:weekly",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800007200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.05,
+              "usedFraction": 0.95,
+              "remaining": 5,
+              "used": 95,
+              "limit": 100
+            },
+            "status": "warning"
+          },
+          {
+            "id": "google-antigravity:default:default:WINDOW_UNKNOWN",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "WINDOW_UNKNOWN"
+            },
+            "window": {
+              "id": "WINDOW_UNKNOWN",
+              "label": "Custom",
+              "resetsAt": 1800043200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.15,
+              "usedFraction": 0.85,
+              "remaining": 15,
+              "used": 85,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:daily",
+            "label": "Usage (Anthropic)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800014400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.2,
+              "usedFraction": 0.8,
+              "remaining": 20,
+              "used": 80,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:daily",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800018000000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.3,
+              "usedFraction": 0.7,
+              "remaining": 30,
+              "used": 70,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:default:default:5h",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.6,
+              "usedFraction": 0.4,
+              "remaining": 60,
+              "used": 40,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:weekly",
+            "label": "Usage (Anthropic)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800172800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.7,
+              "usedFraction": 0.30000000000000004,
+              "remaining": 70,
+              "used": 30.000000000000004,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:openai:g1-pro-tier:daily",
+            "label": "Usage (OpenAI)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "tier": "g1-pro-tier",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 1,
+              "usedFraction": 0,
+              "remaining": 100,
+              "used": 0,
+              "limit": 100
+            },
+            "status": "ok"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:daily",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:daily",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ],
+            "primary": "google-antigravity:openai:free:daily",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:default:daily"
+            ]
+          },
+          {
+            "blockScope": "counter:openai",
+            "limits": [
+              "google-antigravity:openai:free:daily",
+              "google-antigravity:openai:g1-pro-tier:daily"
+            ]
+          },
+          {
+            "blockScope": "counter:default",
+            "limits": [
+              "google-antigravity:default:default:daily",
+              "google-antigravity:default:default:weekly",
+              "google-antigravity:default:default:WINDOW_UNKNOWN",
+              "google-antigravity:default:default:5h"
+            ]
+          },
+          {
+            "blockScope": "counter:anthropic",
+            "limits": [
+              "google-antigravity:anthropic:default:daily",
+              "google-antigravity:anthropic:default:weekly"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "both-fail",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 404,
+          "body": "a"
+        },
+        {
+          "status": 500,
+          "body": "b"
+        },
+        {
+          "status": 502,
+          "body": "c"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": null,
+      "ranking": null,
+      "error": null
+    },
+    {
+      "name": "base-url-override",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        },
+        "baseUrl": "http://127.0.0.1:1//"
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "{\"buckets\":[{\"bucketId\":\"gemini-flash-5h\",\"displayName\":\"5h\",\"window\":\"5h\",\"remainingFraction\":0.25,\"resetTime\":\"2027-01-15T08:30:00.000Z\"},{\"bucketId\":\"gemini-flash-week\",\"displayName\":\"Weekly\",\"window\":\"week\",\"remainingFraction\":0.75,\"resetTime\":\"2027-01-17T08:00:00.000Z\"},{\"bucketId\":\"3p-weekly\",\"displayName\":\"7 day\",\"remainingFraction\":0.4,\"resetTime\":\"2027-01-21T08:00:00.000Z\"},{\"bucketId\":\"other\",\"remainingFraction\":-2},{\"bucketId\":\"stringy\",\"window\":\"x\",\"remainingFraction\":\"0.5\"}]}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:1/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:default:default:other",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "other"
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-flash-5h",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800001800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.25,
+              "usedFraction": 0.75,
+              "remaining": 25,
+              "used": 75,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800518400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:openai:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800518400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-flash-week",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800172800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.75,
+              "usedFraction": 0.25,
+              "remaining": 75,
+              "used": 25,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:default:default:stringy",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "x"
+            },
+            "window": {
+              "id": "x",
+              "label": "x"
+            },
+            "amount": {
+              "unit": "unknown"
+            },
+            "status": "unknown"
+          }
+        ],
+        "metadata": {
+          "endpoint": "http://127.0.0.1:1",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:default:default:other",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:default:default:other",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:default",
+            "limits": [
+              "google-antigravity:default:default:other",
+              "google-antigravity:default:default:stringy"
+            ]
+          },
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ]
+          },
+          {
+            "blockScope": "counter:anthropic",
+            "limits": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ]
+          },
+          {
+            "blockScope": "counter:openai",
+            "limits": [
+              "google-antigravity:openai:default:3p-weekly"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "no-account-id",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "{\"buckets\":[{\"bucketId\":\"gemini-flash-5h\",\"displayName\":\"5h\",\"window\":\"5h\",\"remainingFraction\":0.25,\"resetTime\":\"2027-01-15T08:30:00.000Z\"},{\"bucketId\":\"gemini-flash-week\",\"displayName\":\"Weekly\",\"window\":\"week\",\"remainingFraction\":0.75,\"resetTime\":\"2027-01-17T08:00:00.000Z\"},{\"bucketId\":\"3p-weekly\",\"displayName\":\"7 day\",\"remainingFraction\":0.4,\"resetTime\":\"2027-01-21T08:00:00.000Z\"},{\"bucketId\":\"other\",\"remainingFraction\":-2},{\"bucketId\":\"stringy\",\"window\":\"x\",\"remainingFraction\":\"0.5\"}]}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:default:default:other",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "projectId": "proj-1",
+              "windowId": "other"
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0,
+              "usedFraction": 1,
+              "remaining": 0,
+              "used": 100,
+              "limit": 100
+            },
+            "status": "exhausted"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-flash-5h",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "projectId": "proj-1",
+              "windowId": "5h"
+            },
+            "window": {
+              "id": "5h",
+              "label": "5 Hour",
+              "durationMs": 18000000,
+              "resetsAt": 1800001800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.25,
+              "usedFraction": 0.75,
+              "remaining": 25,
+              "used": 75,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:anthropic:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800518400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:openai:default:3p-weekly",
+            "label": "Claude & GPT (shared)",
+            "scope": {
+              "provider": "google-antigravity",
+              "projectId": "proj-1",
+              "windowId": "weekly",
+              "shared": true,
+              "sharedGroup": "3p-weekly:weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800518400000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:default:gemini-flash-week",
+            "label": "Gemini",
+            "scope": {
+              "provider": "google-antigravity",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800172800000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.75,
+              "usedFraction": 0.25,
+              "remaining": 75,
+              "used": 25,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:default:default:stringy",
+            "label": "Usage",
+            "scope": {
+              "provider": "google-antigravity",
+              "projectId": "proj-1",
+              "windowId": "x"
+            },
+            "window": {
+              "id": "x",
+              "label": "x"
+            },
+            "amount": {
+              "unit": "unknown"
+            },
+            "status": "unknown"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:anthropic:default:3p-weekly",
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ],
+            "primary": "google-antigravity:google:default:gemini-flash-5h",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [
+              "google-antigravity:openai:default:3p-weekly"
+            ],
+            "primary": "google-antigravity:openai:default:3p-weekly",
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:default:default:other",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:default:default:other",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:default",
+            "limits": [
+              "google-antigravity:default:default:other",
+              "google-antigravity:default:default:stringy"
+            ]
+          },
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:gemini-flash-5h",
+              "google-antigravity:google:default:gemini-flash-week"
+            ]
+          },
+          {
+            "blockScope": "counter:anthropic",
+            "limits": [
+              "google-antigravity:anthropic:default:3p-weekly"
+            ]
+          },
+          {
+            "blockScope": "counter:openai",
+            "limits": [
+              "google-antigravity:openai:default:3p-weekly"
+            ]
+          }
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "no-project",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [],
+      "requests": [],
+      "report": null,
+      "ranking": null,
+      "error": null
+    },
+    {
+      "name": "expired-token",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800000000000
+        }
+      },
+      "responses": [],
+      "requests": [],
+      "report": null,
+      "ranking": null,
+      "error": null
+    },
+    {
+      "name": "no-token",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [],
+      "requests": [],
+      "report": null,
+      "ranking": null,
+      "error": null
+    },
+    {
+      "name": "summary-invalid-json-then-legacy",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "not json"
+        },
+        {
+          "status": 200,
+          "body": "{\"models\":{\"gemini-3-pro\":{\"displayName\":\"Gemini 3 Pro\",\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"dailyQuotaInfo\":{\"remainingFraction\":0.5,\"resetTime\":\"2027-01-15T13:00:00.000Z\"},\"weeklyQuotaInfo\":{\"remainingFraction\":0.9,\"resetTime\":\"2027-01-18T08:00:00.000Z\"}},\"gemini-3-flash\":{\"apiProvider\":\"API_PROVIDER_GOOGLE_GEMINI\",\"dailyQuotaInfos\":[{\"remainingFraction\":0.3,\"resetTime\":\"2027-01-15T14:00:00.000Z\"}],\"weeklyQuotaInfos\":[{\"resetTime\":\"2027-01-17T08:00:00.000Z\"}]},\"tab_flash_lite_preview\":{\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"quotaInfo\":{\"remainingFraction\":1}},\"claude-sonnet-4-6\":{\"apiProvider\":\"API_PROVIDER_ANTHROPIC_VERTEX\",\"quotaInfos\":[{\"remainingFraction\":0.7,\"resetTime\":\"2027-01-17T08:00:00.000Z\"},{\"remainingFraction\":0.2,\"resetTime\":\"2027-01-15T12:00:00.000Z\"}]},\"gpt-oss-120b\":{\"modelProvider\":\"MODEL_PROVIDER_OPENAI\",\"quotaInfoByTier\":{\"g1-pro-tier\":{\"remainingFraction\":1},\"Free\":[{\"resetTime\":\"2027-01-15T09:00:00.000Z\"},null]}},\"mystery-model\":{\"quotaInfoByWindow\":{\"WINDOW_5H\":{\"remainingFraction\":0.6,\"resetTime\":\"2027-01-15T09:00:00.000Z\"},\"weekly_limit\":[{\"remainingFraction\":0.35,\"resetTime\":\"2027-01-21T08:00:00.000Z\"}]},\"quotaInfosByWindow\":{\"7 day\":{\"remainingFraction\":0.45},\"24h\":{\"remainingFraction\":0.65,\"resetTime\":\"garbage\"}},\"quotaInfo\":[{\"windowId\":\"WINDOW_UNKNOWN\",\"windowLabel\":\"Custom\",\"remainingFraction\":0.15,\"resetTime\":\"2027-01-15T20:00:00.000Z\"},{\"remainingFraction\":\"0.5\",\"resetTime\":\"2027-01-01\"},{\"remainingFraction\":0.05,\"resetTime\":\"2027-01-15T12:00:00+02:00\"}]},\"empty-model\":{},\"null-quota\":{\"quotaInfo\":null}}}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": null,
+      "ranking": null,
+      "error": "Failed to parse JSON"
+    },
+    {
+      "name": "summary-empty-body",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": ""
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": null,
+      "ranking": null,
+      "error": "null is not an object (evaluating 'data.groups')"
+    },
+    {
+      "name": "summary-null-body",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "null"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": null,
+      "ranking": null,
+      "error": "null is not an object (evaluating 'data.groups')"
+    },
+    {
+      "name": "summary-whitespace-body",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": " "
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": null,
+      "ranking": null,
+      "error": "Failed to parse JSON"
+    },
+    {
+      "name": "legacy-empty-body",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 404,
+          "body": "nope"
+        },
+        {
+          "status": 200,
+          "body": ""
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": null,
+      "ranking": null,
+      "error": "null is not an object (evaluating 'data.models')"
+    },
+    {
+      "name": "legacy-whitespace-body",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 404,
+          "body": "nope"
+        },
+        {
+          "status": 200,
+          "body": "\n"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": null,
+      "ranking": null,
+      "error": "Failed to parse JSON"
+    },
+    {
+      "name": "summary-array-body-falls-back",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 200,
+          "body": "[]"
+        },
+        {
+          "status": 200,
+          "body": "{}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": []
+      },
+      "error": null
+    },
+    {
+      "name": "legacy-falsy-quota-values",
+      "params": {
+        "provider": "google-antigravity",
+        "credential": {
+          "type": "oauth",
+          "accessToken": "ya29.access",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9",
+          "expiresAt": 1800003600000
+        }
+      },
+      "responses": [
+        {
+          "status": 404,
+          "body": "nope"
+        },
+        {
+          "status": 200,
+          "body": "{\"models\":{\"gemini-3-pro\":{\"modelProvider\":\"MODEL_PROVIDER_GOOGLE\",\"quotaInfo\":false,\"quotaInfos\":0,\"dailyQuotaInfo\":\"\",\"dailyQuotaInfos\":null,\"weeklyQuotaInfo\":{\"remainingFraction\":0.4,\"resetTime\":\"2027-01-18T08:00:00.000Z\"},\"quotaInfoByTier\":{\"Free\":false,\"Pro\":0,\"Ultra\":{\"remainingFraction\":0.9,\"resetTime\":\"2027-01-15T09:00:00.000Z\"}},\"quotaInfoByWindow\":{\"daily\":\"\",\"weekly\":{\"remainingFraction\":0.6,\"resetTime\":\"2027-01-17T08:00:00.000Z\"}}}}}"
+        }
+      ],
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        },
+        {
+          "method": "POST",
+          "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer ya29.access",
+            "connection": "keep-alive",
+            "content-length": "20",
+            "content-type": "application/json",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"proj-1\"}"
+        }
+      ],
+      "report": {
+        "provider": "google-antigravity",
+        "fetchedAt": 1800000000000,
+        "limits": [
+          {
+            "id": "google-antigravity:google:default:weekly",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "windowId": "weekly"
+            },
+            "window": {
+              "id": "weekly",
+              "label": "Weekly",
+              "durationMs": 604800000,
+              "resetsAt": 1800259200000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.4,
+              "usedFraction": 0.6,
+              "remaining": 40,
+              "used": 60,
+              "limit": 100
+            },
+            "status": "ok"
+          },
+          {
+            "id": "google-antigravity:google:ultra:daily",
+            "label": "Usage (Google)",
+            "scope": {
+              "provider": "google-antigravity",
+              "accountId": "acct-9",
+              "projectId": "proj-1",
+              "tier": "Ultra",
+              "windowId": "daily"
+            },
+            "window": {
+              "id": "daily",
+              "label": "Daily",
+              "durationMs": 86400000,
+              "resetsAt": 1800003600000
+            },
+            "amount": {
+              "unit": "percent",
+              "remainingFraction": 0.9,
+              "usedFraction": 0.09999999999999998,
+              "remaining": 90,
+              "used": 9.999999999999998,
+              "limit": 100
+            },
+            "status": "ok"
+          }
+        ],
+        "metadata": {
+          "endpoint": "https://daily-cloudcode-pa.googleapis.com",
+          "projectId": "proj-1",
+          "email": "pilot@example.com",
+          "accountId": "acct-9"
+        }
+      },
+      "ranking": {
+        "models": [
+          {
+            "modelId": "claude-opus-4-6",
+            "counterKey": "anthropic",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "claude-sonnet-4-6",
+            "counterKey": "anthropic",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:anthropic"
+          },
+          {
+            "modelId": "gemini-3-pro",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:ultra:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemini-3-flash",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:ultra:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gemma-3",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:ultra:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_flash_lite_preview",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:ultra:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "tab_foo",
+            "counterKey": "google",
+            "scoped": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:ultra:daily"
+            ],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:google"
+          },
+          {
+            "modelId": "gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "openai/gpt-oss-120b",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "gpt-5",
+            "counterKey": "openai",
+            "scoped": [],
+            "primary": null,
+            "blockScope": "counter:openai"
+          },
+          {
+            "modelId": "some-other-model",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:unknown"
+          },
+          {
+            "modelId": "",
+            "counterKey": null,
+            "scoped": [],
+            "primary": "google-antigravity:google:default:weekly",
+            "blockScope": "counter:unknown"
+          }
+        ],
+        "healable": [
+          {
+            "blockScope": "counter:google",
+            "limits": [
+              "google-antigravity:google:default:weekly",
+              "google-antigravity:google:ultra:daily"
+            ]
+          }
+        ]
+      },
+      "error": null
+    }
+  ]
+}

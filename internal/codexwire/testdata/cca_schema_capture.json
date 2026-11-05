@@ -1,0 +1,4184 @@
+{
+  "source": "NeoPi OWN toolWireSchema + normalizeSchemaForGoogle + normalizeSchemaForCCA",
+  "cases": [
+    {
+      "name": "simple-object",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File."
+          },
+          "limit": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"File.\"},\"limit\":{\"type\":\"integer\"}},\"required\":[\"path\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"File.\"},\"limit\":{\"type\":\"integer\"}},\"required\":[\"path\"],\"propertyOrdering\":[\"path\",\"limit\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"File.\"},\"limit\":{\"type\":\"integer\"}},\"required\":[\"path\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"File.\"},\"limit\":{\"type\":\"integer\"}},\"required\":[\"path\"],\"propertyOrdering\":[\"path\",\"limit\"]}"
+    },
+    {
+      "name": "empty-root",
+      "parameters": {},
+      "wire": "{}",
+      "google": "{}",
+      "claude": "{}",
+      "gemini": "{}"
+    },
+    {
+      "name": "root-no-type",
+      "parameters": {
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "google": "{\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "claude": "{\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "gemini": "{\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "root-string",
+      "parameters": {
+        "type": "string",
+        "description": "Just text."
+      },
+      "wire": "{\"type\":\"string\",\"description\":\"Just text.\"}",
+      "google": "{\"type\":\"string\",\"description\":\"Just text.\"}",
+      "claude": "{\"type\":\"string\",\"description\":\"Just text.\"}",
+      "gemini": "{\"type\":\"string\",\"description\":\"Just text.\"}"
+    },
+    {
+      "name": "root-array",
+      "parameters": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
+      },
+      "wire": "{\"type\":\"array\",\"items\":{\"type\":\"number\"}}",
+      "google": "{\"type\":\"array\",\"items\":{\"type\":\"number\"}}",
+      "claude": "{\"type\":\"array\",\"items\":{\"type\":\"number\"}}",
+      "gemini": "{\"type\":\"array\",\"items\":{\"type\":\"number\"}}"
+    },
+    {
+      "name": "empty-objects",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "type": "object"
+          },
+          "nested": {
+            "type": "object",
+            "properties": {
+              "one": {
+                "type": "boolean"
+              }
+            }
+          },
+          "deep": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\"},\"nested\":{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"boolean\"}}},\"deep\":{\"type\":\"object\",\"properties\":{}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\",\"properties\":{}},\"nested\":{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"boolean\"}}},\"deep\":{\"type\":\"object\",\"properties\":{}}},\"propertyOrdering\":[\"cfg\",\"nested\",\"deep\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\",\"properties\":{}},\"nested\":{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"boolean\"}}},\"deep\":{\"type\":\"object\",\"properties\":{}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\",\"properties\":{}},\"nested\":{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"boolean\"}}},\"deep\":{\"type\":\"object\",\"properties\":{}}},\"propertyOrdering\":[\"cfg\",\"nested\",\"deep\"]}"
+    },
+    {
+      "name": "all-scalar-types",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "s": {
+            "type": "string"
+          },
+          "n": {
+            "type": "number"
+          },
+          "i": {
+            "type": "integer"
+          },
+          "b": {
+            "type": "boolean"
+          },
+          "a": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "o": {
+            "type": "object"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"},\"n\":{\"type\":\"number\"},\"i\":{\"type\":\"integer\"},\"b\":{\"type\":\"boolean\"},\"a\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"o\":{\"type\":\"object\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"},\"n\":{\"type\":\"number\"},\"i\":{\"type\":\"integer\"},\"b\":{\"type\":\"boolean\"},\"a\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"o\":{\"type\":\"object\",\"properties\":{}}},\"propertyOrdering\":[\"s\",\"n\",\"i\",\"b\",\"a\",\"o\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"},\"n\":{\"type\":\"number\"},\"i\":{\"type\":\"integer\"},\"b\":{\"type\":\"boolean\"},\"a\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"o\":{\"type\":\"object\",\"properties\":{}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"},\"n\":{\"type\":\"number\"},\"i\":{\"type\":\"integer\"},\"b\":{\"type\":\"boolean\"},\"a\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},\"o\":{\"type\":\"object\",\"properties\":{}}},\"propertyOrdering\":[\"s\",\"n\",\"i\",\"b\",\"a\",\"o\"]}"
+    },
+    {
+      "name": "type-array-nullable",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Max hits."
+          },
+          "term": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "term",
+          "limit"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":[\"number\",\"null\"],\"description\":\"Max hits.\"},\"term\":{\"type\":\"string\"}},\"required\":[\"term\",\"limit\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\",\"nullable\":true},\"term\":{\"type\":\"string\"}},\"required\":[\"term\",\"limit\"],\"propertyOrdering\":[\"limit\",\"term\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"},\"term\":{\"type\":\"string\"}},\"required\":[\"term\",\"limit\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"},\"term\":{\"type\":\"string\"}},\"required\":[\"term\",\"limit\"],\"propertyOrdering\":[\"limit\",\"term\"]}"
+    },
+    {
+      "name": "type-array-multi",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "string",
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "minLength": 2,
+            "maxItems": 3
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":[\"string\",\"array\",\"null\"],\"items\":{\"type\":\"string\"},\"minLength\":2,\"maxItems\":3}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"value\":{\"nullable\":true,\"anyOf\":[{\"type\":\"string\",\"description\":\"{minLength: 2}\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{maxItems: 3}\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"description\":\"{minLength: 2}\\n\\n{maxItems: 3}\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":\"string\",\"description\":\"{minLength: 2}\\n\\n{maxItems: 3}\"}}}"
+    },
+    {
+      "name": "type-array-multi-no-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "description": "Either."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":[\"string\",\"number\"],\"description\":\"Either.\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"value\":{\"description\":\"Either.\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"value\":{\"description\":\"Either.\",\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"value\":{\"description\":\"Either.\",\"type\":\"string\"}}}"
+    },
+    {
+      "name": "type-array-three-constrained",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              "string",
+              "integer",
+              "boolean"
+            ],
+            "minLength": 1,
+            "maximum": 9,
+            "pattern": "^x"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[\"string\",\"integer\",\"boolean\"],\"minLength\":1,\"maximum\":9,\"pattern\":\"^x\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"{minLength: 1, pattern: \\\"^x\\\"}\"},{\"type\":\"integer\",\"description\":\"{maximum: 9}\"},{\"type\":\"boolean\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"{minLength: 1, pattern: \\\"^x\\\"}\\n\\n{maximum: 9}\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"{minLength: 1, pattern: \\\"^x\\\"}\\n\\n{maximum: 9}\"}}}"
+    },
+    {
+      "name": "type-array-only-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              "null"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[\"null\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"nullable\":true}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{}}}"
+    },
+    {
+      "name": "type-array-empty",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": []
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "type-array-nonstring",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[1,2]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "type-array-duplicate",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              "string",
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[\"string\",\"string\",\"null\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"nullable\":true}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "type-array-with-anyof",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[\"string\",\"null\"],\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"nullable\":true}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "type-array-object-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              "object",
+              "array"
+            ],
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "items": {
+              "type": "string"
+            },
+            "required": [
+              "a"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[\"object\",\"array\"],\"properties\":{\"a\":{\"type\":\"string\"}},\"items\":{\"type\":\"string\"},\"required\":[\"a\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}}}"
+    },
+    {
+      "name": "type-array-with-const",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              "string"
+            ],
+            "const": "x"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[\"string\"],\"const\":\"x\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"x\"]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"x\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"x\"]}}}"
+    },
+    {
+      "name": "type-array-root",
+      "parameters": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"type\":[\"object\",\"null\"],\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"nullable\":true}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "type-array-empty-with-enum",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [],
+            "enum": [
+              "a"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[],\"enum\":[\"a\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"a\"]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"a\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"a\"]}}}"
+    },
+    {
+      "name": "type-null-property",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nothing": {
+            "type": "null",
+            "description": "Nada."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":\"null\",\"description\":\"Nada.\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"description\":\"Nada.\",\"nullable\":true}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"description\":\"Nada.\"}}}"
+    },
+    {
+      "name": "nullable-keyword",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "nullable": true
+          },
+          "b": {
+            "type": "number",
+            "nullable": false
+          }
+        },
+        "required": [
+          "a",
+          "b"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":[\"string\",\"null\"]},\"b\":{\"type\":\"number\"}},\"required\":[\"a\",\"b\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"nullable\":true},\"b\":{\"type\":\"number\"}},\"required\":[\"a\",\"b\"],\"propertyOrdering\":[\"a\",\"b\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"}},\"required\":[\"a\",\"b\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"}},\"required\":[\"a\",\"b\"],\"propertyOrdering\":[\"a\",\"b\"]}"
+    },
+    {
+      "name": "nullable-keyword-invalid",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "nullable": "yes"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-null-scalar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "maybe": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "maybe"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"maybe\":{\"maxLength\":5,\"type\":[\"string\",\"null\"]}},\"required\":[\"maybe\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"maybe\":{\"type\":\"string\",\"nullable\":true,\"description\":\"{maxLength: 5}\"}},\"required\":[\"maybe\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"maybe\":{\"type\":\"string\",\"description\":\"{maxLength: 5}\"}},\"required\":[\"maybe\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"maybe\":{\"type\":\"string\",\"description\":\"{maxLength: 5}\"}},\"required\":[\"maybe\"]}"
+    },
+    {
+      "name": "anyof-null-two-scalars",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "many": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"many\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"},{\"type\":\"null\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"many\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"}],\"nullable\":true}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"many\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"many\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-null-enum-untyped",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "enum": [
+                  "a",
+                  "b"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Pick."
+          }
+        },
+        "required": [
+          "pick",
+          "other"
+        ],
+        "additionalProperties": false
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"enum\":[\"a\",\"b\"],\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"Pick.\"}},\"required\":[\"pick\",\"other\"],\"additionalProperties\":false}",
+      "google": "{\"type\":\"object\",\"properties\":{\"pick\":{\"description\":\"Pick.\",\"nullable\":true,\"enum\":[\"a\",\"b\"],\"type\":\"string\"}},\"required\":[\"pick\",\"other\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"pick\":{\"description\":\"Pick.\",\"enum\":[\"a\",\"b\"],\"type\":\"string\"}},\"required\":[\"other\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"pick\":{\"description\":\"Pick.\",\"enum\":[\"a\",\"b\"],\"type\":\"string\"}},\"required\":[\"pick\",\"other\"]}"
+    },
+    {
+      "name": "oneof-null-enum-untyped",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "oneOf": [
+              {
+                "enum": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keep": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pick",
+          "keep"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"oneOf\":[{\"enum\":[1,2],\"type\":\"number\"},{\"type\":\"null\"}]},\"keep\":{\"type\":\"string\"}},\"required\":[\"pick\",\"keep\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"pick\":{\"oneOf\":[{\"type\":\"number\"},{\"nullable\":true}]},\"keep\":{\"type\":\"string\"}},\"required\":[\"pick\",\"keep\"],\"propertyOrdering\":[\"pick\",\"keep\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[1,2],\"type\":\"number\"},\"keep\":{\"type\":\"string\"}},\"required\":[\"keep\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-null-object",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "cfg"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"null\"}]}},\"required\":[\"cfg\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"nullable\":true,\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}},\"required\":[\"cfg\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}},\"required\":[\"cfg\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}},\"required\":[\"cfg\"]}"
+    },
+    {
+      "name": "anyof-null-with-extra-null-keys",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "enum": [
+                  "x"
+                ]
+              },
+              {
+                "type": "null",
+                "description": "no"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"enum\":[\"x\"],\"type\":\"string\"},{\"type\":\"null\",\"description\":\"no\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"nullable\":true,\"enum\":[\"x\"],\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"x\"],\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-only-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"null\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"nullable\":true}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{}}}"
+    },
+    {
+      "name": "anyof-nested-nullable-property",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "outer": {
+            "type": "object",
+            "properties": {
+              "inner": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "q"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "inner"
+            ]
+          }
+        },
+        "required": [
+          "outer"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"outer\":{\"type\":\"object\",\"properties\":{\"inner\":{\"anyOf\":[{\"enum\":[\"q\"],\"type\":\"string\"},{\"type\":\"null\"}]}},\"required\":[\"inner\"]}},\"required\":[\"outer\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"outer\":{\"type\":\"object\",\"properties\":{\"inner\":{\"nullable\":true,\"enum\":[\"q\"],\"type\":\"string\"}},\"required\":[\"inner\"]}},\"required\":[\"outer\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"outer\":{\"type\":\"object\",\"properties\":{\"inner\":{\"enum\":[\"q\"],\"type\":\"string\"}},\"required\":[]}},\"required\":[\"outer\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"outer\":{\"type\":\"object\",\"properties\":{\"inner\":{\"enum\":[\"q\"],\"type\":\"string\"}},\"required\":[\"inner\"]}},\"required\":[\"outer\"]}"
+    },
+    {
+      "name": "anyof-null-conflicting-keys",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "description": "parent",
+            "anyOf": [
+              {
+                "enum": [
+                  "x"
+                ],
+                "description": "child"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"parent\",\"anyOf\":[{\"enum\":[\"x\"],\"description\":\"child\",\"type\":\"string\"},{\"type\":\"null\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"parent\",\"nullable\":true,\"enum\":[\"x\"],\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"parent\",\"enum\":[\"x\"],\"type\":\"string\"}}}"
+    },
+    {
+      "name": "required-with-nonstrings",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "anyOf": [
+              {
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "a",
+          7,
+          "b",
+          "a"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"anyOf\":[{\"enum\":[1],\"type\":\"number\"},{\"type\":\"null\"}]}},\"required\":[\"a\",7,\"b\",\"a\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"nullable\":true,\"type\":\"number\"}},\"required\":[\"a\",7,\"b\",\"a\"],\"propertyOrdering\":[\"a\",\"b\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"enum\":[1],\"type\":\"number\"}},\"required\":[\"a\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"}},\"required\":[\"a\",\"b\"],\"propertyOrdering\":[\"a\",\"b\"]}"
+    },
+    {
+      "name": "const-anyof",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "anyOf": [
+              {
+                "const": "a"
+              },
+              {
+                "const": "b"
+              },
+              {
+                "const": "a"
+              }
+            ],
+            "description": "Mode."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"mode\":{\"description\":\"Mode.\",\"type\":\"string\",\"enum\":[\"a\",\"b\",\"a\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"mode\":{\"description\":\"Mode.\",\"type\":\"string\",\"enum\":[\"a\",\"b\",\"a\"]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "const-anyof-typed",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "oneOf": [
+              {
+                "const": "a",
+                "type": "string"
+              },
+              {
+                "const": "b",
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"mode\":{\"oneOf\":[{\"const\":\"a\",\"type\":\"string\"},{\"const\":\"b\",\"type\":\"string\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"mode\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"mode\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"mode\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}}}"
+    },
+    {
+      "name": "const-mixed-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "oneOf": [
+              {
+                "const": 1
+              },
+              {
+                "const": null
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"oneOf\":[{\"const\":1},{\"const\":null}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"pick\":{\"type\":\"number\",\"nullable\":true}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[1,null],\"type\":\"number\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"pick\":{\"type\":\"number\"}}}"
+    },
+    {
+      "name": "const-mixed-types",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "const": 1
+              },
+              {
+                "const": "x"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"const\":1},{\"const\":\"x\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"pick\":{}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[1,\"x\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"pick\":{}}}"
+    },
+    {
+      "name": "const-anyof-extra-keys",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "const": "a"
+              },
+              {
+                "const": "b"
+              }
+            ],
+            "default": "a",
+            "pattern": "x",
+            "title": "T",
+            "nullable": true
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"const\":\"a\"},{\"const\":\"b\"},{\"type\":\"null\"}],\"default\":\"a\",\"pattern\":\"x\",\"title\":\"T\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\",\"default\":\"a\",\"title\":\"T\",\"nullable\":true,\"description\":\"{pattern: \\\"x\\\"}\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\",\"default\":\"a\",\"title\":\"T\",\"description\":\"{pattern: \\\"x\\\"}\"}}}"
+    },
+    {
+      "name": "const-anyof-and-oneof",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "const": "a"
+              },
+              {
+                "const": "b"
+              }
+            ],
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"const\":\"a\"},{\"const\":\"b\"}],\"oneOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\",\"oneOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}}}"
+    },
+    {
+      "name": "bare-const",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "fixed": {
+            "const": "x"
+          },
+          "num": {
+            "const": 3
+          },
+          "flag": {
+            "const": true
+          },
+          "nil": {
+            "const": null
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"const\":\"x\"},\"num\":{\"const\":3},\"flag\":{\"const\":true},\"nil\":{\"const\":null}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"enum\":[\"x\"],\"type\":\"string\"},\"num\":{\"type\":\"number\"},\"flag\":{\"type\":\"boolean\"},\"nil\":{\"nullable\":true}},\"propertyOrdering\":[\"fixed\",\"num\",\"flag\",\"nil\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"enum\":[\"x\"],\"type\":\"string\"},\"num\":{\"type\":\"number\"},\"flag\":{\"type\":\"boolean\"},\"nil\":{}},\"propertyOrdering\":[\"fixed\",\"num\",\"flag\",\"nil\"]}"
+    },
+    {
+      "name": "const-object-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "o": {
+            "const": {
+              "anyOf": [
+                1
+              ],
+              "nullable": true
+            }
+          },
+          "a": {
+            "const": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"o\":{\"const\":{\"anyOf\":[1],\"nullable\":true}},\"a\":{\"const\":[1,2]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"o\":{\"type\":\"object\",\"properties\":{}},\"a\":{\"type\":\"array\"}},\"propertyOrdering\":[\"o\",\"a\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"o\":{\"enum\":[{\"anyOf\":[1],\"nullable\":true}],\"type\":\"object\",\"properties\":{}},\"a\":{\"enum\":[[1,2]],\"type\":\"array\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"o\":{\"type\":\"object\",\"properties\":{}},\"a\":{\"type\":\"array\"}},\"propertyOrdering\":[\"o\",\"a\"]}"
+    },
+    {
+      "name": "const-and-enum",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "enum": [
+              "a",
+              "b"
+            ],
+            "const": "c"
+          },
+          "w": {
+            "type": "string",
+            "enum": [
+              "a"
+            ],
+            "const": "a"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",\"b\"],\"const\":\"c\",\"type\":\"string\"},\"w\":{\"type\":\"string\",\"enum\":[\"a\"],\"const\":\"a\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",\"b\",\"c\"],\"type\":\"string\"},\"w\":{\"type\":\"string\",\"enum\":[\"a\"]}},\"propertyOrdering\":[\"v\",\"w\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",\"b\",\"c\"],\"type\":\"string\"},\"w\":{\"type\":\"string\",\"enum\":[\"a\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",\"b\",\"c\"],\"type\":\"string\"},\"w\":{\"type\":\"string\",\"enum\":[\"a\"]}},\"propertyOrdering\":[\"v\",\"w\"]}"
+    },
+    {
+      "name": "bare-enum",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "enum": [
+              "s",
+              "m"
+            ]
+          },
+          "level": {
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "mixed": {
+            "type": "string",
+            "enum": [
+              "a",
+              2
+            ]
+          },
+          "flags": {
+            "enum": [
+              true,
+              false
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"size\":{\"enum\":[\"s\",\"m\"],\"type\":\"string\"},\"level\":{\"enum\":[1,2],\"type\":\"number\"},\"mixed\":{\"type\":\"string\",\"enum\":[\"a\",2]},\"flags\":{\"enum\":[true,false],\"type\":\"boolean\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"size\":{\"enum\":[\"s\",\"m\"],\"type\":\"string\"},\"level\":{\"type\":\"number\"},\"mixed\":{\"type\":\"string\"},\"flags\":{\"type\":\"boolean\"}},\"propertyOrdering\":[\"size\",\"level\",\"mixed\",\"flags\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"size\":{\"enum\":[\"s\",\"m\"],\"type\":\"string\"},\"level\":{\"enum\":[1,2],\"type\":\"number\"},\"mixed\":{\"type\":\"string\",\"enum\":[\"a\",2]},\"flags\":{\"enum\":[true,false],\"type\":\"boolean\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"size\":{\"enum\":[\"s\",\"m\"],\"type\":\"string\"},\"level\":{\"type\":\"number\"},\"mixed\":{\"type\":\"string\"},\"flags\":{\"type\":\"boolean\"}},\"propertyOrdering\":[\"size\",\"level\",\"mixed\",\"flags\"]}"
+    },
+    {
+      "name": "bare-enum-mixed-no-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "enum": [
+              "a",
+              1
+            ]
+          },
+          "w": {
+            "enum": [
+              null,
+              "a"
+            ]
+          },
+          "x": {
+            "enum": []
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",1]},\"w\":{\"enum\":[null,\"a\"]},\"x\":{\"enum\":[]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{},\"w\":{},\"x\":{}},\"propertyOrdering\":[\"v\",\"w\",\"x\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{},\"w\":{},\"x\":{}},\"propertyOrdering\":[\"v\",\"w\",\"x\"]}"
+    },
+    {
+      "name": "enum-duplicates",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "enum": [
+              "a",
+              "a"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"a\",\"a\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"a\",\"a\"]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "enum-objects",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "enum": [
+              {
+                "type": "null"
+              },
+              {
+                "anyOf": []
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[{\"type\":\"null\"},{\"anyOf\":[]}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[{\"type\":\"null\"},{\"anyOf\":[]}],\"type\":\"object\",\"properties\":{}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{}}}}"
+    },
+    {
+      "name": "enum-numbers-strings",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "enum": [
+              1,
+              "1"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[1,\"1\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[1,\"1\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{}}}"
+    },
+    {
+      "name": "anyof-mixed-scalars",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "description": "Either."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"description\":\"Either.\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"description\":\"Either.\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"Either.\",\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"Either.\",\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-mixed-descriptions",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "a"
+              },
+              {
+                "type": "integer",
+                "description": "b"
+              },
+              {
+                "type": "boolean",
+                "description": "a"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"a\"},{\"type\":\"integer\",\"description\":\"b\"},{\"type\":\"boolean\",\"description\":\"a\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"a\"},{\"type\":\"integer\",\"description\":\"b\"},{\"type\":\"boolean\",\"description\":\"a\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"a\\n\\nb\\n\\na\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"a\\n\\nb\\n\\na\"}}}"
+    },
+    {
+      "name": "anyof-mixed-conflicting-title",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "title": "A"
+              },
+              {
+                "type": "integer",
+                "title": "B"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"title\":\"A\"},{\"type\":\"integer\",\"title\":\"B\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"title\":\"A\"},{\"type\":\"integer\",\"title\":\"B\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-mixed-spill-descriptions",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^a"
+              },
+              {
+                "type": "integer",
+                "minimum": 2
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"minLength\":1,\"pattern\":\"^a\"},{\"type\":\"integer\",\"minimum\":2}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"{minLength: 1, pattern: \\\"^a\\\"}\"},{\"type\":\"integer\",\"description\":\"{minimum: 2}\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"{minLength: 1, pattern: \\\"^a\\\"}\\n\\n{minimum: 2}\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"{minLength: 1, pattern: \\\"^a\\\"}\\n\\n{minimum: 2}\"}}}"
+    },
+    {
+      "name": "anyof-mixed-defaults",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "default": "x"
+              },
+              {
+                "type": "number",
+                "default": 2
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"default\":\"x\"},{\"type\":\"number\",\"default\":2}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"default\":\"x\"},{\"type\":\"number\",\"default\":2}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-mixed-description-nonstring",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": 5
+              },
+              {
+                "type": "number",
+                "description": "x"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":5},{\"type\":\"number\",\"description\":\"x\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":5},{\"type\":\"number\",\"description\":\"x\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"x\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"x\"}}}"
+    },
+    {
+      "name": "anyof-mixed-description-nonstring-incoming",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "a"
+              },
+              {
+                "type": "number",
+                "description": 7
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"a\"},{\"type\":\"number\",\"description\":7}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"a\"},{\"type\":\"number\",\"description\":7}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"a\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"a\"}}}"
+    },
+    {
+      "name": "anyof-mixed-description-empty",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": ""
+              },
+              {
+                "type": "number",
+                "description": "b"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"\"},{\"type\":\"number\",\"description\":\"b\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"\"},{\"type\":\"number\",\"description\":\"b\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"b\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"b\"}}}"
+    },
+    {
+      "name": "anyof-mixed-description-empty-incoming",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "a"
+              },
+              {
+                "type": "number",
+                "description": ""
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"a\"},{\"type\":\"number\",\"description\":\"\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"a\"},{\"type\":\"number\",\"description\":\"\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"a\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"a\"}}}"
+    },
+    {
+      "name": "anyof-mixed-title-equal",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "title": "T"
+              },
+              {
+                "type": "number",
+                "title": "T"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"title\":\"T\"},{\"type\":\"number\",\"title\":\"T\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"title\":\"T\"},{\"type\":\"number\",\"title\":\"T\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"title\":\"T\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"title\":\"T\"}}}"
+    },
+    {
+      "name": "oneof-mixed-scalars",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"oneOf\":[{\"type\":\"boolean\"},{\"type\":\"integer\"},{\"type\":\"string\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"oneOf\":[{\"type\":\"boolean\"},{\"type\":\"integer\"},{\"type\":\"string\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}"
+    },
+    {
+      "name": "anyof-mixed-with-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"nullable\":true}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-mixed-array-string",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"array\",\"items\":{\"type\":\"string\"}},{\"type\":\"string\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"array\",\"items\":{\"type\":\"string\"}},{\"type\":\"string\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}"
+    },
+    {
+      "name": "anyof-mixed-string-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"}}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-mixed-object-string",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"string\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"string\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}}"
+    },
+    {
+      "name": "anyof-mixed-parent-siblings",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "description": "Parent.",
+            "default": 3,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"Parent.\",\"default\":3,\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"Parent.\",\"default\":3,\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"Parent.\",\"default\":3,\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"Parent.\",\"default\":3,\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-mixed-parent-foreign-key",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "items": {
+              "type": "string"
+            },
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"items\":{\"type\":\"string\"},\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"items\":{\"type\":\"string\"},\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-duplicate-types",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string",
+                "description": "x"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"string\",\"description\":\"x\"},{\"type\":\"number\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"string\",\"description\":\"x\"},{\"type\":\"number\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-same-type-enums",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "a"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "b",
+                  "a"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"a\"]},{\"type\":\"string\",\"enum\":[\"b\",\"a\"]}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"a\"]},{\"type\":\"string\",\"enum\":[\"b\",\"a\"]}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"a\",\"b\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"a\",\"b\"]}}}"
+    },
+    {
+      "name": "anyof-same-type-enums-conflict",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "a"
+                ],
+                "description": "x"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "b"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"a\"],\"description\":\"x\"},{\"type\":\"string\",\"enum\":[\"b\"]}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"a\"],\"description\":\"x\"},{\"type\":\"string\",\"enum\":[\"b\"]}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-same-type-enum-and-plain",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "a"
+                ],
+                "description": "narrow"
+              },
+              {
+                "type": "string",
+                "description": "broad"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"a\"],\"description\":\"narrow\"},{\"type\":\"string\",\"description\":\"broad\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"a\"],\"description\":\"narrow\"},{\"type\":\"string\",\"description\":\"broad\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"broad\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"broad\"}}}"
+    },
+    {
+      "name": "anyof-same-type-plain",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "first"
+              },
+              {
+                "type": "string",
+                "minLength": 3
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"first\"},{\"type\":\"string\",\"minLength\":3}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"first\"},{\"type\":\"string\",\"description\":\"{minLength: 3}\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"first\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"first\"}}}"
+    },
+    {
+      "name": "anyof-same-type-objects-keep",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}}"
+    },
+    {
+      "name": "anyof-single-variant",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "only"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"only\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"only\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"only\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"only\"}}}"
+    },
+    {
+      "name": "anyof-empty-variant",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[true,{\"type\":\"string\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{},{\"type\":\"string\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-empty-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": []
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-nested",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]},{\"type\":\"boolean\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]},{\"type\":\"boolean\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-nested-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":[\"string\",\"null\"]},{\"type\":\"number\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"nullable\":true},{\"type\":\"number\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "oneof-and-anyof-both",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"oneOf\":[{\"type\":\"boolean\"},{\"type\":\"integer\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"oneOf\":[{\"type\":\"boolean\"},{\"type\":\"integer\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}"
+    },
+    {
+      "name": "anyof-unknown-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "weird"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"weird\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"weird\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-items-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"}]}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"}]}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}"
+    },
+    {
+      "name": "anyof-ref-variants",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/A"
+              },
+              {
+                "$ref": "#/$defs/B"
+              }
+            ]
+          }
+        },
+        "$defs": {
+          "A": {
+            "type": "string"
+          },
+          "B": {
+            "type": "number"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"$ref\":\"#/$defs/A\"},{\"$ref\":\"#/$defs/B\"}]}},\"$defs\":{\"A\":{\"type\":\"string\"},\"B\":{\"type\":\"number\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-ref-same-twice",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/A"
+              },
+              {
+                "$ref": "#/$defs/A"
+              }
+            ]
+          },
+          "w": {
+            "$ref": "#/$defs/A"
+          }
+        },
+        "$defs": {
+          "A": {
+            "type": "string",
+            "enum": [
+              "x"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"$ref\":\"#/$defs/A\"},{\"$ref\":\"#/$defs/A\"}]},\"w\":{\"$ref\":\"#/$defs/A\"}},\"$defs\":{\"A\":{\"type\":\"string\",\"enum\":[\"x\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\",\"enum\":[\"x\"]},{\"type\":\"string\",\"enum\":[\"x\"]}]},\"w\":{\"type\":\"string\",\"enum\":[\"x\"]}},\"propertyOrdering\":[\"v\",\"w\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"x\"]},\"w\":{\"type\":\"string\",\"enum\":[\"x\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[\"x\"]},\"w\":{\"type\":\"string\",\"enum\":[\"x\"]}},\"propertyOrdering\":[\"v\",\"w\"]}"
+    },
+    {
+      "name": "anyof-objects-merge",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"number\"}},\"required\":[\"b\"]}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"number\"}},\"required\":[\"b\"]}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"}}}"
+    },
+    {
+      "name": "anyof-objects-shared-required",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              },
+              "c": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a",
+              "c"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "number"
+              },
+              "c": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b",
+              "c"
+            ]
+          }
+        ],
+        "description": "Union."
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"c\":{\"type\":\"string\"}},\"required\":[\"a\",\"c\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"number\"},\"c\":{\"type\":\"string\"}},\"required\":[\"b\",\"c\"]}],\"description\":\"Union.\"}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"c\":{\"type\":\"string\"}},\"required\":[\"a\",\"c\"],\"propertyOrdering\":[\"a\",\"c\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"number\"},\"c\":{\"type\":\"string\"}},\"required\":[\"b\",\"c\"],\"propertyOrdering\":[\"b\",\"c\"]}],\"description\":\"Union.\"}",
+      "claude": "{\"description\":\"Union.\",\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"c\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"}},\"required\":[\"c\"]}",
+      "gemini": "{\"description\":\"Union.\",\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"c\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"}},\"required\":[\"c\"]}"
+    },
+    {
+      "name": "oneof-objects-merge",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "x"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "y": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "y"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"oneOf\":[{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"}},\"required\":[\"x\"]},{\"type\":\"object\",\"properties\":{\"y\":{\"type\":\"string\"}},\"required\":[\"y\"]}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"oneOf\":[{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"}},\"required\":[\"x\"]},{\"type\":\"object\",\"properties\":{\"y\":{\"type\":\"string\"}},\"required\":[\"y\"]}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"},\"y\":{\"type\":\"string\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"},\"y\":{\"type\":\"string\"}}}}}"
+    },
+    {
+      "name": "anyof-objects-property-conflict-types",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "number"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\"}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\"}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-objects-property-conflict-three",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\"}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\"}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-objects-property-conflict-enums",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "k": {
+                "type": "string",
+                "enum": [
+                  "a"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "k": {
+                "type": "string",
+                "enum": [
+                  "b"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\",\"enum\":[\"a\"]}}},{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\",\"enum\":[\"b\"]}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\",\"enum\":[\"a\"]}}},{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\",\"enum\":[\"b\"]}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\",\"enum\":[\"a\",\"b\"]}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\",\"enum\":[\"a\",\"b\"]}}}"
+    },
+    {
+      "name": "anyof-objects-property-conflict-complex",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}}}"
+    },
+    {
+      "name": "anyof-objects-property-same",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "string"
+              },
+              "a": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "string"
+              },
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}},\"propertyOrdering\":[\"v\",\"a\"]},{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"propertyOrdering\":[\"v\",\"b\"]}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-objects-parent-properties",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string"
+          },
+          "shared": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "base"
+        ],
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "shared": {
+                "type": "number"
+              },
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"base\":{\"type\":\"string\"},\"shared\":{\"type\":\"string\"}},\"required\":[\"base\"],\"anyOf\":[{\"type\":\"object\",\"properties\":{\"shared\":{\"type\":\"number\"},\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"base\":{\"type\":\"string\"},\"shared\":{\"type\":\"string\"}},\"required\":[\"base\"],\"anyOf\":[{\"type\":\"object\",\"properties\":{\"shared\":{\"type\":\"number\"},\"a\":{\"type\":\"string\"}},\"required\":[\"a\"],\"propertyOrdering\":[\"shared\",\"a\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}],\"propertyOrdering\":[\"base\",\"shared\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"base\":{\"type\":\"string\"},\"shared\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"required\":[\"base\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"base\":{\"type\":\"string\"},\"shared\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"required\":[\"base\"],\"propertyOrdering\":[\"base\",\"shared\"]}"
+    },
+    {
+      "name": "anyof-objects-parent-required-missing",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "base",
+          "ghost"
+        ],
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"base\":{\"type\":\"string\"}},\"required\":[\"base\",\"ghost\"],\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"base\":{\"type\":\"string\"}},\"required\":[\"base\",\"ghost\"],\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"base\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"required\":[\"base\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"base\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"required\":[\"base\"]}"
+    },
+    {
+      "name": "anyof-objects-required-not-in-props",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a",
+              "zzz"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a",
+              "zzz"
+            ]
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\",\"zzz\"]},{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\",\"zzz\"]}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\",\"zzz\"]},{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\",\"zzz\"]}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}"
+    },
+    {
+      "name": "anyof-objects-no-type-shape",
+      "parameters": {
+        "anyOf": [
+          {
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          },
+          {
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]},{\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "google": "{\"anyOf\":[{\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]},{\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-objects-additional-only",
+      "parameters": {
+        "anyOf": [
+          {
+            "additionalProperties": true
+          },
+          {
+            "type": "object",
+            "additionalProperties": false
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"additionalProperties\":true},{\"type\":\"object\",\"additionalProperties\":false}]}",
+      "google": "{\"anyOf\":[{},{\"type\":\"object\",\"properties\":{}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-objects-with-scalar",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"string\"}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"string\"}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-objects-bad-required",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": "a"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":\"a\"},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":\"a\"},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-objects-bad-properties",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": [
+              1
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":[1]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":[1]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "anyof-objects-discriminated",
+      "parameters": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "a"
+              },
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "x"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "b"
+              },
+              "y": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "y"
+            ]
+          }
+        ]
+      },
+      "wire": "{\"oneOf\":[{\"type\":\"object\",\"properties\":{\"kind\":{\"const\":\"a\"},\"x\":{\"type\":\"string\"}},\"required\":[\"kind\",\"x\"]},{\"type\":\"object\",\"properties\":{\"kind\":{\"const\":\"b\"},\"y\":{\"type\":\"string\"}},\"required\":[\"kind\",\"y\"]}]}",
+      "google": "{\"oneOf\":[{\"type\":\"object\",\"properties\":{\"kind\":{\"enum\":[\"a\"],\"type\":\"string\"},\"x\":{\"type\":\"string\"}},\"required\":[\"kind\",\"x\"],\"propertyOrdering\":[\"kind\",\"x\"]},{\"type\":\"object\",\"properties\":{\"kind\":{\"enum\":[\"b\"],\"type\":\"string\"},\"y\":{\"type\":\"string\"}},\"required\":[\"kind\",\"y\"],\"propertyOrdering\":[\"kind\",\"y\"]}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"kind\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"},\"x\":{\"type\":\"string\"},\"y\":{\"type\":\"string\"}},\"required\":[\"kind\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"kind\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"},\"x\":{\"type\":\"string\"},\"y\":{\"type\":\"string\"}},\"required\":[\"kind\"]}"
+    },
+    {
+      "name": "anyof-objects-nested-merge",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "opts": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "inner": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "a": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "b": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "other": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"opts\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"inner\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}}},{\"type\":\"object\",\"properties\":{\"other\":{\"type\":\"string\"}}}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"opts\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"inner\":{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}}},{\"type\":\"object\",\"properties\":{\"other\":{\"type\":\"string\"}}}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"properties\":{\"inner\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}},\"other\":{\"type\":\"string\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"properties\":{\"inner\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}},\"other\":{\"type\":\"string\"}}}}}"
+    },
+    {
+      "name": "anyof-objects-with-nullable-props",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "x"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "a"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"anyOf\":[{\"enum\":[\"x\"],\"type\":\"string\"},{\"type\":\"null\"}]}},\"required\":[\"a\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"nullable\":true,\"enum\":[\"x\"],\"type\":\"string\"}},\"required\":[\"a\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"enum\":[\"x\"],\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"enum\":[\"x\"],\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "anyof-objects-numeric-keys",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "1": {
+                "type": "string"
+              },
+              "2": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"string\"},\"2\":{\"type\":\"string\"}}}]}",
+      "google": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"string\"},\"2\":{\"type\":\"string\"}},\"propertyOrdering\":[\"1\",\"2\"]}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"string\"},\"2\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"string\"},\"2\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "numeric-property-names",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "2": {
+            "type": "string"
+          },
+          "10": {
+            "type": "string"
+          },
+          "b": {
+            "type": "string"
+          },
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "b",
+          "10"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"2\":{\"type\":\"string\"},\"10\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}},\"required\":[\"b\",\"10\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"2\":{\"type\":\"string\"},\"10\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}},\"required\":[\"b\",\"10\"],\"propertyOrdering\":[\"2\",\"10\",\"b\",\"a\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"2\":{\"type\":\"string\"},\"10\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}},\"required\":[\"b\",\"10\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"2\":{\"type\":\"string\"},\"10\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}},\"required\":[\"b\",\"10\"],\"propertyOrdering\":[\"2\",\"10\",\"b\",\"a\"]}"
+    },
+    {
+      "name": "allof-objects",
+      "parameters": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"allOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "google": "{\"allOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "allof-scalar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "allOf": [
+              {
+                "type": "string"
+              },
+              {
+                "minLength": 1
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"allOf\":[{\"type\":\"string\"},{\"minLength\":1}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"allOf\":[{\"type\":\"string\"},{\"description\":\"{minLength: 1}\"}]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "allof-empty",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "allOf": []
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"allOf\":[]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"allOf\":[]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "refs",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "$ref": "#/$defs/Node",
+            "description": "Root node."
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Leaf"
+            }
+          }
+        },
+        "$defs": {
+          "Node": {
+            "type": "object",
+            "properties": {
+              "child": {
+                "$ref": "#/$defs/Node"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "definitions": {
+          "Leaf": {
+            "type": "string",
+            "enum": [
+              "x",
+              "y"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"node\":{\"$ref\":\"#/$defs/Node\",\"description\":\"Root node.\"},\"list\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/Leaf\"}}},\"$defs\":{\"Node\":{\"type\":\"object\",\"properties\":{\"child\":{\"$ref\":\"#/$defs/Node\"},\"name\":{\"type\":\"string\"}}},\"Leaf\":{\"type\":\"string\",\"enum\":[\"x\",\"y\"]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"node\":{\"type\":\"object\",\"properties\":{\"child\":{},\"name\":{\"type\":\"string\"}},\"description\":\"Root node.\",\"propertyOrdering\":[\"child\",\"name\"]},\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"x\",\"y\"]}}},\"propertyOrdering\":[\"node\",\"list\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"node\":{\"type\":\"object\",\"properties\":{\"child\":{},\"name\":{\"type\":\"string\"}},\"description\":\"Root node.\"},\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"x\",\"y\"]}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"node\":{\"type\":\"object\",\"properties\":{\"child\":{},\"name\":{\"type\":\"string\"}},\"description\":\"Root node.\",\"propertyOrdering\":[\"child\",\"name\"]},\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"x\",\"y\"]}}},\"propertyOrdering\":[\"node\",\"list\"]}"
+    },
+    {
+      "name": "refs-recursive-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tree": {
+            "$ref": "#/$defs/Tree"
+          }
+        },
+        "$defs": {
+          "Tree": {
+            "type": "object",
+            "properties": {
+              "kids": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/Tree"
+                }
+              },
+              "v": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"tree\":{\"$ref\":\"#/$defs/Tree\"}},\"$defs\":{\"Tree\":{\"type\":\"object\",\"properties\":{\"kids\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/Tree\"}},\"v\":{\"type\":\"string\"}}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"tree\":{\"type\":\"object\",\"properties\":{\"kids\":{\"type\":\"array\",\"items\":{}},\"v\":{\"type\":\"string\"}},\"propertyOrdering\":[\"kids\",\"v\"]}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"tree\":{\"type\":\"object\",\"properties\":{\"kids\":{\"type\":\"array\",\"items\":{}},\"v\":{\"type\":\"string\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"tree\":{\"type\":\"object\",\"properties\":{\"kids\":{\"type\":\"array\",\"items\":{}},\"v\":{\"type\":\"string\"}},\"propertyOrdering\":[\"kids\",\"v\"]}}}"
+    },
+    {
+      "name": "refs-mutual",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/A"
+          }
+        },
+        "$defs": {
+          "A": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "$ref": "#/$defs/B"
+              }
+            }
+          },
+          "B": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "$ref": "#/$defs/A"
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"$ref\":\"#/$defs/A\"}},\"$defs\":{\"A\":{\"type\":\"object\",\"properties\":{\"b\":{\"$ref\":\"#/$defs/B\"}}},\"B\":{\"type\":\"object\",\"properties\":{\"a\":{\"$ref\":\"#/$defs/A\"}}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"object\",\"properties\":{\"a\":{}}}}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"object\",\"properties\":{\"a\":{}}}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"object\",\"properties\":{\"a\":{}}}}}}}"
+    },
+    {
+      "name": "refs-sibling-keywords",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "$ref": "#/$defs/S",
+            "description": "Sibling.",
+            "default": "z"
+          }
+        },
+        "$defs": {
+          "S": {
+            "type": "string",
+            "minLength": 2
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"$ref\":\"#/$defs/S\",\"description\":\"Sibling.\",\"default\":\"z\"}},\"$defs\":{\"S\":{\"type\":\"string\",\"minLength\":2}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"Sibling.\\n\\n{minLength: 2}\",\"default\":\"z\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"Sibling.\\n\\n{minLength: 2}\",\"default\":\"z\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"Sibling.\\n\\n{minLength: 2}\",\"default\":\"z\"}}}"
+    },
+    {
+      "name": "refs-unresolved",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ext": {
+            "$ref": "https://example.com/schema.json"
+          },
+          "missing": {
+            "$ref": "#/$defs/Nope"
+          },
+          "deep": {
+            "$ref": "#/$defs/A/properties/x"
+          }
+        },
+        "$defs": {
+          "A": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"ext\":{\"$ref\":\"https://example.com/schema.json\"},\"missing\":{\"$ref\":\"#/$defs/Nope\"},\"deep\":{\"$ref\":\"#/$defs/A/properties/x\"}},\"$defs\":{\"A\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"}}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"ext\":{},\"missing\":{},\"deep\":{}},\"propertyOrdering\":[\"ext\",\"missing\",\"deep\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"ext\":{},\"missing\":{},\"deep\":{}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"ext\":{},\"missing\":{},\"deep\":{}},\"propertyOrdering\":[\"ext\",\"missing\",\"deep\"]}"
+    },
+    {
+      "name": "refs-root",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "self": {
+            "$ref": "#"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"self\":{\"$ref\":\"#\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"self\":{}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"self\":{}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"self\":{}}}"
+    },
+    {
+      "name": "refs-in-anyof-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/E"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "v"
+        ],
+        "$defs": {
+          "E": {
+            "enum": [
+              "a",
+              "b"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"$ref\":\"#/$defs/E\"},{\"type\":\"null\"}]}},\"required\":[\"v\"],\"$defs\":{\"E\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"nullable\":true,\"enum\":[\"a\",\"b\"],\"type\":\"string\"}},\"required\":[\"v\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}},\"required\":[]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}},\"required\":[\"v\"]}"
+    },
+    {
+      "name": "refs-escaped-name",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "$ref": "#/$defs/a~1b"
+          }
+        },
+        "$defs": {
+          "a/b": {
+            "type": "boolean"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"$ref\":\"#/$defs/a~1b\"}},\"$defs\":{\"a/b\":{\"type\":\"boolean\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"boolean\"}}}"
+    },
+    {
+      "name": "defs-unused",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "$defs": {
+          "Unused": {
+            "type": "number"
+          }
+        },
+        "definitions": {
+          "Old": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"$defs\":{\"Unused\":{\"type\":\"number\"},\"Old\":{\"type\":\"string\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "refs-nested-defs-keyword",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "object",
+            "properties": {
+              "w": {
+                "$ref": "#/$defs/W"
+              }
+            },
+            "$defs": {
+              "Inner": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "$defs": {
+          "W": {
+            "type": "integer"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"w\":{\"$ref\":\"#/$defs/W\"}},\"$defs\":{\"Inner\":{\"type\":\"string\"}}}},\"$defs\":{\"W\":{\"type\":\"integer\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"w\":{\"type\":\"integer\"}}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"w\":{\"type\":\"integer\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"properties\":{\"w\":{\"type\":\"integer\"}}}}}"
+    },
+    {
+      "name": "draft7-items-tuple",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"string\"},{\"type\":\"number\"}]},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{uniqueItems: true}\"}},\"propertyOrdering\":[\"pair\",\"tags\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{uniqueItems: true}\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{uniqueItems: true}\"}},\"propertyOrdering\":[\"pair\",\"tags\"]}"
+    },
+    {
+      "name": "draft7-items-empty-tuple",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "array",
+            "items": []
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\",\"prefixItems\":[]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\"}}}"
+    },
+    {
+      "name": "draft7-additional-items",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string"
+              }
+            ],
+            "additionalItems": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"string\"}],\"items\":{\"type\":\"number\"}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}"
+    },
+    {
+      "name": "draft7-dependencies",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "dependencies": {
+          "a": [
+            "b"
+          ],
+          "b": {
+            "type": "object",
+            "properties": {
+              "c": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"dependentRequired\":{\"a\":[\"b\"]},\"dependentSchemas\":{\"b\":{\"type\":\"object\",\"properties\":{\"c\":{\"type\":\"string\"}}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"propertyOrdering\":[\"a\",\"b\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"propertyOrdering\":[\"a\",\"b\"]}"
+    },
+    {
+      "name": "draft7-definitions",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "v": {
+            "$ref": "#/definitions/V"
+          }
+        },
+        "definitions": {
+          "V": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"v\":{\"$ref\":\"#/$defs/V\"}},\"$defs\":{\"V\":{\"type\":\"string\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "draft2020-prefix-items",
+      "parameters": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "items": false
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"items\":false}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"array\",\"items\":{\"not\":{}}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "boolean-subschemas",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "anything": true,
+          "never": false,
+          "arr": {
+            "type": "array",
+            "items": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"anything\":true,\"never\":false,\"arr\":{\"type\":\"array\",\"items\":true}},\"additionalProperties\":false}",
+      "google": "{\"type\":\"object\",\"properties\":{\"anything\":{},\"never\":{\"not\":{}},\"arr\":{\"type\":\"array\",\"items\":{}}},\"propertyOrdering\":[\"anything\",\"never\",\"arr\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "boolean-subschema-combiners",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              true,
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "w": {
+            "not": false
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[true,{\"type\":\"string\"}]},\"w\":{\"not\":false}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{},{\"type\":\"string\"}]},\"w\":{\"not\":{\"not\":{}}}},\"propertyOrdering\":[\"v\",\"w\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "boolean-additional-properties-schema",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"additionalProperties\":{\"type\":\"string\"}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "snake-case",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "opts": {
+            "type": "object",
+            "additional_properties": false,
+            "any_of": [
+              {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "t": {
+            "type": "array",
+            "prefix_items": [
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"additional_properties\":false,\"any_of\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}]},\"t\":{\"type\":\"array\",\"prefix_items\":[{\"type\":\"string\"}]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}],\"properties\":{}},\"t\":{\"type\":\"array\"}},\"propertyOrdering\":[\"opts\",\"t\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},\"t\":{\"type\":\"array\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},\"t\":{\"type\":\"array\"}},\"propertyOrdering\":[\"opts\",\"t\"]}"
+    },
+    {
+      "name": "snake-case-collision",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "opts": {
+            "type": "object",
+            "additional_properties": false,
+            "additionalProperties": true,
+            "property_ordering": [
+              "a"
+            ],
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"additional_properties\":false,\"additionalProperties\":true,\"property_ordering\":[\"a\"],\"properties\":{\"a\":{\"type\":\"string\"}}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"propertyOrdering\":[\"a\"],\"properties\":{\"a\":{\"type\":\"string\"}}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"propertyOrdering\":[\"a\"],\"properties\":{\"a\":{\"type\":\"string\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"propertyOrdering\":[\"a\"],\"properties\":{\"a\":{\"type\":\"string\"}}}}}"
+    },
+    {
+      "name": "property-ordering-present",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "propertyOrdering": [
+          "b",
+          "a"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"propertyOrdering\":[\"b\",\"a\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"propertyOrdering\":[\"b\",\"a\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"propertyOrdering\":[\"b\",\"a\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"propertyOrdering\":[\"b\",\"a\"]}"
+    },
+    {
+      "name": "property-named-keywords",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "const": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "enum": {
+            "type": "string"
+          },
+          "nullable": {
+            "type": "string"
+          },
+          "not": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "string"
+          },
+          "anyOf": {
+            "type": "string"
+          },
+          "$ref": {
+            "type": "string"
+          },
+          "items": {
+            "type": "string"
+          },
+          "default": {
+            "type": "string"
+          },
+          "required": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"const\":{\"type\":\"string\"},\"type\":{\"type\":\"string\"},\"enum\":{\"type\":\"string\"},\"nullable\":{\"type\":\"string\"},\"not\":{\"type\":\"string\"},\"properties\":{\"type\":\"string\"},\"anyOf\":{\"type\":\"string\"},\"$ref\":{\"type\":\"string\"},\"items\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"required\":{\"type\":\"string\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\"},\"enum\":[{\"type\":\"string\"}],\"nullable\":{\"type\":\"string\"},\"not\":{\"type\":\"string\"},\"properties\":{\"type\":\"string\"},\"anyOf\":{\"type\":\"string\"},\"$ref\":{\"type\":\"string\"},\"items\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"required\":{\"type\":\"string\"}},\"propertyOrdering\":[\"type\",\"enum\",\"nullable\",\"not\",\"properties\",\"anyOf\",\"$ref\",\"items\",\"default\",\"required\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "property-named-type-object",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},\"properties\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"}}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},\"properties\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"}}}},\"propertyOrdering\":[\"type\",\"properties\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},\"properties\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},\"properties\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"}}}},\"propertyOrdering\":[\"type\",\"properties\"]}"
+    },
+    {
+      "name": "property-named-nullable-required",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nullable": {
+            "type": "string"
+          },
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nullable",
+          "a"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"nullable\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}},\"required\":[\"nullable\",\"a\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"nullable\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}},\"required\":[\"nullable\",\"a\"],\"propertyOrdering\":[\"nullable\",\"a\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"nullable\",\"a\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"nullable\",\"a\"],\"propertyOrdering\":[\"nullable\",\"a\"]}"
+    },
+    {
+      "name": "property-named-spilled",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "minimum": {
+            "type": "number"
+          },
+          "examples": {
+            "type": "string"
+          },
+          "default": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "$schema": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"pattern\":{\"type\":\"string\"},\"minimum\":{\"type\":\"number\"},\"examples\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"additionalProperties\":{\"type\":\"string\"},\"$schema\":{\"type\":\"string\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"pattern\":{\"type\":\"string\"},\"minimum\":{\"type\":\"number\"},\"examples\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"additionalProperties\":{\"type\":\"string\"},\"$schema\":{\"type\":\"string\"}},\"propertyOrdering\":[\"format\",\"pattern\",\"minimum\",\"examples\",\"default\",\"additionalProperties\",\"$schema\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"pattern\":{\"type\":\"string\"},\"minimum\":{\"type\":\"number\"},\"examples\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"additionalProperties\":{\"type\":\"string\"},\"$schema\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"},\"pattern\":{\"type\":\"string\"},\"minimum\":{\"type\":\"number\"},\"examples\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"additionalProperties\":{\"type\":\"string\"},\"$schema\":{\"type\":\"string\"}},\"propertyOrdering\":[\"format\",\"pattern\",\"minimum\",\"examples\",\"default\",\"additionalProperties\",\"$schema\"]}"
+    },
+    {
+      "name": "nested-deep",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "l1": {
+            "type": "object",
+            "properties": {
+              "l2": {
+                "type": "object",
+                "properties": {
+                  "l3": {
+                    "type": "object",
+                    "properties": {
+                      "l4": {
+                        "type": "object",
+                        "properties": {
+                          "l5": {
+                            "type": "object",
+                            "properties": {
+                              "l6": {
+                                "type": "object",
+                                "properties": {
+                                  "leaf": {
+                                    "anyOf": [
+                                      {
+                                        "enum": [
+                                          "z"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "leaf"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"l1\":{\"type\":\"object\",\"properties\":{\"l2\":{\"type\":\"object\",\"properties\":{\"l3\":{\"type\":\"object\",\"properties\":{\"l4\":{\"type\":\"object\",\"properties\":{\"l5\":{\"type\":\"object\",\"properties\":{\"l6\":{\"type\":\"object\",\"properties\":{\"leaf\":{\"anyOf\":[{\"enum\":[\"z\"],\"type\":\"string\"},{\"type\":\"null\"}]}},\"required\":[\"leaf\"]}}}}}}}}}}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"l1\":{\"type\":\"object\",\"properties\":{\"l2\":{\"type\":\"object\",\"properties\":{\"l3\":{\"type\":\"object\",\"properties\":{\"l4\":{\"type\":\"object\",\"properties\":{\"l5\":{\"type\":\"object\",\"properties\":{\"l6\":{\"type\":\"object\",\"properties\":{\"leaf\":{\"nullable\":true,\"enum\":[\"z\"],\"type\":\"string\"}},\"required\":[\"leaf\"]}}}}}}}}}}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"l1\":{\"type\":\"object\",\"properties\":{\"l2\":{\"type\":\"object\",\"properties\":{\"l3\":{\"type\":\"object\",\"properties\":{\"l4\":{\"type\":\"object\",\"properties\":{\"l5\":{\"type\":\"object\",\"properties\":{\"l6\":{\"type\":\"object\",\"properties\":{\"leaf\":{\"enum\":[\"z\"],\"type\":\"string\"}},\"required\":[]}}}}}}}}}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"l1\":{\"type\":\"object\",\"properties\":{\"l2\":{\"type\":\"object\",\"properties\":{\"l3\":{\"type\":\"object\",\"properties\":{\"l4\":{\"type\":\"object\",\"properties\":{\"l5\":{\"type\":\"object\",\"properties\":{\"l6\":{\"type\":\"object\",\"properties\":{\"leaf\":{\"enum\":[\"z\"],\"type\":\"string\"}},\"required\":[\"leaf\"]}}}}}}}}}}}}}"
+    },
+    {
+      "name": "items-nested-arrays",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"grid\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":[\"number\",\"null\"]}}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"grid\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"number\",\"nullable\":true}}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"grid\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"grid\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}}"
+    },
+    {
+      "name": "spill",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z]+$",
+            "format": "uuid",
+            "default": "abc",
+            "examples": [
+              "x"
+            ],
+            "$comment": "c"
+          },
+          "n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9,
+            "description": "Count."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"pattern\":\"^[a-z]+$\",\"format\":\"uuid\",\"default\":\"abc\",\"examples\":[\"x\"],\"$comment\":\"c\"},\"n\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":9,\"description\":\"Count.\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"default\":\"abc\",\"description\":\"{pattern: \\\"^[a-z]+$\\\", format: \\\"uuid\\\", examples: [\\\"x\\\"]}\"},\"n\":{\"type\":\"integer\",\"description\":\"Count.\\n\\n{minimum: 1, maximum: 9}\"}},\"propertyOrdering\":[\"id\",\"n\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"default\":\"abc\",\"description\":\"{pattern: \\\"^[a-z]+$\\\", format: \\\"uuid\\\", examples: [\\\"x\\\"]}\"},\"n\":{\"type\":\"integer\",\"description\":\"Count.\\n\\n{minimum: 1, maximum: 9}\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"default\":\"abc\",\"description\":\"{pattern: \\\"^[a-z]+$\\\", format: \\\"uuid\\\", examples: [\\\"x\\\"]}\"},\"n\":{\"type\":\"integer\",\"description\":\"Count.\\n\\n{minimum: 1, maximum: 9}\"}},\"propertyOrdering\":[\"id\",\"n\"]}"
+    },
+    {
+      "name": "spill-all-liftable",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "minProperties": 1,
+            "maxProperties": 2,
+            "exclusiveMinimum": 0,
+            "exclusiveMaximum": 10,
+            "multipleOf": 0.5,
+            "minLength": 1,
+            "maxLength": 9
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"minItems\":1,\"maxItems\":4,\"uniqueItems\":true,\"minProperties\":1,\"maxProperties\":2,\"exclusiveMinimum\":0,\"exclusiveMaximum\":10,\"multipleOf\":0.5,\"minLength\":1,\"maxLength\":9}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"minProperties\":1,\"maxProperties\":2,\"description\":\"{minItems: 1, maxItems: 4, uniqueItems: true, exclusiveMinimum: 0, exclusiveMaximum: 10, multipleOf: 0.5, minLength: 1, maxLength: 9}\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"minProperties\":1,\"maxProperties\":2,\"description\":\"{minItems: 1, maxItems: 4, uniqueItems: true, exclusiveMinimum: 0, exclusiveMaximum: 10, multipleOf: 0.5, minLength: 1, maxLength: 9}\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"minProperties\":1,\"maxProperties\":2,\"description\":\"{minItems: 1, maxItems: 4, uniqueItems: true, exclusiveMinimum: 0, exclusiveMaximum: 10, multipleOf: 0.5, minLength: 1, maxLength: 9}\"}}}"
+    },
+    {
+      "name": "spill-existing-description",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "description": "Base.",
+            "format": "date"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"Base.\",\"format\":\"date\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"Base.\\n\\n{format: \\\"date\\\"}\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"Base.\\n\\n{format: \\\"date\\\"}\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":\"Base.\\n\\n{format: \\\"date\\\"}\"}}}"
+    },
+    {
+      "name": "spill-numbers",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "number",
+            "default": 1e+21,
+            "minimum": 0.1,
+            "maximum": 100,
+            "multipleOf": 1e-7,
+            "exclusiveMinimum": 1.5e+300
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\",\"default\":1e+21,\"minimum\":0.1,\"maximum\":100,\"multipleOf\":1e-7,\"exclusiveMinimum\":1.5e+300}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\",\"default\":1e+21,\"description\":\"{minimum: 0.1, maximum: 100, multipleOf: 1e-7, exclusiveMinimum: 1.5e+300}\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\",\"default\":1e+21,\"description\":\"{minimum: 0.1, maximum: 100, multipleOf: 1e-7, exclusiveMinimum: 1.5e+300}\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\",\"default\":1e+21,\"description\":\"{minimum: 0.1, maximum: 100, multipleOf: 1e-7, exclusiveMinimum: 1.5e+300}\"}}}"
+    },
+    {
+      "name": "spill-unicode",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "default": "café   😀 \"q\" \\ \n",
+            "description": "d "
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"default\":\"café   😀 \\\"q\\\" \\\\ \\n\",\"description\":\"d \"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"default\":\"café   😀 \\\"q\\\" \\\\ \\n\",\"description\":\"d \"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"default\":\"café   😀 \\\"q\\\" \\\\ \\n\",\"description\":\"d \"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"default\":\"café   😀 \\\"q\\\" \\\\ \\n\",\"description\":\"d \"}}}"
+    },
+    {
+      "name": "spill-nested-default",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "object",
+            "default": {
+              "a": [
+                1,
+                {
+                  "b": null
+                }
+              ],
+              "c": "d"
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"default\":{\"a\":[1,{\"b\":null}],\"c\":\"d\"}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"default\":{\"a\":[1,{\"b\":null}],\"c\":\"d\"},\"properties\":{}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"default\":{\"a\":[1,{\"b\":null}],\"c\":\"d\"},\"properties\":{}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"default\":{\"a\":[1,{\"b\":null}],\"c\":\"d\"},\"properties\":{}}}}"
+    },
+    {
+      "name": "spill-on-combiner-node",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "default": "x",
+            "format": "f"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"default\":\"x\",\"format\":\"f\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"default\":\"x\",\"description\":\"{format: \\\"f\\\"}\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"default\":\"x\",\"description\":\"{format: \\\"f\\\"}\",\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"default\":\"x\",\"description\":\"{format: \\\"f\\\"}\",\"type\":\"string\"}}}"
+    },
+    {
+      "name": "unsupported-non-liftable",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "$id": "x",
+        "$anchor": "y",
+        "$dynamicRef": "z",
+        "$dynamicAnchor": "w",
+        "patternProperties": {
+          "^a": {
+            "type": "string"
+          }
+        },
+        "propertyNames": {
+          "pattern": "^a"
+        },
+        "unevaluatedProperties": false,
+        "dependentSchemas": {
+          "a": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "dependentRequired": {
+          "a": [
+            "b"
+          ]
+        },
+        "contains": {
+          "type": "string"
+        },
+        "minContains": 1,
+        "maxContains": 2,
+        "contentEncoding": "base64",
+        "contentMediaType": "x/y",
+        "contentSchema": {
+          "type": "string"
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"$id\":\"x\",\"$anchor\":\"y\",\"$dynamicRef\":\"z\",\"$dynamicAnchor\":\"w\",\"patternProperties\":{\"^a\":{\"type\":\"string\"}},\"propertyNames\":{\"pattern\":\"^a\"},\"unevaluatedProperties\":false,\"dependentSchemas\":{\"a\":{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}},\"dependentRequired\":{\"a\":[\"b\"]},\"contains\":{\"type\":\"string\"},\"minContains\":1,\"maxContains\":2,\"contentEncoding\":\"base64\",\"contentMediaType\":\"x/y\",\"contentSchema\":{\"type\":\"string\"}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "mcp-annotations",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "x-mcp-header": "Region",
+            "deprecated": true,
+            "readOnly": true,
+            "writeOnly": false,
+            "$comment": "note",
+            "title": "A"
+          }
+        },
+        "title": "Tool",
+        "x-vendor": {
+          "k": 1
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-mcp-header\":\"Region\",\"deprecated\":true,\"readOnly\":true,\"writeOnly\":false,\"$comment\":\"note\",\"title\":\"A\"}},\"title\":\"Tool\",\"x-vendor\":{\"k\":1}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"title\":\"A\"}},\"title\":\"Tool\",\"x-vendor\":{\"k\":1}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"title\":\"A\"}},\"title\":\"Tool\",\"x-vendor\":{\"k\":1}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"title\":\"A\"}},\"title\":\"Tool\",\"x-vendor\":{\"k\":1}}"
+    },
+    {
+      "name": "unknown-keywords",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "x-custom": [
+              1,
+              2
+            ],
+            "foo": {
+              "anyOf": []
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-custom\":[1,2],\"foo\":{\"anyOf\":[]}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-custom\":[1,2],\"foo\":{\"anyOf\":[]}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-custom\":[1,2],\"foo\":{\"anyOf\":[]}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-custom\":[1,2],\"foo\":{\"anyOf\":[]}}}}"
+    },
+    {
+      "name": "title-description-defaults",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "title": "T",
+            "description": "D",
+            "default": "x"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"title\":\"T\",\"description\":\"D\",\"default\":\"x\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"title\":\"T\",\"description\":\"D\",\"default\":\"x\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"title\":\"T\",\"description\":\"D\",\"default\":\"x\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"title\":\"T\",\"description\":\"D\",\"default\":\"x\"}}}"
+    },
+    {
+      "name": "annotation-wrong-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "deprecated": "yes"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"deprecated\":\"yes\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "if-then-else",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "if": {
+          "properties": {
+            "a": {
+              "const": "x"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "a"
+          ]
+        },
+        "else": {}
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"if\":{\"properties\":{\"a\":{\"const\":\"x\"}}},\"then\":{\"required\":[\"a\"]},\"else\":true}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"if\":{\"properties\":{\"a\":{\"enum\":[\"x\"],\"type\":\"string\"}}},\"then\":{\"required\":[\"a\"]},\"else\":{}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"if\":{\"properties\":{\"a\":{\"enum\":[\"x\"],\"type\":\"string\"}}},\"then\":{\"required\":[\"a\"]},\"else\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"if\":{\"properties\":{\"a\":{\"enum\":[\"x\"],\"type\":\"string\"}}},\"then\":{\"required\":[\"a\"]},\"else\":{}}"
+    },
+    {
+      "name": "not-enum",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "s": {
+            "type": "string",
+            "not": {
+              "enum": [
+                1
+              ]
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"not\":{\"enum\":[1],\"type\":\"number\"}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "not-const",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "t": {
+            "type": "string",
+            "not": {
+              "const": "z"
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"string\",\"not\":{\"const\":\"z\"}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"t\":{\"type\":\"string\",\"not\":{\"enum\":[\"z\"],\"type\":\"string\"}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "not-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "t": {
+            "not": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"t\":{\"not\":{\"type\":\"string\"}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"t\":{\"not\":{\"type\":\"string\"}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "not-false-root",
+      "parameters": {
+        "not": false
+      },
+      "wire": "{\"not\":false}",
+      "google": "{\"not\":{\"not\":{}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-required-duplicates",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a",
+          "a"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\",\"a\"]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\",\"a\"]}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}"
+    },
+    {
+      "name": "invalid-required-string",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": "a"
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":\"a\"}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":\"a\"}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-required-nonstring-no-props",
+      "parameters": {
+        "type": "object",
+        "required": [
+          "a",
+          1
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"required\":[\"a\",1]}",
+      "google": "{\"type\":\"object\",\"required\":[\"a\",1],\"properties\":{}}",
+      "claude": "{\"type\":\"object\",\"required\":[\"a\"],\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"required\":[\"a\"],\"properties\":{}}"
+    },
+    {
+      "name": "invalid-enum-empty",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "enum": []
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":[]}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "invalid-enum-not-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "enum": "a"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":\"a\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"enum\":\"a\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-enum-duplicate-numbers",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "enum": [
+              1,
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[1,1,2],\"type\":\"number\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"number\"}}}"
+    },
+    {
+      "name": "invalid-type-name",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "str"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"str\"}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"str\"}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-type-number",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": 5
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":5}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":5}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-min-properties-negative",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "object",
+            "minProperties": -1
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"minProperties\":-1}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"minProperties\":-1,\"properties\":{}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-min-properties-float",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "object",
+            "minProperties": 1.5
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"minProperties\":1.5}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"minProperties\":1.5,\"properties\":{}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "valid-min-properties",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 3
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"minProperties\":1,\"maxProperties\":3}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"minProperties\":1,\"maxProperties\":3,\"properties\":{}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"minProperties\":1,\"maxProperties\":3,\"properties\":{}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"object\",\"minProperties\":1,\"maxProperties\":3,\"properties\":{}}}}"
+    },
+    {
+      "name": "invalid-properties-array",
+      "parameters": {
+        "type": "object",
+        "properties": []
+      },
+      "wire": "{\"type\":\"object\",\"properties\":[]}",
+      "google": "{\"type\":\"object\",\"properties\":[]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-properties-nonschema-value",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": 5
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":5}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":5}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-properties-null-value",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": null
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":null}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":null}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-items-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "array",
+            "items": null
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":null}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":null}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-nested-schema",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "array",
+            "items": {
+              "type": "nope"
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"nope\"}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"nope\"}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-additional-items-survives",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "definitions": 3
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}"
+    },
+    {
+      "name": "invalid-description-non-string",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "string",
+            "description": 5
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":5}}}",
+      "google": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":5}}}",
+      "claude": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":5}}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"description\":5}}}"
+    },
+    {
+      "name": "invalid-if-string",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "if": "x"
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"if\":\"x\"}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"if\":\"x\"}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "invalid-then-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "then": []
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"then\":[]}",
+      "google": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"then\":[]}",
+      "claude": "{\"type\":\"object\",\"properties\":{}}",
+      "gemini": "{\"type\":\"object\",\"properties\":{}}"
+    }
+  ]
+}

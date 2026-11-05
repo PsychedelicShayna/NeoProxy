@@ -201,14 +201,22 @@ func (h *Handler) completeCodexLogin(ctx context.Context, state string, storage 
 	CompleteOAuthSession(state)
 }
 
+// RequestAntigravityToken drives NeoPi's google-antigravity sign-in from the
+// dashboard: an authorization-code grant with PKCE and a hex state through the
+// rule's 127.0.0.1:51121 callback, then userinfo and Cloud Code Assist project
+// discovery.
 func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 	ctx := context.Background()
 	ctx = PopulateAuthContext(ctx, c)
 
 	fmt.Println("Initializing Antigravity authentication...")
 
-	authSvc := antigravity.NewAntigravityAuth(h.cfg, nil)
-
+	pkce, errPKCE := antigravity.GeneratePKCE()
+	if errPKCE != nil {
+		log.Errorf("Failed to generate PKCE codes: %v", errPKCE)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate pkce codes"})
+		return
+	}
 	state, errState := misc.GenerateRandomState()
 	if errState != nil {
 		log.Errorf("Failed to generate state parameter: %v", errState)
@@ -216,8 +224,9 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 		return
 	}
 
-	redirectURI := fmt.Sprintf("http://localhost:%d/oauth-callback", antigravity.CallbackPort)
-	authURL := authSvc.BuildAuthURL(state, redirectURI)
+	redirectURI := antigravity.RedirectURI(antigravity.CallbackPort)
+	authURL := antigravity.BuildAuthURL(state, pkce.Challenge, redirectURI)
+	httpClient := util.SetProxy(&h.cfg.SDKConfig, &http.Client{})
 
 	RegisterOAuthSession(state, "antigravity")
 
@@ -280,73 +289,40 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 			time.Sleep(500 * time.Millisecond)
 		}
 
-		tokenResp, errToken := authSvc.ExchangeCodeForTokens(ctx, authCode, redirectURI)
-		if errToken != nil {
-			log.Errorf("Failed to exchange token: %v", errToken)
+		credential, errExchange := antigravity.Exchange(ctx, httpClient, authCode, redirectURI, pkce.Verifier)
+		if errExchange != nil {
+			log.Errorf("Failed to exchange token: %v", errExchange)
 			SetOAuthSessionError(state, "Failed to exchange token")
 			return
 		}
-
-		accessToken := strings.TrimSpace(tokenResp.AccessToken)
-		if accessToken == "" {
+		if strings.TrimSpace(credential.Access) == "" {
 			log.Error("antigravity: token exchange returned empty access token")
 			SetOAuthSessionError(state, "Failed to exchange token")
 			return
 		}
-
-		email, errInfo := authSvc.FetchUserInfo(ctx, accessToken)
-		if errInfo != nil {
-			log.Errorf("Failed to fetch user info: %v", errInfo)
-			SetOAuthSessionError(state, "Failed to fetch user info")
+		if strings.TrimSpace(credential.ProjectID) == "" {
+			log.Error("antigravity: project discovery returned empty project")
+			SetOAuthSessionError(state, "Failed to discover project")
 			return
-		}
-		email = strings.TrimSpace(email)
-		if email == "" {
-			log.Error("antigravity: user info returned empty email")
-			SetOAuthSessionError(state, "Failed to fetch user info")
-			return
-		}
-
-		projectID := ""
-		if accessToken != "" {
-			fetchedProjectID, errProject := authSvc.FetchProjectID(ctx, accessToken)
-			if errProject != nil {
-				log.Warnf("antigravity: failed to fetch project ID: %v", errProject)
-			} else {
-				projectID = fetchedProjectID
-				log.Infof("antigravity: obtained project ID %s", util.HideAPIKey(projectID))
-			}
 		}
 
 		now := time.Now()
-		metadata := map[string]any{
-			"type":          "antigravity",
-			"access_token":  tokenResp.AccessToken,
-			"refresh_token": tokenResp.RefreshToken,
-			"expires_in":    tokenResp.ExpiresIn,
-			"timestamp":     now.UnixMilli(),
-			"expired":       now.Add(time.Duration(tokenResp.ExpiresIn) * time.Second).Format(time.RFC3339),
+		record := antigravity.BuildAuth(credential, now)
+		usage, errUsage := antigravity.FetchUsage(ctx, antigravity.UsageRequest{
+			Client:      httpClient,
+			AccessToken: credential.Access,
+			ProjectID:   credential.ProjectID,
+			Email:       credential.Email,
+			ExpiresAt:   credential.ExpiresAt,
+		})
+		if errUsage != nil {
+			log.Warnf("antigravity: usage report unavailable: %v", errUsage)
 		}
-		if email != "" {
-			metadata["email"] = email
-		}
-		if projectID != "" {
-			metadata["project_id"] = projectID
-		}
-
-		fileName := antigravity.CredentialFileName(email)
-		label := strings.TrimSpace(email)
-		if label == "" {
-			label = "antigravity"
+		antigravity.ApplyUsage(record, usage, now)
+		if credential.ProjectID != "" {
+			log.Infof("antigravity: obtained project ID %s", util.HideAPIKey(credential.ProjectID))
 		}
 
-		record := &coreauth.Auth{
-			ID:       fileName,
-			Provider: "antigravity",
-			FileName: fileName,
-			Label:    label,
-			Metadata: metadata,
-		}
 		if errGuard := guardOAuthSessionPendingForSave(state, "antigravity"); errGuard != nil {
 			return
 		}
@@ -359,8 +335,8 @@ func (h *Handler) RequestAntigravityToken(c *gin.Context) {
 
 		CompleteOAuthSession(state)
 		fmt.Printf("Authentication successful! Token saved to %s\n", savedPath)
-		if projectID != "" {
-			fmt.Printf("Using GCP project: %s\n", util.HideAPIKey(projectID))
+		if credential.ProjectID != "" {
+			fmt.Printf("Using GCP project: %s\n", util.HideAPIKey(credential.ProjectID))
 		}
 		fmt.Println("You can now use Antigravity services through this CLI")
 	}()

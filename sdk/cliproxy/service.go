@@ -131,7 +131,6 @@ type Service struct {
 	homePluginSyncKey            string
 	homePluginSyncFetch          func(context.Context, sdkpluginstore.PluginSyncRequest) (sdkpluginstore.PluginSyncResponse, error)
 	homePluginDeleteTask         func(context.Context, *config.Config, home.PluginTask) homeplugins.SyncReport
-	antigravityProbeWg           sync.WaitGroup
 	// Claude probes share the service lifetime and never rotate credentials.
 	claudeDiscoveryContext context.Context // protected by cfgMu
 	claudeDiscoveryMu      sync.Mutex
@@ -139,17 +138,6 @@ type Service struct {
 	codexDiscoveryContext  context.Context // protected by cfgMu
 	codexDiscoveryMu       sync.Mutex
 	codexCatalog           map[string]*codexModelCatalogEntry
-	// antigravityContext is protected by cfgMu and owns background model probes.
-	antigravityContext       context.Context
-	antigravityProbeMu       sync.Mutex
-	antigravityAccountProbes map[string]map[*antigravityAccountProbe]struct{}
-	antigravityRefreshWake   chan struct{}
-	// antigravityRefreshPending is protected by antigravityProbeMu. Each entry
-	// owns one worker and at most one queued snapshot shared by all probe entry
-	// points. A nil value means the worker is running without a queued successor.
-	antigravityRefreshPending map[string]*antigravityModelRefreshRequest
-	antigravityPersistPending map[string]*antigravityHintPersistRequest
-	antigravityPersistActive  map[string]*antigravityHintPersistRequest
 }
 
 // SetResultPolicy sets an execution result policy on the underlying core auth manager.

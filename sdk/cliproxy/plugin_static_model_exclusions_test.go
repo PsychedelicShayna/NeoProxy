@@ -173,11 +173,10 @@ func TestRegisterModelsForAuth_PluginStaticExclusionsDoNotMatchNativeAliases(t *
 	}
 }
 
-func TestAntigravityModelsForHints_PluginStaticModelsFollowExclusions(t *testing.T) {
+func TestRegisterModelsForAuth_AntigravityPluginStaticModelsFollowExclusions(t *testing.T) {
 	const provider = "antigravity"
 	cfg := &config.Config{OAuthExcludedModels: map[string][]string{provider: {pluginStaticGlobalModel}}}
 	service := &Service{cfg: cfg, pluginHost: newPluginStaticModelHost(t, provider)}
-	hints := antigravityModelCapabilityHints{ModelIDs: map[string]struct{}{"gemini-3.1-flash-lite": {}}}
 
 	for _, tc := range []struct {
 		name          string
@@ -189,18 +188,20 @@ func TestAntigravityModelsForHints_PluginStaticModelsFollowExclusions(t *testing
 		{name: "credential rules override global", ownRules: pluginStaticCredentialModel, wantGlobal: true, wantCredValue: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			auth := antigravityTestAuth(t.Name(), "http://127.0.0.1:1")
+			auth := &coreauth.Auth{ID: t.Name(), Provider: provider, Status: coreauth.StatusActive, Attributes: map[string]string{"auth_kind": "oauth"}}
 			if tc.ownRules != "" {
 				auth.Attributes["excluded_models"] = tc.ownRules
 			}
+			seedAntigravityDiscovery(t, auth.ID, registry.AntigravityBundledModels())
+			reg := GlobalModelRegistry()
+			reg.UnregisterClient(auth.ID)
+			t.Cleanup(func() { reg.UnregisterClient(auth.ID) })
 
-			present := make(map[string]bool)
-			for _, model := range service.antigravityModelsForHints(auth, hints) {
-				present[model.ID] = true
-			}
+			service.registerModelsForAuth(t.Context(), auth)
 
-			if present[pluginStaticGlobalModel] != tc.wantGlobal || present[pluginStaticCredentialModel] != tc.wantCredValue {
-				t.Fatalf("plugin static models = (%t,%t), want (%t,%t); models = %v", present[pluginStaticGlobalModel], present[pluginStaticCredentialModel], tc.wantGlobal, tc.wantCredValue, present)
+			gotGlobal, gotCred := reg.ClientSupportsModel(auth.ID, pluginStaticGlobalModel), reg.ClientSupportsModel(auth.ID, pluginStaticCredentialModel)
+			if gotGlobal != tc.wantGlobal || gotCred != tc.wantCredValue {
+				t.Fatalf("plugin static models = (%t,%t), want (%t,%t)", gotGlobal, gotCred, tc.wantGlobal, tc.wantCredValue)
 			}
 		})
 	}

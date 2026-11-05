@@ -92,7 +92,6 @@ func detectChangedProviders(oldData, newData *staticModelsJSON) []string {
 		{"gemini-interactions", oldData.Gemini, newData.Gemini},
 		{"vertex", oldData.Vertex, newData.Vertex},
 		{"aistudio", oldData.AIStudio, newData.AIStudio},
-		{"antigravity", oldData.Antigravity, newData.Antigravity},
 		{"xai", oldData.XAI, newData.XAI},
 		{"meta", oldData.Meta, newData.Meta},
 	}
@@ -215,7 +214,6 @@ func validateModelsCatalog(data *staticModelsJSON) error {
 		{name: "gemini", models: data.Gemini},
 		{name: "vertex", models: data.Vertex},
 		{name: "aistudio", models: data.AIStudio},
-		{name: "antigravity", models: data.Antigravity},
 		{name: "xai", models: data.XAI},
 		{name: "meta", models: data.Meta},
 	}

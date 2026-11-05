@@ -1117,26 +1117,20 @@ udp-port-max = 0
 #     username: "user"
 #     credential: "secret"
 
-# Antigravity provider behavior.
-[oauth.providers.antigravity]
-# sensitive-words:              # optional: words to obfuscate with zero-width characters in system instructions
-#   - "API"
-#   - "proxy"
-# connection-pool:              # optional: upstream HTTP connection pool settings
-#   enabled: false             # whether to enable connection pooling (default: false)
-#   idle-conn-timeout: "30s"    # idle keep-alive timeout (default: 30s, capped at 210s)
-#   max-idle-conns-per-host: 2  # max idle connections per host per credential (default: 2)
-# Use credits as a last resort after free-tier Claude quota is exhausted.
-antigravity-credits = true
-# Signature cache validation for thinking blocks (Antigravity/Claude).
-# When true (default), cached signatures are preferred and validated.
-# When false, client signatures are used directly after normalization (bypass mode for testing).
-# signature-cache-enabled: true
-
-# Bypass mode signature validation strictness (only applies when signature cache is disabled).
-# When true, validates full Claude protobuf tree (Field 2 -> Field 1 structure).
-# When false (default), only checks R/E prefix + base64 + first byte 0x12.
-# signature-bypass-strict: false
+# Antigravity has no provider-specific tunables. Sign-in, token refresh, model discovery,
+# and Cloud Code Assist requests follow NeoPi's own Antigravity behavior.
+# Only the thinking-block signature options below are configurable. Uncomment to override:
+#
+# antigravity:
+#   # Signature cache validation for thinking blocks (Antigravity/Claude).
+#   # When true (default), cached signatures are preferred and validated.
+#   # When false, client signatures are used directly after normalization (bypass mode for testing).
+#   signature-cache-enabled: true
+#
+#   # Bypass mode signature validation strictness (only applies when signature cache is disabled).
+#   # When true, validates full Claude protobuf tree (Field 2 -> Field 1 structure).
+#   # When false (default), only checks R/E prefix + base64 + first byte 0x12.
+#   signature-bypass-strict: false
 
 # Image and video behavior.
 [multimedia]
@@ -1277,4 +1271,3 @@ mode = "safe"
 #   quota-exceeded:
 #     switch-project: true
 #     switch-preview-model: true
-# antigravity-credits moved to oauth.providers.antigravity.antigravity-credits.

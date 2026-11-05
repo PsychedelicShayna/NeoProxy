@@ -287,6 +287,10 @@ func lookupOAuthModelCapability(auth *Auth, upstreamModel string) (*registry.Mod
 		if len(models) == 0 {
 			models = registry.DevinBundledModels()
 		}
+	case "antigravity":
+		if len(models) == 0 {
+			models = registry.AntigravityBundledModels()
+		}
 	default:
 		return nil, false
 	}

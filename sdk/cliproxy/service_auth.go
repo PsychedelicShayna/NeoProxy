@@ -101,9 +101,8 @@ func (s *Service) handleAuthUpdates(ctx context.Context, updates []watcher.AuthU
 	if s == nil {
 		return
 	}
-	// Keep this path limited to the targeted auths. Global plugin rebuilds and
-	// in-flight Antigravity probes can hold authUpdateMu for minutes and stall
-	// Management API PATCH responses.
+	// Keep this path limited to the targeted auths. Global plugin rebuilds can
+	// hold authUpdateMu for minutes and stall Management API PATCH responses.
 	s.authUpdateMu.Lock()
 	locked := true
 	defer func() {
@@ -429,14 +428,6 @@ func (s *Service) prepareCoreAuthForModelRegistration(ctx context.Context, auth 
 			return existing
 		}
 		auth.CreatedAt = existing.CreatedAt
-		if existing.Metadata != nil {
-			if persistedHints, hasHints := existing.Metadata[antigravityPersistedHintsMetaKey]; hasHints {
-				if auth.Metadata == nil {
-					auth.Metadata = make(map[string]any)
-				}
-				auth.Metadata[antigravityPersistedHintsMetaKey] = persistedHints
-			}
-		}
 		if !existing.Disabled && existing.Status != coreauth.StatusDisabled && !auth.Disabled && auth.Status != coreauth.StatusDisabled {
 			auth.LastRefreshedAt = existing.LastRefreshedAt
 			auth.NextRefreshAfter = existing.NextRefreshAfter
@@ -470,7 +461,6 @@ func (s *Service) prepareCoreAuthForModelRegistration(ctx context.Context, auth 
 		}
 		auth = current
 	}
-	s.cancelStaleAntigravityProbes(auth.ID)
 	return auth
 }
 
@@ -647,7 +637,6 @@ func (s *Service) applyCoreAuthRemoval(ctx context.Context, id string) {
 	// republish its cached models after the registry has been cleared.
 	s.coreManager.Remove(ctx, id)
 	GlobalModelRegistry().UnregisterClient(id)
-	s.cancelStaleAntigravityProbes(id)
 	forgetXAIModelDiscovery(provider, id)
 	forgetNeoPiDiscovery(id)
 	s.forgetClaudeModelDiscovery(id)

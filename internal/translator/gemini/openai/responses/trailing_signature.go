@@ -12,7 +12,7 @@ import (
 )
 
 // Keep text signature carriers off the client-visible reasoning timeline. The
-// existing replay cache bounds their lifetime and size and supports Home storage.
+// Gemini text signature cache bounds their lifetime and size and supports Home storage.
 func cacheGeminiResponsesTextSignatures(modelName, messageID, text string, signatures []string) bool {
 	if messageID == "" || text == "" {
 		return false
@@ -28,7 +28,7 @@ func cacheGeminiResponsesTextSignatures(modelName, messageID, text string, signa
 		item, _ = sjson.SetBytes(item, "targetHash", textHash)
 		items = append(items, item)
 	}
-	return cache.CacheAntigravityReasoningReplayItems(thinking.ParseSuffix(modelName).ModelName, "gemini-responses-text:"+messageID, items)
+	return cache.CacheGeminiResponsesTextSignatureItems(thinking.ParseSuffix(modelName).ModelName, "gemini-responses-text:"+messageID, items)
 }
 
 func restoreGeminiResponsesTextSignatures(modelName string, items []gjson.Result) []gjson.Result {
@@ -44,7 +44,7 @@ func restoreGeminiResponsesTextSignatures(modelName string, items []gjson.Result
 		if !ok || messageID == "" {
 			continue
 		}
-		cached, found := cache.GetAntigravityReasoningReplayItems(thinking.ParseSuffix(modelName).ModelName, "gemini-responses-text:"+messageID)
+		cached, found := cache.GetGeminiResponsesTextSignatureItems(thinking.ParseSuffix(modelName).ModelName, "gemini-responses-text:"+messageID)
 		if !found {
 			continue
 		}

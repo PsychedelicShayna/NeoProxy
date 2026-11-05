@@ -1,0 +1,3685 @@
+{
+ "source": "NeoPi OWN compat/rules.json",
+ "taxonomy": {
+  "classes": [
+   {
+    "id": "ai21",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "jamba"
+     },
+     {
+      "kind": "namespace",
+      "token": "ai21"
+     }
+    ],
+    "families": [
+     {
+      "id": "jamba",
+      "glob": "*jamba*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "amazon",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "nova"
+     },
+     {
+      "kind": "bounded",
+      "token": "titan"
+     },
+     {
+      "kind": "namespace",
+      "token": "amazon",
+      "bounded": true
+     }
+    ],
+    "families": [
+     {
+      "id": "nova",
+      "glob": "*nova*",
+      "priority": 0
+     },
+     {
+      "id": "titan",
+      "glob": "*titan*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "anthropic",
+    "matchers": [
+     {
+      "kind": "namespace",
+      "token": "anthropic",
+      "bounded": true
+     },
+     {
+      "kind": "bounded",
+      "token": "anthropic"
+     },
+     {
+      "kind": "bounded",
+      "token": "claude"
+     }
+    ],
+    "families": [
+     {
+      "id": "opus",
+      "glob": "*opus*",
+      "priority": 0
+     },
+     {
+      "id": "sonnet",
+      "glob": "*sonnet*",
+      "priority": 0
+     },
+     {
+      "id": "haiku",
+      "glob": "*haiku*",
+      "priority": 0
+     },
+     {
+      "id": "fable",
+      "glob": "*fable*",
+      "priority": 0
+     },
+     {
+      "id": "mythos",
+      "glob": "*mythos*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [
+     {
+      "prefix": "claude-",
+      "anywhere": true
+     }
+    ],
+    "skipBare": [],
+    "overrides": [
+     {
+      "id": "nanogpt-gemma-claude-opus-distill-family",
+      "rationale": "The reviewed distillation lineage follows its Claude Opus teacher rather than the student architecture",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "Gemma-4-31B-Claude-4.6-Opus-Reasoning-Distilled",
+      "provider": "nanogpt",
+      "logical": "Gemma-4-31B-Claude-4.6-Opus-Reasoning-Distilled",
+      "class": "anthropic",
+      "family": "opus"
+     },
+     {
+      "id": "nanogpt-qwen-claude-opus-distill-family",
+      "rationale": "The reviewed distillation lineage follows its Claude Opus teacher rather than the student architecture",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-Derestricted",
+      "provider": "nanogpt",
+      "logical": "Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-Derestricted",
+      "class": "anthropic",
+      "family": "opus"
+     },
+     {
+      "id": "nanogpt-qwen-claude-opus-distill-lite-family",
+      "rationale": "The reviewed lite distillation lineage follows its Claude Opus teacher rather than the student architecture",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-Derestricted-Lite",
+      "provider": "nanogpt",
+      "logical": "Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-Derestricted-Lite",
+      "class": "anthropic",
+      "family": "opus"
+     }
+    ]
+   },
+   {
+    "id": "baidu",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "ernie"
+     }
+    ],
+    "families": [
+     {
+      "id": "ernie",
+      "glob": "*ernie*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "bytedance",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "doubao"
+     }
+    ],
+    "families": [
+     {
+      "id": "doubao",
+      "glob": "*doubao*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "cohere",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "command"
+     },
+     {
+      "kind": "namespace",
+      "token": "cohere"
+     }
+    ],
+    "families": [
+     {
+      "id": "command",
+      "glob": "*command*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "deepseek",
+    "matchers": [
+     {
+      "kind": "namespace",
+      "token": "deepseek",
+      "bounded": true
+     },
+     {
+      "kind": "bounded",
+      "token": "deepseek"
+     }
+    ],
+    "families": [
+     {
+      "id": "r1",
+      "glob": "*deepseek-r1*",
+      "priority": 0
+     },
+     {
+      "id": "reasoner",
+      "glob": "*deepseek-reasoner*",
+      "priority": 0
+     },
+     {
+      "id": "flash",
+      "glob": "*deepseek*v4*flash*",
+      "priority": 0
+     },
+     {
+      "id": "flash",
+      "glob": "*deepseek-flash",
+      "priority": 0
+     },
+     {
+      "id": "pro",
+      "glob": "*deepseek*v4*pro*",
+      "priority": 0
+     },
+     {
+      "id": "v4",
+      "glob": "*deepseek-v4*",
+      "priority": 0
+     },
+     {
+      "id": "v3",
+      "glob": "*deepseek-v3*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [
+     {
+      "prefix": "deepseek-v",
+      "anywhere": true
+     }
+    ],
+    "skipBare": [],
+    "overrides": [
+     {
+      "id": "deepseek-bare-flash-v4-1",
+      "rationale": "The first-party bare Flash alias serves DeepSeek V4.1 Flash, not V4 Flash",
+      "provenance": "providers/deepseek.kdl",
+      "model": "deepseek-flash",
+      "provider": "deepseek",
+      "class": "deepseek",
+      "family": "flash",
+      "revision": "4.1.0"
+     },
+     {
+      "id": "opencode-go-bare-flash-v4-1",
+      "rationale": "OpenCode Go's bare Flash lane shares the reviewed V4.1 Flash deployment contract",
+      "provenance": "providers/opencode-go.kdl",
+      "model": "deepseek-flash",
+      "provider": "opencode-go",
+      "class": "deepseek",
+      "family": "flash",
+      "revision": "4.1.0"
+     },
+     {
+      "id": "vercel-deepseek-v3-2-thinking-product",
+      "rationale": "Oracle exposes this independently priced product rather than an effort route",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "deepseek-v3.2-thinking",
+      "provider": "vercel-ai-gateway",
+      "logical": "deepseek/deepseek-v3.2-thinking",
+      "class": "deepseek"
+     },
+     {
+      "id": "opencode-zen-big-pickle-family",
+      "rationale": "OpenCode Zen's big-pickle is a DeepSeek reasoning alias whose upstream 400s require exact reasoning_content replay",
+      "provenance": "models.json census",
+      "model": "big-pickle",
+      "provider": "opencode-zen",
+      "class": "deepseek"
+     },
+     {
+      "id": "umans-deepseek-v4-flash-family",
+      "rationale": "The opaque Umans product identifier is backed by the reviewed DeepSeek V4 Flash family",
+      "provenance": "fixtures/llm-oracle/catalog-policy/compat-profiles.json:compat-04",
+      "model": "umans-deepseek-v4-flash-0731",
+      "provider": "umans",
+      "logical": "umans-deepseek-v4-flash-0731",
+      "class": "deepseek"
+     },
+     {
+      "id": "umans-deepseek-v4-flash-lab-family",
+      "rationale": "The opaque Umans lab product identifier is backed by the reviewed DeepSeek V4 Flash family",
+      "provenance": "fixtures/llm-oracle/catalog-policy/compat-profiles.json:compat-04",
+      "model": "umans-deepseek-v4-flash-0731-lab",
+      "provider": "umans",
+      "logical": "umans-deepseek-v4-flash-0731-lab",
+      "class": "deepseek"
+     },
+     {
+      "id": "venice-e2ee-deepseek-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed DeepSeek family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-deepseek-v4-flash",
+      "provider": "venice",
+      "logical": "e2ee-deepseek-v4-flash",
+      "class": "deepseek"
+     }
+    ]
+   },
+   {
+    "id": "gemini",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "gemini"
+     }
+    ],
+    "families": [
+     {
+      "id": "lite",
+      "glob": "*flash-lite*",
+      "priority": 10
+     },
+     {
+      "id": "flash",
+      "glob": "*flash*",
+      "priority": 0
+     },
+     {
+      "id": "pro",
+      "glob": "*pro*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [
+     {
+      "prefix": "gemini-"
+     }
+    ],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "gemma",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "gemma"
+     }
+    ],
+    "families": [],
+    "revisionPrefixes": [
+     {
+      "prefix": "gemma-"
+     }
+    ],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "glm",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "glm"
+     },
+     {
+      "kind": "bounded",
+      "token": "zai-glm"
+     }
+    ],
+    "families": [
+     {
+      "id": "flash",
+      "glob": "*flash*",
+      "priority": 0
+     },
+     {
+      "id": "air",
+      "glob": "*air*",
+      "priority": 0
+     },
+     {
+      "id": "turbo",
+      "glob": "*turbo*",
+      "priority": 0
+     },
+     {
+      "id": "vision",
+      "glob": "*glm-5v*",
+      "priority": 20
+     }
+    ],
+    "revisionPrefixes": [
+     {
+      "prefix": "glm-",
+      "anywhere": true
+     }
+    ],
+    "skipBare": [],
+    "overrides": [
+     {
+      "id": "umans-glm-5-3-flash-lab-family",
+      "rationale": "The opaque Umans lab deployment is backed by the reviewed GLM 5.3 Flash family",
+      "provenance": "models.json census",
+      "model": "umans-glm-5.3-flash-lab",
+      "provider": "umans",
+      "class": "glm"
+     },
+     {
+      "id": "abliteration-glm-5-3-family",
+      "rationale": "Abliteration's Large V2 is an abliterated GLM 5.3 deployment",
+      "provenance": "docs.abliteration.ai/models (2026-09)",
+      "model": "abliterated-model-large-v2",
+      "provider": "abliteration",
+      "class": "glm",
+      "revision": "5.3.0"
+     },
+     {
+      "id": "abliteration-glm-5-2-family",
+      "rationale": "Abliteration's Large is an abliterated GLM 5.2 deployment",
+      "provenance": "docs.abliteration.ai/models (2026-09)",
+      "model": "abliterated-model-large",
+      "provider": "abliteration",
+      "class": "glm",
+      "revision": "5.2.0"
+     },
+     {
+      "id": "abliteration-glm-base-family",
+      "rationale": "Abliteration's base deployment is GLM-derived; the docs do not pin the revision",
+      "provenance": "docs.abliteration.ai/models (2026-09)",
+      "model": "abliterated-model",
+      "provider": "abliteration",
+      "class": "glm"
+     }
+    ]
+   },
+   {
+    "id": "gpt-oss",
+    "matchers": [
+     {
+      "kind": "namespace",
+      "token": "gpt-oss",
+      "bounded": true
+     },
+     {
+      "kind": "bounded",
+      "token": "gpt-oss"
+     }
+    ],
+    "families": [
+     {
+      "id": "120b",
+      "glob": "*gpt-oss-120b*",
+      "priority": 0
+     },
+     {
+      "id": "20b",
+      "glob": "*gpt-oss-20b*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": [
+     {
+      "id": "venice-e2ee-gpt-oss-120b-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed GPT OSS family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-gpt-oss-120b-p",
+      "provider": "venice",
+      "logical": "e2ee-gpt-oss-120b-p",
+      "class": "gpt-oss"
+     },
+     {
+      "id": "venice-e2ee-gpt-oss-20b-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed GPT OSS family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-gpt-oss-20b-p",
+      "provider": "venice",
+      "logical": "e2ee-gpt-oss-20b-p",
+      "class": "gpt-oss"
+     },
+     {
+      "id": "venice-openai-gpt-oss-family",
+      "rationale": "The reviewed Venice deployment belongs to the GPT OSS family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "openai-gpt-oss-120b",
+      "provider": "venice",
+      "logical": "openai-gpt-oss-120b",
+      "class": "gpt-oss"
+     }
+    ]
+   },
+   {
+    "id": "kimi",
+    "matchers": [
+     {
+      "kind": "namespace",
+      "token": "moonshotai"
+     },
+     {
+      "kind": "bounded",
+      "token": "kimi"
+     },
+     {
+      "kind": "exact",
+      "token": "k3"
+     },
+     {
+      "kind": "exact",
+      "token": "k3-256k"
+     }
+    ],
+    "families": [
+     {
+      "id": "k2",
+      "glob": "*kimi-k2*",
+      "priority": 0
+     },
+     {
+      "id": "k2.5",
+      "glob": "*kimi-k2.5*",
+      "priority": 10
+     },
+     {
+      "id": "k2.6",
+      "glob": "*kimi-k2.6*",
+      "priority": 10
+     },
+     {
+      "id": "k2.6",
+      "glob": "*kimi-k2p6*",
+      "priority": 10
+     },
+     {
+      "id": "k2.7-code",
+      "glob": "*kimi-k2.7-code*",
+      "priority": 10
+     },
+     {
+      "id": "k2.7-code",
+      "glob": "*kimi-k2-7-code*",
+      "priority": 10
+     },
+     {
+      "id": "k2.7-code",
+      "glob": "*kimi-k2p7*code*",
+      "priority": 10
+     },
+     {
+      "id": "k2-thinking",
+      "glob": "*kimi-k2-thinking*",
+      "priority": 20
+     },
+     {
+      "id": "k3",
+      "glob": "*kimi-k3*",
+      "priority": 0
+     },
+     {
+      "id": "k3",
+      "glob": "k3",
+      "priority": 0
+     },
+     {
+      "id": "k3",
+      "glob": "k3-256k",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": [
+     {
+      "id": "kimi-k3-1-pro",
+      "rationale": "K3.1 Pro is a post-trained K3 sharing K3's parameter contract",
+      "provenance": "https://platform.kimi.ai/docs/api/models-overview",
+      "glob": "*k3.1-pro",
+      "class": "kimi",
+      "family": "k3",
+      "revision": "3.1.0"
+     },
+     {
+      "id": "kimi-k3-1-pro-highspeed",
+      "rationale": "K3.1 Pro Highspeed serves K3.1 Pro faster with identical parameter constraints",
+      "provenance": "https://platform.kimi.ai/docs/api/models-overview",
+      "glob": "*k3.1-pro-highspeed",
+      "class": "kimi",
+      "family": "k3",
+      "revision": "3.1.0"
+     },
+     {
+      "id": "kilo-kimi-k2-thinking-product",
+      "rationale": "Oracle exposes this independently priced product rather than an effort route",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "kimi-k2-thinking",
+      "provider": "kilo",
+      "logical": "moonshotai/kimi-k2-thinking",
+      "class": "kimi"
+     },
+     {
+      "id": "openrouter-kimi-k2-thinking-product",
+      "rationale": "Oracle exposes this independently priced product rather than an effort route",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "kimi-k2-thinking",
+      "provider": "openrouter",
+      "logical": "moonshotai/kimi-k2-thinking",
+      "class": "kimi"
+     },
+     {
+      "id": "vercel-kimi-k2-thinking-product",
+      "rationale": "Oracle exposes this independently priced product rather than an effort route",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "kimi-k2-thinking",
+      "provider": "vercel-ai-gateway",
+      "logical": "moonshotai/kimi-k2-thinking",
+      "class": "kimi"
+     }
+    ]
+   },
+   {
+    "id": "meta",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "muse-spark"
+     },
+     {
+      "kind": "bounded",
+      "token": "muse-wonder"
+     },
+     {
+      "kind": "bounded",
+      "token": "llama"
+     },
+     {
+      "kind": "bounded",
+      "token": "meta-llama"
+     },
+     {
+      "kind": "namespace",
+      "token": "meta-llama"
+     }
+    ],
+    "families": [
+     {
+      "id": "llama",
+      "glob": "*llama*",
+      "priority": 0
+     },
+     {
+      "id": "muse-spark",
+      "glob": "*muse-spark*",
+      "priority": 0
+     },
+     {
+      "id": "muse-wonder",
+      "glob": "*muse-wonder*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [
+     {
+      "prefix": "muse-spark-"
+     },
+     {
+      "prefix": "muse-wonder-"
+     }
+    ],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "mimo",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "mimo"
+     }
+    ],
+    "families": [
+     {
+      "id": "v2",
+      "glob": "*mimo-v2*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": [
+     {
+      "id": "venice-xiaomi-mimo-family",
+      "rationale": "The reviewed Venice deployment belongs to the Xiaomi MiMo family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "xiaomi-mimo-v2-5",
+      "provider": "venice",
+      "logical": "xiaomi-mimo-v2-5",
+      "class": "mimo"
+     }
+    ]
+   },
+   {
+    "id": "minimax",
+    "matchers": [
+     {
+      "kind": "namespace",
+      "token": "minimax"
+     },
+     {
+      "kind": "bounded",
+      "token": "minimax"
+     },
+     {
+      "kind": "bounded",
+      "token": "hailuo"
+     }
+    ],
+    "families": [
+     {
+      "id": "m1",
+      "glob": "*minimax-m1*",
+      "priority": 0
+     },
+     {
+      "id": "m2",
+      "glob": "*minimax-m2*",
+      "priority": 0
+     },
+     {
+      "id": "m3",
+      "glob": "*minimax-m3*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "mistral",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "mistral"
+     },
+     {
+      "kind": "bounded",
+      "token": "mixtral"
+     }
+    ],
+    "families": [
+     {
+      "id": "mistral",
+      "glob": "*mistral*",
+      "priority": 0
+     },
+     {
+      "id": "mixtral",
+      "glob": "*mixtral*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "openai",
+    "matchers": [
+     {
+      "kind": "namespace",
+      "token": "openai"
+     },
+     {
+      "kind": "namespace",
+      "token": "openai",
+      "bounded": true
+     },
+     {
+      "kind": "prefix",
+      "token": "gpt-"
+     },
+     {
+      "kind": "prefix",
+      "token": "chatgpt-"
+     },
+     {
+      "kind": "prefix",
+      "token": "codex-"
+     },
+     {
+      "kind": "exact",
+      "token": "o1"
+     },
+     {
+      "kind": "prefix",
+      "token": "o1-"
+     },
+     {
+      "kind": "prefix",
+      "token": "o1."
+     },
+     {
+      "kind": "exact",
+      "token": "o3"
+     },
+     {
+      "kind": "prefix",
+      "token": "o3-"
+     },
+     {
+      "kind": "prefix",
+      "token": "o3."
+     },
+     {
+      "kind": "exact",
+      "token": "o4"
+     },
+     {
+      "kind": "prefix",
+      "token": "o4-"
+     },
+     {
+      "kind": "prefix",
+      "token": "o4."
+     }
+    ],
+    "families": [
+     {
+      "id": "gpt",
+      "glob": "gpt-*",
+      "priority": 0
+     },
+     {
+      "id": "chatgpt",
+      "glob": "chatgpt-*",
+      "priority": 0
+     },
+     {
+      "id": "gpt-image",
+      "glob": "gpt-image-*",
+      "priority": 0
+     },
+     {
+      "id": "gpt-image",
+      "glob": "chatgpt-image-*",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o1",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o1-*",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o1.*",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o3",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o3-*",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o3.*",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o4",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o4-*",
+      "priority": 0
+     },
+     {
+      "id": "o-series",
+      "glob": "o4.*",
+      "priority": 0
+     },
+     {
+      "id": "codex",
+      "glob": "*codex*",
+      "priority": 10
+     },
+     {
+      "id": "codex-spark",
+      "glob": "*codex-spark*",
+      "priority": 20
+     }
+    ],
+    "revisionPrefixes": [
+     {
+      "prefix": "chatgpt-"
+     },
+     {
+      "prefix": "gpt-",
+      "anywhere": true
+     },
+     {
+      "prefix": "o"
+     }
+    ],
+    "skipBare": [
+     "o1",
+     "o3",
+     "o4"
+    ],
+    "overrides": [
+     {
+      "id": "openai-daybreak-blue-2026-08",
+      "rationale": "OpenAI rolling alias pins only the documented generation; its opaque product name supplies no family evidence",
+      "provenance": "catalog-oracle:identity/daybreak-aliases",
+      "model": "daybreak-blue-latest",
+      "logical": "daybreak-blue-latest",
+      "class": "unknown",
+      "revision": "5.6.0",
+      "expiresAtMs": 1799712000000
+     },
+     {
+      "id": "openai-daybreak-red-2026-08",
+      "rationale": "OpenAI rolling alias pins only the documented generation; its opaque product name supplies no family evidence",
+      "provenance": "catalog-oracle:identity/daybreak-aliases",
+      "model": "daybreak-red-latest",
+      "logical": "daybreak-red-latest",
+      "class": "unknown",
+      "revision": "5.6.0",
+      "expiresAtMs": 1799712000000
+     },
+     {
+      "id": "openai-gpt-daybreak-blue-2026-08",
+      "rationale": "OpenAI rolling alias pinned to the generation declared by the source snapshot",
+      "provenance": "catalog-oracle:identity/daybreak-aliases",
+      "model": "gpt-daybreak-blue-latest",
+      "logical": "gpt-daybreak-blue-latest",
+      "class": "openai",
+      "revision": "5.6.0",
+      "expiresAtMs": 1799712000000
+     },
+     {
+      "id": "openai-gpt-daybreak-red-2026-08",
+      "rationale": "OpenAI rolling alias pinned to the generation declared by the source snapshot",
+      "provenance": "catalog-oracle:identity/daybreak-aliases",
+      "model": "gpt-daybreak-red-latest",
+      "logical": "gpt-daybreak-red-latest",
+      "class": "openai",
+      "revision": "5.6.0",
+      "expiresAtMs": 1799712000000
+     }
+    ]
+   },
+   {
+    "id": "qwen",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "qwen"
+     },
+     {
+      "kind": "bounded",
+      "token": "deepseek-r1-distill-qwen"
+     },
+     {
+      "kind": "glob",
+      "token": "*distill-qwen*"
+     }
+    ],
+    "families": [
+     {
+      "id": "qwq",
+      "glob": "*qwq*",
+      "priority": 0
+     },
+     {
+      "id": "coder",
+      "glob": "*qwen3-coder*",
+      "priority": 0
+     },
+     {
+      "id": "next",
+      "glob": "*qwen3-next*",
+      "priority": 0
+     },
+     {
+      "id": "omni",
+      "glob": "*qwen3-omni*",
+      "priority": 0
+     },
+     {
+      "id": "vl",
+      "glob": "*qwen3-vl*",
+      "priority": 0
+     },
+     {
+      "id": "qwenlong",
+      "glob": "*qwenlong*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [
+     {
+      "prefix": "qwen"
+     }
+    ],
+    "skipBare": [],
+    "overrides": [
+     {
+      "id": "yolo-auto-yolo-identity",
+      "rationale": "Yolo-Auto's paid yolo route is currently backed by the same Qwen3.8-27B deployment as qwen3.8-27b; the opaque alias carries no lineage tokens",
+      "provenance": "yolo-auto.com/models (2026-10)",
+      "model": "yolo",
+      "provider": "yolo-auto",
+      "class": "qwen",
+      "revision": "3.8.0"
+     },
+     {
+      "id": "prismml-bonsai-27b-qwen-3-6",
+      "rationale": "Reviewed PrismML Bonsai and Ternary-Bonsai 27B lineage is Qwen3.6-27B; the wire basename may carry a prefix or GGUF quantization suffix",
+      "provenance": "packages/coding-agent/src/config/model-discovery.ts; original reviewed alias e3aa6594e5",
+      "glob": "*bonsai-27b*",
+      "class": "qwen",
+      "revision": "3.6.0"
+     },
+     {
+      "id": "prismml-bonsai-2-27b-qwen-3-8",
+      "rationale": "Reviewed PrismML Bonsai 2 27B lineage is Qwen3.8-27B; the wire basename may carry a prefix or GGUF quantization suffix",
+      "provenance": "packages/coding-agent/src/config/model-discovery.ts",
+      "glob": "*bonsai-2-27b*",
+      "class": "qwen",
+      "revision": "3.8.0"
+     },
+     {
+      "id": "kilo-qwq-32b-family",
+      "rationale": "The reviewed Kilo QwQ deployment belongs to the Qwen family despite its opaque product spelling",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "qwq-32b",
+      "provider": "kilo",
+      "logical": "qwen/qwq-32b",
+      "class": "qwen"
+     },
+     {
+      "id": "nanogpt-eva-qwen-2-5-family",
+      "rationale": "The reviewed EVA deployment is a Qwen 2.5 derivative despite its opaque product namespace",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "EVA-Qwen2.5-32B-v0.2",
+      "provider": "nanogpt",
+      "logical": "EVA-UNIT-01/EVA-Qwen2.5-32B-v0.2",
+      "class": "qwen"
+     },
+     {
+      "id": "nanogpt-eva-qwen-2-5-72b-family",
+      "rationale": "The reviewed EVA 72B deployment is a Qwen 2.5 derivative despite its opaque product namespace",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "EVA-Qwen2.5-72B-v0.2",
+      "provider": "nanogpt",
+      "logical": "EVA-UNIT-01/EVA-Qwen2.5-72B-v0.2",
+      "class": "qwen"
+     },
+     {
+      "id": "nanogpt-qwenlong-l1-family",
+      "rationale": "The reviewed Tongyi Zhiwen QwenLong deployment belongs to the Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "QwenLong-L1-32B",
+      "provider": "nanogpt",
+      "logical": "Tongyi-Zhiwen/QwenLong-L1-32B",
+      "class": "qwen"
+     },
+     {
+      "id": "nanogpt-dolphin-qwen-family",
+      "rationale": "The reviewed Dolphin deployment is a Qwen derivative",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "dolphin-2.9.2-qwen2-72b",
+      "provider": "nanogpt",
+      "logical": "cognitivecomputations/dolphin-2.9.2-qwen2-72b",
+      "class": "qwen"
+     },
+     {
+      "id": "nanogpt-cogito-qwen-family",
+      "rationale": "The reviewed Cogito deployment is a Qwen derivative",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "cogito-v1-preview-qwen-32B",
+      "provider": "nanogpt",
+      "logical": "deepcogito/cogito-v1-preview-qwen-32B",
+      "class": "qwen"
+     },
+     {
+      "id": "nanogpt-qwq-preview-family",
+      "rationale": "The reviewed QwQ preview belongs to the Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "qwq-32b-preview",
+      "provider": "nanogpt",
+      "logical": "qwen/qwq-32b-preview",
+      "class": "qwen"
+     },
+     {
+      "id": "nanogpt-grayline-qwen-family",
+      "rationale": "The reviewed GrayLine deployment is a Qwen derivative",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "GrayLine-Qwen3-8B",
+      "provider": "nanogpt",
+      "logical": "soob3123/GrayLine-Qwen3-8B",
+      "class": "qwen"
+     },
+     {
+      "id": "novita-r1-qwen-family",
+      "rationale": "The reviewed distillation lineage follows the Qwen student architecture",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "deepseek-r1-0528-qwen3-8b",
+      "provider": "novita",
+      "logical": "deepseek/deepseek-r1-0528-qwen3-8b",
+      "class": "qwen"
+     },
+     {
+      "id": "openrouter-qwq-family",
+      "rationale": "The reviewed QwQ deployment belongs to the Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "qwq-32b",
+      "provider": "openrouter",
+      "logical": "qwen/qwq-32b",
+      "class": "qwen"
+     },
+     {
+      "id": "umans-qwen-3-6-family",
+      "rationale": "The opaque Umans deployment is backed by the reviewed Qwen 3.6 family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "umans-qwen3.6-35b-a3b",
+      "provider": "umans",
+      "logical": "umans-qwen3.6-35b-a3b",
+      "class": "qwen"
+     },
+     {
+      "id": "venice-e2ee-qwen-2-5-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-qwen-2-5-7b-p",
+      "provider": "venice",
+      "logical": "e2ee-qwen-2-5-7b-p",
+      "class": "qwen"
+     },
+     {
+      "id": "venice-e2ee-qwen-3-30b-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-qwen3-30b-a3b-p",
+      "provider": "venice",
+      "logical": "e2ee-qwen3-30b-a3b-p",
+      "class": "qwen"
+     },
+     {
+      "id": "venice-e2ee-qwen-3-5-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-qwen3-5-122b-a10b",
+      "provider": "venice",
+      "logical": "e2ee-qwen3-5-122b-a10b",
+      "class": "qwen"
+     },
+     {
+      "id": "venice-e2ee-qwen-3-6-27b-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-qwen3-6-27b",
+      "provider": "venice",
+      "logical": "e2ee-qwen3-6-27b",
+      "class": "qwen"
+     },
+     {
+      "id": "venice-e2ee-qwen-3-6-35b-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-qwen3-6-35b-a3b",
+      "provider": "venice",
+      "logical": "e2ee-qwen3-6-35b-a3b",
+      "class": "qwen"
+     },
+     {
+      "id": "venice-e2ee-qwen-3-6-uncensored-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-qwen3-6-35b-a3b-uncensored-p",
+      "provider": "venice",
+      "logical": "e2ee-qwen3-6-35b-a3b-uncensored-p",
+      "class": "qwen"
+     },
+     {
+      "id": "venice-e2ee-qwen-vl-family",
+      "rationale": "The opaque Venice E2EE deployment is backed by the reviewed Qwen family",
+      "provenance": "fixtures/llm-oracle/catalog/models.normalized.json",
+      "model": "e2ee-qwen3-vl-30b-a3b-p",
+      "provider": "venice",
+      "logical": "e2ee-qwen3-vl-30b-a3b-p",
+      "class": "qwen"
+     }
+    ]
+   },
+   {
+    "id": "stepfun",
+    "matchers": [
+     {
+      "kind": "bounded",
+      "token": "step"
+     }
+    ],
+    "families": [
+     {
+      "id": "step",
+      "glob": "*step*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "unknown",
+    "matchers": [],
+    "families": [],
+    "revisionPrefixes": [],
+    "skipBare": [],
+    "overrides": []
+   },
+   {
+    "id": "xai",
+    "matchers": [
+     {
+      "kind": "prefix",
+      "token": "cursor-grok-"
+     },
+     {
+      "kind": "bounded",
+      "token": "grok"
+     },
+     {
+      "kind": "namespace",
+      "token": "x-ai"
+     },
+     {
+      "kind": "namespace",
+      "token": "xai",
+      "bounded": true
+     }
+    ],
+    "families": [
+     {
+      "id": "grok",
+      "glob": "*grok*",
+      "priority": 0
+     }
+    ],
+    "revisionPrefixes": [
+     {
+      "prefix": "cursor-grok-"
+     },
+     {
+      "prefix": "grok-",
+      "anywhere": true
+     }
+    ],
+    "skipBare": [],
+    "overrides": []
+   }
+  ],
+  "suffixes": [
+   {
+    "suffix": "-thinking",
+    "thinking": true
+   },
+   {
+    "suffix": "-extra-high",
+    "effort": "xhigh"
+   },
+   {
+    "suffix": "-none",
+    "effort": "off"
+   },
+   {
+    "suffix": "-minimal",
+    "effort": "minimal"
+   },
+   {
+    "suffix": "-medium",
+    "effort": "medium"
+   },
+   {
+    "suffix": "-xhigh",
+    "effort": "xhigh"
+   },
+   {
+    "suffix": "-high",
+    "effort": "high"
+   },
+   {
+    "suffix": "-low",
+    "effort": "low"
+   },
+   {
+    "suffix": "-max",
+    "effort": "max",
+    "exceptBarePrefix": "qwen"
+   }
+  ],
+  "pairTokens": [
+   "thinking",
+   "reasoning",
+   "reasoner"
+  ],
+  "lanes": [
+   {
+    "suffix": "-fast",
+    "providers": [
+     "cursor"
+    ]
+   }
+  ],
+  "effortFamilies": []
+ },
+ "cascade": [
+  {
+   "source": "classes/anthropic.kdl:42",
+   "class": "anthropic",
+   "family": "opus",
+   "revision": [
+    {
+     "op": "=",
+     "revision": "5.0.0"
+    }
+   ],
+   "catalog": {
+    "behavioralPreset": "opus-5"
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:45",
+   "class": "anthropic",
+   "family": "opus",
+   "revision": [
+    {
+     "op": "<",
+     "revision": "4.7.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "maxEdge": 1568,
+     "maxTokens": 1568
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:52",
+   "class": "anthropic",
+   "family": "opus",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "10.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "47.0.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "maxEdge": 1568,
+     "maxTokens": 1568
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:63",
+   "class": "anthropic",
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": "<",
+     "revision": "4.6.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "maxEdge": 1568,
+     "maxTokens": 1568
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:70",
+   "class": "anthropic",
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "4.6.0"
+    },
+    {
+     "op": "<",
+     "revision": "4.7.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "verified": true,
+     "maxEdge": 1568,
+     "maxTokens": 1568
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:78",
+   "class": "anthropic",
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "10.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "46.0.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "maxEdge": 1568,
+     "maxTokens": 1568
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:85",
+   "class": "anthropic",
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "46.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "47.0.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "verified": true,
+     "maxEdge": 1568,
+     "maxTokens": 1568
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:95",
+   "class": "anthropic",
+   "family": "haiku",
+   "revision": [
+    {
+     "op": "<",
+     "revision": "4.7.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "maxEdge": 1568,
+     "maxTokens": 1568
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:102",
+   "class": "anthropic",
+   "family": "haiku",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "10.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "47.0.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "maxEdge": 1568,
+     "maxTokens": 1568
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:26",
+   "class": "anthropic",
+   "catalog": {
+    "promptCacheLookback": 20,
+    "classifierCotExtraction": true,
+    "thinkingReplayTokens": "output",
+    "imageTokenization": {
+     "regime": "anthropic-patch",
+     "verified": true,
+     "maxEdge": 2576,
+     "maxTokens": 4784
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:114",
+   "class": "anthropic",
+   "family": "fable",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.1.0"
+    }
+   ],
+   "thinking": {
+    "prefixBinding": true
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:124",
+   "class": "anthropic",
+   "family": "opus",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "4.7.0"
+    },
+    {
+     "op": "<",
+     "revision": "10.0.0"
+    }
+   ],
+   "wire": {
+    "supportsSamplingParams": false
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:131",
+   "class": "anthropic",
+   "family": "opus",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.5.0"
+    },
+    {
+     "op": "<",
+     "revision": "10.0.0"
+    }
+   ],
+   "catalog": {
+    "snapcompactImageReads": true
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:136",
+   "class": "anthropic",
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "10.0.0"
+    }
+   ],
+   "wire": {
+    "supportsSamplingParams": false
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:141",
+   "class": "anthropic",
+   "family": "fable",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "10.0.0"
+    }
+   ],
+   "wire": {
+    "supportsSamplingParams": false
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:146",
+   "class": "anthropic",
+   "family": "mythos",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "10.0.0"
+    }
+   ],
+   "wire": {
+    "supportsSamplingParams": false
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:151",
+   "class": "anthropic",
+   "family": "haiku",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.5.0"
+    },
+    {
+     "op": "<",
+     "revision": "10.0.0"
+    }
+   ],
+   "wire": {
+    "supportsSamplingParams": false
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:159",
+   "class": "anthropic",
+   "family": "haiku",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.5.0"
+    },
+    {
+     "op": "<",
+     "revision": "6.0.0"
+    }
+   ],
+   "catalog": {
+    "longContext": {
+     "inputThreshold": 100000,
+     "multiplier": 5
+    }
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:224",
+   "class": "anthropic",
+   "family": "opus",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.5.0"
+    },
+    {
+     "op": "<",
+     "revision": "6.0.0"
+    }
+   ],
+   "wire": {
+    "supportsForcedToolChoice": false
+   },
+   "thinking": {
+    "prefixBinding": true
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:240",
+   "class": "anthropic",
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.5.0"
+    },
+    {
+     "op": "<",
+     "revision": "6.0.0"
+    }
+   ],
+   "wire": {
+    "supportsForcedToolChoice": false,
+    "supportsBetweenToolsThinking": true
+   },
+   "thinking": {
+    "prefixBinding": true
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:255",
+   "class": "anthropic",
+   "family": "haiku",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.5.0"
+    },
+    {
+     "op": "<",
+     "revision": "6.0.0"
+    }
+   ],
+   "thinking": {
+    "prefixBinding": true
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:348",
+   "class": "anthropic",
+   "providers": [
+    "amazon-bedrock",
+    "anthropic",
+    "cloudflare-ai-gateway",
+    "github-copilot",
+    "gitlab-duo",
+    "google-antigravity",
+    "google-vertex",
+    "opencode-zen",
+    "snowflake",
+    "vercel-ai-gateway",
+    "zenmux"
+   ],
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.7.0"
+    },
+    {
+     "op": "<",
+     "revision": "4.6.0"
+    }
+   ],
+   "thinking": {
+    "mode": "budget"
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:399",
+   "class": "anthropic",
+   "providers": [
+    "amazon-bedrock",
+    "cursor",
+    "google-antigravity",
+    "openrouter"
+   ],
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "4.6.0"
+    },
+    {
+     "op": "<",
+     "revision": "5.0.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:403",
+   "class": "anthropic",
+   "providers": [
+    "amazon-bedrock",
+    "cursor",
+    "google-antigravity",
+    "openrouter"
+   ],
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.7.0"
+    },
+    {
+     "op": "<",
+     "revision": "4.6.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:409",
+   "class": "anthropic",
+   "providers": [
+    "amazon-bedrock",
+    "google-antigravity"
+   ],
+   "family": "sonnet",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "4.6.0"
+    },
+    {
+     "op": "<",
+     "revision": "5.0.0"
+    }
+   ],
+   "thinking": {
+    "mode": "budget"
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:738",
+   "class": "anthropic",
+   "family": "haiku",
+   "revision": [
+    {
+     "op": "=",
+     "revision": "3.5.0"
+    }
+   ],
+   "wire": {
+    "injectClaudeCodeInstruction": false
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:744",
+   "class": "anthropic",
+   "providers": [
+    "google-antigravity",
+    "google-gemini-cli"
+   ],
+   "wire": {
+    "supportsFunctionPartId": true,
+    "ccaLegacyParametersSchema": true
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:755",
+   "class": "anthropic",
+   "providers": [
+    "google-antigravity"
+   ],
+   "revision": [
+    {
+     "op": "<",
+     "revision": "5.0.0"
+    }
+   ],
+   "wire": {
+    "claudeThinkingBetaHeader": true
+   }
+  },
+  {
+   "source": "classes/anthropic.kdl:748",
+   "class": "anthropic",
+   "providers": [
+    "google-antigravity"
+   ],
+   "wire": {
+    "dropUnsignedThinking": true,
+    "antigravityClaudeToolMode": true,
+    "antigravityUsageLabel": "true"
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:21",
+   "class": "deepseek",
+   "family": "pro",
+   "thinking": {
+    "efforts": [
+     "low",
+     "high",
+     "max"
+    ]
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:24",
+   "class": "deepseek",
+   "family": "flash",
+   "thinking": {
+    "efforts": [
+     "low",
+     "high",
+     "max"
+    ]
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:27",
+   "class": "deepseek",
+   "family": "v4",
+   "thinking": {
+    "efforts": [
+     "low",
+     "high",
+     "max"
+    ]
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:30",
+   "class": "deepseek",
+   "family": "r1",
+   "thinking": {
+    "efforts": [
+     "high",
+     "max"
+    ]
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:33",
+   "class": "deepseek",
+   "family": "v3",
+   "thinking": {
+    "efforts": [
+     "high",
+     "max"
+    ]
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:36",
+   "class": "deepseek",
+   "family": "reasoner",
+   "thinking": {
+    "efforts": [
+     "high",
+     "max"
+    ]
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:74",
+   "class": "deepseek",
+   "models": [
+    {
+     "kind": "token",
+     "value": "ocr"
+    }
+   ],
+   "wire": {
+    "stripImageInput": false
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:77",
+   "class": "deepseek",
+   "models": [
+    {
+     "kind": "token",
+     "value": "vision"
+    }
+   ],
+   "wire": {
+    "stripImageInput": false
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:88",
+   "class": "deepseek",
+   "models": [
+    {
+     "kind": "glob",
+     "value": "*v4.1-flash*"
+    }
+   ],
+   "priority": 10,
+   "wire": {
+    "stripImageInput": false
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:97",
+   "class": "deepseek",
+   "models": [
+    {
+     "kind": "glob",
+     "value": "*deepseek-flash"
+    }
+   ],
+   "priority": 10,
+   "wire": {
+    "stripImageInput": false
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:109",
+   "class": "deepseek",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "4.0.0"
+    }
+   ],
+   "catalog": {
+    "portableReasoning": true
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:117",
+   "class": "deepseek",
+   "family": "flash",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "4.1.0"
+    },
+    {
+     "op": "<",
+     "revision": "4.2.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "deepseek-patch",
+     "verified": true,
+     "patchSize": 14,
+     "downsample": 3,
+     "maxTokens": 1024,
+     "minPixels": 295936
+    }
+   }
+  },
+  {
+   "source": "classes/deepseek.kdl:3",
+   "class": "deepseek",
+   "wire": {
+    "stripImageInput": true,
+    "streamMarkupHealingPattern": "dsml",
+    "thinkingLoopGuard": "deepseek"
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:9",
+   "class": "gemini",
+   "family": "pro",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "2.5.0"
+    },
+    {
+     "op": "<",
+     "revision": "3.0.0"
+    }
+   ],
+   "thinking": {
+    "requiresEffort": true
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:12",
+   "class": "gemini",
+   "family": "pro",
+   "revision": [
+    {
+     "op": "<",
+     "revision": "3.0.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:15",
+   "class": "gemini",
+   "family": "pro",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.0.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "low",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:20",
+   "class": "gemini",
+   "family": "flash",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "0.0.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:25",
+   "class": "gemini",
+   "family": "lite",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "0.0.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:103",
+   "class": "gemini",
+   "providers": [
+    "google",
+    "google-vertex",
+    "google-antigravity"
+   ],
+   "models": [
+    {
+     "kind": "exact",
+     "value": "gemini-4-argon"
+    }
+   ],
+   "catalog": {
+    "costPatch": {
+     "input": 2,
+     "output": 10,
+     "cacheRead": 0.1,
+     "cacheWrite": 0,
+     "effectiveRates": {
+      "listPrice": {
+       "effectiveFrom": "2026-12-01T08:00:00Z",
+       "input": 4,
+       "output": 20,
+       "cacheRead": 0.2,
+       "cacheWrite": 0
+      }
+     }
+    }
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:122",
+   "class": "gemini",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.0.0"
+    }
+   ],
+   "wire": {
+    "multimodalFunctionResponse": true
+   },
+   "thinking": {
+    "requiresEffort": true
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:131",
+   "class": "gemini",
+   "apis": [
+    "google-generative-ai",
+    "google-gemini-cli",
+    "google-vertex"
+   ],
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.0.0"
+    }
+   ],
+   "thinking": {
+    "mode": "google-level"
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:146",
+   "class": "gemini",
+   "providers": [
+    "google-antigravity",
+    "google-gemini-cli"
+   ],
+   "family": "flash",
+   "wire": {
+    "streamFirstEventTimeoutMs": 60000,
+    "flashStreamLeakWorkaround": true
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:3",
+   "class": "gemini",
+   "wire": {
+    "thinkingLoopGuard": "gemini"
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:158",
+   "class": "gemini",
+   "apis": [
+    "google-generative-ai",
+    "google-gemini-cli"
+   ],
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "2.0.0"
+    }
+   ],
+   "catalog": {
+    "webSearch": "gemini",
+    "webSearchModel": "gemini-2.5-flash",
+    "imageModel": "gemini-3-pro-image"
+   }
+  },
+  {
+   "source": "classes/gemini.kdl:170",
+   "class": "gemini",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.0.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "fixed",
+     "tokens": 1120
+    }
+   }
+  },
+  {
+   "source": "classes/glm.kdl:16",
+   "class": "glm",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.2.0"
+    },
+    {
+     "op": "<",
+     "revision": "5.3.0"
+    }
+   ],
+   "priority": 10,
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "max"
+    ]
+   }
+  },
+  {
+   "source": "classes/glm.kdl:108",
+   "class": "glm",
+   "models": [
+    {
+     "kind": "glob",
+     "value": "*glm-5.3"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-air"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-turbo"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-flash"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-flashx"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3:*"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-flash-uncensored"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-free"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-highspeed"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-fast"
+    },
+    {
+     "kind": "glob",
+     "value": "*glm-5.3-flash-lab"
+    }
+   ],
+   "priority": 10,
+   "thinking": {
+    "defaultLevel": "max",
+    "efforts": [
+     "low",
+     "high",
+     "max"
+    ],
+    "requiresEffort": true
+   }
+  },
+  {
+   "source": "classes/glm.kdl:120",
+   "class": "glm",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.0.0"
+    }
+   ],
+   "models": [
+    {
+     "kind": "glob",
+     "value": "*-uncensored"
+    },
+    {
+     "kind": "glob",
+     "value": "*-cybersecurity"
+    }
+   ],
+   "catalog": {
+    "portableReasoning": false
+   }
+  },
+  {
+   "source": "classes/glm.kdl:117",
+   "class": "glm",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.0.0"
+    }
+   ],
+   "catalog": {
+    "portableReasoning": true
+   }
+  },
+  {
+   "source": "classes/gpt-oss.kdl:10",
+   "class": "gpt-oss",
+   "providers": [
+    "amazon-bedrock",
+    "google-antigravity",
+    "ollama-cloud"
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/gpt-oss.kdl:16",
+   "class": "gpt-oss",
+   "providers": [
+    "google-antigravity",
+    "google-gemini-cli"
+   ],
+   "wire": {
+    "supportsFunctionPartId": true
+   }
+  },
+  {
+   "source": "classes/gpt-oss.kdl:3",
+   "class": "gpt-oss",
+   "thinking": {
+    "efforts": [
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/kimi.kdl:33",
+   "class": "kimi",
+   "family": "k3",
+   "wire": {
+    "reasoningEffortMap": {
+     "minimal": "low",
+     "medium": "high",
+     "xhigh": "max",
+     "max": "max"
+    }
+   },
+   "thinking": {
+    "defaultLevel": "max",
+    "efforts": [
+     "low",
+     "high",
+     "max"
+    ],
+    "requiresEffort": true
+   }
+  },
+  {
+   "source": "classes/kimi.kdl:110",
+   "class": "kimi",
+   "models": [
+    {
+     "kind": "glob",
+     "value": "*kimi*k2*"
+    }
+   ],
+   "wire": {
+    "streamMarkupHealingPattern": "kimi"
+   }
+  },
+  {
+   "source": "classes/kimi.kdl:131",
+   "class": "kimi",
+   "family": "k3",
+   "catalog": {
+    "portableReasoning": true
+   }
+  },
+  {
+   "source": "classes/kimi.kdl:3",
+   "class": "kimi",
+   "wire": {
+    "streamRevision": "possible"
+   }
+  },
+  {
+   "source": "classes/meta.kdl:8",
+   "class": "meta",
+   "models": [
+    {
+     "kind": "exact",
+     "value": "muse-spark-1.3"
+    },
+    {
+     "kind": "exact",
+     "value": "muse-spark-1.3-contributor"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "mode": "effort"
+   }
+  },
+  {
+   "source": "classes/meta.kdl:15",
+   "class": "meta",
+   "models": [
+    {
+     "kind": "exact",
+     "value": "muse-wonder-1.0"
+    },
+    {
+     "kind": "exact",
+     "value": "muse-wonder-1.0-contributor"
+    },
+    {
+     "kind": "exact",
+     "value": "muse-wonder-full-1.0"
+    },
+    {
+     "kind": "exact",
+     "value": "muse-wonder-full-1.0-contributor"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "mode": "effort"
+   }
+  },
+  {
+   "source": "classes/meta.kdl:19",
+   "class": "meta",
+   "models": [
+    {
+     "kind": "exact",
+     "value": "muse-spark-1.1"
+    },
+    {
+     "kind": "exact",
+     "value": "muse-spark-1.2"
+    },
+    {
+     "kind": "exact",
+     "value": "muse-spark-1.2-contributor"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "mode": "effort"
+   }
+  },
+  {
+   "source": "classes/minimax.kdl:5",
+   "class": "minimax",
+   "family": "m2",
+   "thinking": {
+    "requiresEffort": true
+   }
+  },
+  {
+   "source": "classes/minimax.kdl:36",
+   "class": "minimax",
+   "family": "m2",
+   "thinking": {
+    "efforts": [
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/minimax.kdl:132",
+   "class": "minimax",
+   "family": "m3",
+   "models": [
+    {
+     "kind": "glob",
+     "value": "*m3.1*"
+    }
+   ],
+   "catalog": {
+    "portableReasoning": false
+   }
+  },
+  {
+   "source": "classes/minimax.kdl:128",
+   "class": "minimax",
+   "family": "m3",
+   "catalog": {
+    "portableReasoning": true
+   }
+  },
+  {
+   "source": "classes/minimax.kdl:3",
+   "class": "minimax",
+   "wire": {
+    "reasoningDeltasMayBeCumulative": true
+   }
+  },
+  {
+   "source": "classes/openai.kdl:7",
+   "class": "openai",
+   "family": "o-series",
+   "wire": {
+    "supportsSamplingParams": false
+   },
+   "thinking": {
+    "requiresEffort": true
+   }
+  },
+  {
+   "source": "classes/openai.kdl:11",
+   "class": "openai",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.0.0"
+    }
+   ],
+   "wire": {
+    "supportsSamplingParams": false
+   }
+  },
+  {
+   "source": "classes/openai.kdl:16",
+   "class": "openai",
+   "models": [
+    {
+     "kind": "exact",
+     "value": "gpt-5.4"
+    }
+   ],
+   "catalog": {
+    "limitsPatch": {
+     "contextWindow": 1000000
+    },
+    "longContextWindowUncapped": true
+   }
+  },
+  {
+   "source": "classes/openai.kdl:26",
+   "class": "openai",
+   "family": "gpt",
+   "revision": [
+    {
+     "op": "<",
+     "revision": "5.2.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/openai.kdl:31",
+   "class": "openai",
+   "family": "codex",
+   "revision": [
+    {
+     "op": "<",
+     "revision": "5.2.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/openai.kdl:35",
+   "class": "openai",
+   "family": "codex",
+   "revision": [
+    {
+     "op": "=",
+     "revision": "5.1.0"
+    }
+   ],
+   "models": [
+    {
+     "kind": "glob",
+     "value": "*codex-mini*"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "classes/openai.kdl:40",
+   "class": "openai",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.2.0"
+    },
+    {
+     "op": "<",
+     "revision": "5.6.0"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ]
+   }
+  },
+  {
+   "source": "classes/openai.kdl:43",
+   "class": "openai",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.6.0"
+    }
+   ],
+   "wire": {
+    "requiresReasoningOffJuiceInstruction": true
+   },
+   "thinking": {
+    "efforts": [
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ]
+   }
+  },
+  {
+   "source": "classes/openai.kdl:51",
+   "class": "openai",
+   "revision": [
+    {
+     "op": "=",
+     "revision": "5.6.0"
+    }
+   ],
+   "catalog": {
+    "delegationBias": "gated"
+   }
+  },
+  {
+   "source": "classes/openai.kdl:56",
+   "class": "openai",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "6.0.0"
+    }
+   ],
+   "wire": {
+    "supportsSteering": true
+   },
+   "catalog": {
+    "delegationBias": "restrained"
+   }
+  },
+  {
+   "source": "classes/openai.kdl:65",
+   "class": "openai",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "6.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "7.0.0"
+    }
+   ],
+   "wire": {
+    "supportsConfigurationUpdate": true
+   }
+  },
+  {
+   "source": "classes/openai.kdl:71",
+   "class": "openai",
+   "family": "codex",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "1.0.0"
+    }
+   ],
+   "catalog": {
+    "limitsPatch": {
+     "contextWindow": 272000
+    }
+   }
+  },
+  {
+   "source": "classes/openai.kdl:107",
+   "class": "openai",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.6.0"
+    },
+    {
+     "op": "<",
+     "revision": "6.2.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "openai-patch",
+     "verified": true,
+     "multiplier": 1.2,
+     "auto": "original",
+     "low": {
+      "maxEdge": 512
+     },
+     "high": {
+      "maxEdge": 2048,
+      "patchBudget": 2500
+     },
+     "original": {
+      "maxEdge": 65535
+     }
+    }
+   }
+  },
+  {
+   "source": "classes/openai.kdl:127",
+   "class": "openai",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "6.2.0"
+    },
+    {
+     "op": "<",
+     "revision": "10.0.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "openai-patch",
+     "multiplier": 1.2,
+     "auto": "original",
+     "low": {
+      "maxEdge": 512
+     },
+     "high": {
+      "maxEdge": 2048,
+      "patchBudget": 2500
+     },
+     "original": {
+      "maxEdge": 65535
+     }
+    }
+   }
+  },
+  {
+   "source": "classes/openai.kdl:145",
+   "class": "openai",
+   "revision": [
+    {
+     "op": "=",
+     "revision": "5.5.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "openai-patch",
+     "verified": true,
+     "multiplier": 1.2,
+     "auto": "original",
+     "low": {
+      "maxEdge": 512
+     },
+     "high": {
+      "maxEdge": 2048,
+      "patchBudget": 2500
+     },
+     "original": {
+      "maxEdge": 6000,
+      "patchBudget": 10000
+     }
+    }
+   }
+  },
+  {
+   "source": "classes/openai.kdl:165",
+   "class": "openai",
+   "revision": [
+    {
+     "op": "=",
+     "revision": "5.4.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "openai-patch",
+     "multiplier": 1.2,
+     "auto": "high",
+     "low": {
+      "maxEdge": 2048,
+      "patchBudget": 6144
+     },
+     "high": {
+      "maxEdge": 2048,
+      "patchBudget": 2500
+     },
+     "original": {
+      "maxEdge": 6000,
+      "patchBudget": 10000
+     }
+    }
+   }
+  },
+  {
+   "source": "classes/openai.kdl:185",
+   "class": "openai",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "5.2.0"
+    },
+    {
+     "op": "<",
+     "revision": "5.4.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "openai-patch",
+     "multiplier": 1.2,
+     "auto": "high",
+     "low": {
+      "maxEdge": 2048,
+      "patchBudget": 6144
+     },
+     "high": {
+      "maxEdge": 2048,
+      "patchBudget": 6144
+     },
+     "original": {
+      "maxEdge": 2048,
+      "patchBudget": 6144
+     }
+    }
+   }
+  },
+  {
+   "source": "classes/openai.kdl:206",
+   "class": "openai",
+   "models": [
+    {
+     "kind": "glob",
+     "value": "*gpt-6-astra*"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "openai-patch",
+     "verified": true,
+     "multiplier": 1.2,
+     "auto": "original",
+     "low": {
+      "maxEdge": 512
+     },
+     "high": {
+      "maxEdge": 65535,
+      "patchBudget": 2500
+     },
+     "original": {
+      "maxEdge": 65535
+     }
+    }
+   }
+  },
+  {
+   "source": "classes/xai.kdl:49",
+   "class": "xai",
+   "family": "grok",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "4.6.0"
+    },
+    {
+     "op": "<=",
+     "revision": "4.20.0"
+    }
+   ],
+   "catalog": {
+    "imageTokenization": {
+     "regime": "openai-patch",
+     "verified": true,
+     "multiplier": 1.017,
+     "auto": "original",
+     "low": {
+      "maxEdge": 65535,
+      "patchBudget": 2401
+     },
+     "high": {
+      "maxEdge": 65535,
+      "patchBudget": 2401
+     },
+     "original": {
+      "maxEdge": 65535,
+      "patchBudget": 2401
+     }
+    }
+   }
+  },
+  {
+   "source": "classes/xai.kdl:3",
+   "class": "xai",
+   "wire": {
+    "thinkingLoopGuard": "xai"
+   }
+  },
+  {
+   "source": "classes/xai.kdl:74",
+   "class": "xai",
+   "catalog": {
+    "webSearchModel": "grok-4.5",
+    "imageModel": "grok-imagine-image"
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:59",
+   "class": "anthropic",
+   "providers": [
+    "google-antigravity"
+   ],
+   "revision": [
+    {
+     "op": "<",
+     "revision": "5.0.0"
+    }
+   ],
+   "catalog": {
+    "maxTokensCeiling": 64000
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:62",
+   "class": "anthropic",
+   "providers": [
+    "google-antigravity"
+   ],
+   "family": "opus",
+   "thinking": {
+    "mode": "budget"
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:31",
+   "class": "anthropic",
+   "providers": [
+    "google-antigravity"
+   ],
+   "wire": {
+    "maxImageDimension": 8000,
+    "maxImagePayloadBytes": 5242880
+   },
+   "catalog": {
+    "imageCountBudget": 20,
+    "promptCache": {
+     "short": 300
+    }
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:70",
+   "class": "gemini",
+   "providers": [
+    "google-antigravity"
+   ],
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.0.0"
+    }
+   ],
+   "wire": {
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:74",
+   "class": "gemini",
+   "providers": [
+    "google-antigravity"
+   ],
+   "family": "flash",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "3.6.0"
+    }
+   ],
+   "thinking": {
+    "effortBudgets": {
+     "high": 10000,
+     "low": 1000,
+     "medium": 4000,
+     "minimal": 1000
+    },
+    "mode": "budget",
+    "suppressWhenOff": true
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:84",
+   "class": "gemini",
+   "providers": [
+    "google-antigravity"
+   ],
+   "family": "flash",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.6.0"
+    }
+   ],
+   "thinking": {
+    "mode": "google-level",
+    "requiresEffort": true
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:90",
+   "class": "gemini",
+   "providers": [
+    "google-antigravity"
+   ],
+   "family": "pro",
+   "revision": [
+    {
+     "op": ">=",
+     "revision": "3.0.0"
+    },
+    {
+     "op": "<",
+     "revision": "3.2.0"
+    }
+   ],
+   "thinking": {
+    "suppressWhenOff": true
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:99",
+   "class": "gemini",
+   "providers": [
+    "google-antigravity"
+   ],
+   "priority": 1,
+   "catalog": {
+    "imageTokenization": {
+     "regime": "fixed",
+     "verified": true,
+     "tokens": 1089
+    }
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:107",
+   "providers": [
+    "google-antigravity"
+   ],
+   "models": [
+    {
+     "kind": "exact",
+     "value": "claude-opus-4-6"
+    }
+   ],
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:111",
+   "providers": [
+    "google-antigravity"
+   ],
+   "models": [
+    {
+     "kind": "exact",
+     "value": "gemini-3-pro"
+    }
+   ],
+   "thinking": {
+    "mode": "google-level"
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:118",
+   "providers": [
+    "google-antigravity"
+   ],
+   "models": [
+    {
+     "kind": "exact",
+     "value": "gemini-3-pro-image"
+    },
+    {
+     "kind": "exact",
+     "value": "gemini-3.1-flash-image"
+    }
+   ],
+   "catalog": {
+    "kind": "image"
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:122",
+   "providers": [
+    "google-antigravity"
+   ],
+   "models": [
+    {
+     "kind": "exact",
+     "value": "gemini-3.1-flash-lite"
+    }
+   ],
+   "thinking": {
+    "mode": "google-level",
+    "requiresEffort": true
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:127",
+   "providers": [
+    "google-antigravity"
+   ],
+   "models": [
+    {
+     "kind": "exact",
+     "value": "gemini-3.1-pro"
+    }
+   ],
+   "thinking": {
+    "effortBudgets": {
+     "high": 10001,
+     "low": 1001
+    },
+    "mode": "budget"
+   }
+  },
+  {
+   "source": "providers/google-antigravity.kdl:3",
+   "providers": [
+    "google-antigravity"
+   ],
+   "catalog": {
+    "webSearch": "gemini",
+    "imageCountBudget": 60,
+    "preservesMaxOutputTokens": false
+   }
+  },
+  {
+   "source": "providers/image-tokenization.kdl:28",
+   "apis": [
+    "google-generative-ai",
+    "google-gemini-cli",
+    "google-vertex"
+   ],
+   "priority": -1,
+   "catalog": {
+    "imageTokenization": {
+     "regime": "fixed",
+     "tokens": 1120
+    }
+   }
+  },
+  {
+   "source": "providers/tool-call-names.kdl:34",
+   "apis": [
+    "google-gemini-cli"
+   ],
+   "catalog": {
+    "toolCallNameCharset": "google",
+    "toolCallNameMaxLength": 64
+   }
+  }
+ ],
+ "googleWireKeys": [
+  "antigravityClaudeToolMode",
+  "antigravityUsageLabel",
+  "ccaLegacyParametersSchema",
+  "claudeThinkingBetaHeader",
+  "dropUnsignedThinking",
+  "flashStreamLeakWorkaround",
+  "maxImageDimension",
+  "maxImagePayloadBytes",
+  "multimodalFunctionResponse",
+  "requiresSkipThoughtSignature",
+  "requiresSkipThoughtSignatureOnFirstFunctionCall",
+  "streamFirstEventTimeoutMs",
+  "streamIdleTimeoutMs",
+  "stripImageInput",
+  "supportsFunctionPartId",
+  "supportsSamplingParams",
+  "thinkingLoopGuard"
+ ],
+ "variantFamilies": [
+  {
+   "provider": "google-antigravity",
+   "id": "gemini-{rev}-flash",
+   "name": "Gemini {rev} Flash",
+   "members": [
+    "gemini-{rev}-flash-low",
+    "gemini-{rev}-flash-medium",
+    "gemini-{rev}-flash-high",
+    "gemini-{rev}-flash-tiered"
+   ],
+   "routing": {
+    "minimal": "gemini-{rev}-flash-low",
+    "low": "gemini-{rev}-flash-low",
+    "medium": "gemini-{rev}-flash-medium",
+    "high": "gemini-{rev}-flash-high"
+   },
+   "revision": ">=3.6",
+   "mode": "google-level",
+   "efforts": [
+    "minimal",
+    "low",
+    "medium",
+    "high"
+   ],
+   "requiresEffort": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "gemini-4-argon",
+   "name": "Gemini 4 Argon",
+   "members": [
+    "gemini-4-argon-low",
+    "gemini-4-argon-medium",
+    "gemini-4-argon-high"
+   ],
+   "routing": {
+    "low": "gemini-4-argon-low",
+    "medium": "gemini-4-argon-medium",
+    "high": "gemini-4-argon-high"
+   },
+   "mode": "google-level",
+   "efforts": [
+    "low",
+    "medium",
+    "high"
+   ],
+   "requiresEffort": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "gemini-3.5-flash",
+   "name": "Gemini 3.5 Flash",
+   "members": [
+    "gemini-3.5-flash-extra-low",
+    "gemini-3.5-flash-low",
+    "gemini-3-flash-agent"
+   ],
+   "routing": {
+    "off": "gemini-3.5-flash-extra-low",
+    "minimal": "gemini-3.5-flash-extra-low",
+    "low": "gemini-3.5-flash-extra-low",
+    "medium": "gemini-3.5-flash-low",
+    "high": "gemini-3-flash-agent"
+   },
+   "mode": "budget",
+   "efforts": [
+    "minimal",
+    "low",
+    "medium",
+    "high"
+   ],
+   "effortBudgets": {
+    "minimal": 1000,
+    "low": 1000,
+    "medium": 4000,
+    "high": 10000
+   },
+   "extraAliases": [
+    "gemini-3-flash"
+   ],
+   "suppressWhenOff": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "gemini-3.1-pro",
+   "name": "Gemini 3.1 Pro",
+   "members": [
+    "gemini-3.1-pro-low",
+    "gemini-pro-agent",
+    "gemini-3.1-pro-high"
+   ],
+   "routing": {
+    "off": "gemini-3.1-pro-low",
+    "low": "gemini-3.1-pro-low",
+    "high": "gemini-pro-agent"
+   },
+   "mode": "budget",
+   "efforts": [
+    "low",
+    "high"
+   ],
+   "effortBudgets": {
+    "low": 1001,
+    "high": 10001
+   },
+   "retiredMembers": [
+    "gemini-3.1-pro-high"
+   ],
+   "suppressWhenOff": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "gemini-3-pro",
+   "name": "Gemini 3 Pro",
+   "members": [
+    "gemini-3-pro-low",
+    "gemini-3-pro-high"
+   ],
+   "routing": {
+    "off": "gemini-3-pro-low",
+    "low": "gemini-3-pro-low",
+    "high": "gemini-3-pro-high"
+   },
+   "mode": "google-level",
+   "efforts": [
+    "low",
+    "high"
+   ],
+   "suppressWhenOff": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "gpt-oss-120b",
+   "name": "GPT-OSS 120B",
+   "members": [
+    "gpt-oss-120b-medium"
+   ],
+   "routing": {},
+   "mode": "budget",
+   "efforts": [
+    "minimal",
+    "low",
+    "medium",
+    "high"
+   ]
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "claude-opus-5-5",
+   "name": "Claude Opus 5.5",
+   "members": [
+    "claude-opus-5-5-low",
+    "claude-opus-5-5-medium",
+    "claude-opus-5-5-high"
+   ],
+   "routing": {
+    "low": "claude-opus-5-5-low",
+    "medium": "claude-opus-5-5-medium",
+    "high": "claude-opus-5-5-high"
+   },
+   "mode": "budget",
+   "efforts": [
+    "low",
+    "medium",
+    "high"
+   ],
+   "requiresEffort": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "claude-sonnet-5-5",
+   "name": "Claude Sonnet 5.5",
+   "members": [
+    "claude-sonnet-5-5-low",
+    "claude-sonnet-5-5-medium",
+    "claude-sonnet-5-5-high"
+   ],
+   "routing": {
+    "low": "claude-sonnet-5-5-low",
+    "medium": "claude-sonnet-5-5-medium",
+    "high": "claude-sonnet-5-5-high"
+   },
+   "mode": "budget",
+   "efforts": [
+    "low",
+    "medium",
+    "high"
+   ],
+   "requiresEffort": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "claude-sonnet-4-6",
+   "name": "Claude Sonnet 4.6",
+   "members": [
+    "claude-sonnet-4-6",
+    "claude-sonnet-4-6-thinking"
+   ],
+   "routing": {},
+   "mode": "budget",
+   "efforts": [
+    "minimal",
+    "low",
+    "medium",
+    "high"
+   ],
+   "retiredMembers": [
+    "claude-sonnet-4-6-thinking"
+   ]
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "claude-opus-4-6",
+   "name": "Claude Opus 4.6",
+   "members": [
+    "claude-opus-4-6-thinking",
+    "claude-opus-4-6"
+   ],
+   "routing": {},
+   "mode": "budget",
+   "efforts": [
+    "minimal",
+    "low",
+    "medium",
+    "high"
+   ],
+   "retiredMembers": [
+    "claude-opus-4-6"
+   ]
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "claude-sonnet-4-5",
+   "name": "Claude Sonnet 4.5",
+   "members": [
+    "claude-sonnet-4-5",
+    "claude-sonnet-4-5-thinking"
+   ],
+   "routing": {
+    "off": "claude-sonnet-4-5",
+    "minimal": "claude-sonnet-4-5-thinking",
+    "low": "claude-sonnet-4-5-thinking",
+    "medium": "claude-sonnet-4-5-thinking",
+    "high": "claude-sonnet-4-5-thinking"
+   },
+   "mode": "budget",
+   "efforts": [
+    "minimal",
+    "low",
+    "medium",
+    "high"
+   ],
+   "preserveAbsentEffortRoutes": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "claude-opus-4-5",
+   "name": "Claude Opus 4.5",
+   "members": [
+    "claude-opus-4-5",
+    "claude-opus-4-5-thinking"
+   ],
+   "routing": {
+    "off": "claude-opus-4-5",
+    "minimal": "claude-opus-4-5-thinking",
+    "low": "claude-opus-4-5-thinking",
+    "medium": "claude-opus-4-5-thinking",
+    "high": "claude-opus-4-5-thinking"
+   },
+   "mode": "budget",
+   "efforts": [
+    "minimal",
+    "low",
+    "medium",
+    "high"
+   ],
+   "preserveAbsentEffortRoutes": true
+  },
+  {
+   "provider": "google-antigravity",
+   "id": "gemini-2.5-flash",
+   "name": "Gemini 2.5 Flash",
+   "members": [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-thinking"
+   ],
+   "routing": {
+    "off": "gemini-2.5-flash",
+    "minimal": "gemini-2.5-flash-thinking",
+    "low": "gemini-2.5-flash-thinking",
+    "medium": "gemini-2.5-flash-thinking",
+    "high": "gemini-2.5-flash-thinking"
+   },
+   "mode": "budget",
+   "efforts": [
+    "minimal",
+    "low",
+    "medium",
+    "high"
+   ],
+   "preserveAbsentEffortRoutes": true
+  }
+ ],
+ "providerAliases": {},
+ "excludeModels": [
+  {
+   "provider": "google-antigravity",
+   "match": {
+    "exact": [
+     "gemini-3.5-flash",
+     "gemini-3-flash"
+    ]
+   }
+  }
+ ]
+}

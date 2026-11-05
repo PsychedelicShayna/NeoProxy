@@ -23,9 +23,39 @@ func newJmap() *jmap { return &jmap{vals: map[string]any{}} }
 func (m *jmap) has(key string) bool { _, ok := m.vals[key]; return ok }
 func (m *jmap) get(key string) any  { return m.vals[key] }
 
+// arrayIndexKey reports whether key is a canonical JavaScript array index
+// (a decimal uint32 below 2^32-1 without leading zeros), which objects
+// enumerate first in ascending order.
+func arrayIndexKey(key string) (uint64, bool) {
+	if key == "" || len(key) > 10 || (key[0] == '0' && len(key) > 1) {
+		return 0, false
+	}
+	var n uint64
+	for i := 0; i < len(key); i++ {
+		if key[i] < '0' || key[i] > '9' {
+			return 0, false
+		}
+		n = n*10 + uint64(key[i]-'0')
+	}
+	return n, n < 1<<32-1
+}
+
 func (m *jmap) set(key string, value any) {
 	if _, ok := m.vals[key]; !ok {
-		m.keys = append(m.keys, key)
+		position := len(m.keys)
+		if index, isIndex := arrayIndexKey(key); isIndex {
+			position = 0
+			for position < len(m.keys) {
+				existing, existingIsIndex := arrayIndexKey(m.keys[position])
+				if !existingIsIndex || existing > index {
+					break
+				}
+				position++
+			}
+		}
+		m.keys = append(m.keys, "")
+		copy(m.keys[position+1:], m.keys[position:])
+		m.keys[position] = key
 	}
 	m.vals[key] = value
 }
@@ -93,11 +123,17 @@ func encodeTree(value any) json.RawMessage {
 			if i > 0 {
 				out = append(out, ',')
 			}
-			out = append(out, encodeTree(child)...)
+			if encoded := encodeTree(child); len(encoded) > 0 {
+				out = append(out, encoded...)
+			} else {
+				out = append(out, "null"...)
+			}
 		}
 		return append(out, ']')
 	case float64:
 		return json.RawMessage(jsjson.Number(typed))
+	case jsUndefined:
+		return nil
 	case nil:
 		return json.RawMessage("null")
 	}

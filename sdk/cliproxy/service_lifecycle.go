@@ -39,7 +39,6 @@ func (s *Service) Run(ctx context.Context) error {
 	}
 	ctx, runCancel := context.WithCancel(ctx)
 	s.cfgMu.Lock()
-	s.antigravityContext = ctx
 	s.claudeDiscoveryContext = ctx
 	s.codexDiscoveryContext = ctx
 	s.cfgMu.Unlock()
@@ -234,7 +233,6 @@ func (s *Service) Run(ctx context.Context) error {
 
 	s.registerModelRefreshCallback()
 	if !homeEnabled {
-		go s.runAntigravityModelRefresh(ctx)
 		go s.runXAIModelDiscovery(ctx)
 		go s.runNeoPiDiscovery(ctx)
 		go s.runClaudeModelDiscovery(ctx)
