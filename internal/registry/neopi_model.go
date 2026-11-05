@@ -98,6 +98,7 @@ type NeoPiCompletionsCompat struct {
 	SessionHeader                                string                  `json:"sessionHeader,omitempty"`
 	ExtraBody                                    map[string]any          `json:"extraBody,omitempty"`
 	StreamIdleTimeoutMs                          int                     `json:"streamIdleTimeoutMs,omitempty"`
+	StreamFirstEventTimeoutMs                    *int                    `json:"streamFirstEventTimeoutMs,omitempty"`
 	AlwaysSendMaxTokens                          bool                    `json:"alwaysSendMaxTokens"`
 	ClampOutputToModelMax                        bool                    `json:"clampOutputToModelMax"`
 	SupportsDeveloperRole                        bool                    `json:"supportsDeveloperRole"`
@@ -168,6 +169,10 @@ func (c *NeoPiCompletionsCompat) Clone() *NeoPiCompletionsCompat {
 		return nil
 	}
 	out := *c
+	if c.StreamFirstEventTimeoutMs != nil {
+		timeout := *c.StreamFirstEventTimeoutMs
+		out.StreamFirstEventTimeoutMs = &timeout
+	}
 	out.ReasoningEffortMap = maps.Clone(c.ReasoningEffortMap)
 	out.ExtraBody = maps.Clone(c.ExtraBody)
 	out.WhenThinking = c.WhenThinking.Clone()

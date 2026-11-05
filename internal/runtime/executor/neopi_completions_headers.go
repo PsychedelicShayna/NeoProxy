@@ -32,7 +32,9 @@ func neoPiCompletionsHeaders(ctx context.Context, auth *cliproxyauth.Auth, incom
 	if headers.Get("User-Agent") == "" {
 		headers.Set("User-Agent", openaiwire.NeoPiUserAgent)
 	}
-	headers.Set("X-Stainless-Timeout", neoPiCompletionsTimeoutHeader(row))
+	if timeout := neoPiCompletionsTimeoutHeader(row); timeout != "" {
+		headers.Set("X-Stainless-Timeout", timeout)
+	}
 	return headers
 }
 
@@ -40,6 +42,13 @@ func neoPiCompletionsHeaders(ctx context.Context, auth *cliproxyauth.Auth, incom
 // its first-event timeout, which never undershoots the stream idle timeout.
 func neoPiCompletionsTimeoutHeader(row *registry.NeoPiModel) string {
 	timeout := neoPiCompletionsDefaultIdleTimeoutMs
+	if row != nil && row.CompletionsCompat != nil && row.CompletionsCompat.StreamFirstEventTimeoutMs != nil {
+		first := *row.CompletionsCompat.StreamFirstEventTimeoutMs
+		if first <= 0 {
+			return ""
+		}
+		timeout = max(timeout, first)
+	}
 	if row != nil && row.CompletionsCompat != nil && row.CompletionsCompat.StreamIdleTimeoutMs > timeout {
 		timeout = row.CompletionsCompat.StreamIdleTimeoutMs
 	}
