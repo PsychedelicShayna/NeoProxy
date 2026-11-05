@@ -13,9 +13,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/anthropicnpi"
 	zaiauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/zai"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/openaiwire"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
+	"github.com/tidwall/gjson"
 )
 
 // accessHTTPClient validates keys. It never follows redirects (a key must not be
@@ -84,10 +88,17 @@ func listUpstreamModels(ctx context.Context, style, base, key string) ([]string,
 		return nil, nil, accessErr(http.StatusBadRequest, "The base URL is not a valid address.")
 	}
 	req.Header = header
-	req.Header.Set("Accept", "application/json")
-	// Some providers sit behind bot protection that rejects Go's default
-	// User-Agent with a 403 page (Nous Portal does), which would read as a bad key.
-	req.Header.Set("User-Agent", "NeoProxy")
+	if registry.ResponsesProviderForBaseURL(base) != "" {
+		// NeoPi's models-endpoint validation (validateApiKeyAgainstModelsEndpoint):
+		// fetch's default Accept and Bun's User-Agent, nothing else.
+		req.Header.Set("Accept", "*/*")
+		req.Header.Set("User-Agent", openaiwire.BunUserAgent)
+	} else {
+		req.Header.Set("Accept", "application/json")
+		// Some providers sit behind bot protection that rejects Go's default
+		// User-Agent with a 403 page (Nous Portal does), which would read as a bad key.
+		req.Header.Set("User-Agent", "NeoProxy")
+	}
 	resp, err := accessHTTPClient.Do(req)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) || strings.Contains(err.Error(), "Client.Timeout") {
@@ -170,6 +181,10 @@ func listUpstreamModels(ctx context.Context, style, base, key string) ([]string,
 // dropped so they never reach the model list. routes carries the API each
 // model is served over (see modelRoutes).
 func validateCatalogKey(ctx context.Context, info ProviderInfo, base, preferred, key string) (string, []string, map[string]modelRoute, error) {
+	if gateway := registry.GatewayProviderFor(base); gateway != "" {
+		models, err := validateGatewayKey(ctx, gateway, key)
+		return base, models, nil, err
+	}
 	if info.ID == "zai" {
 		return zaiauth.CodingPlanBaseURL, nil, nil, validateZaiKey(ctx, key)
 	}
@@ -216,7 +231,7 @@ func validateCatalogKey(ctx context.Context, info ProviderInfo, base, preferred,
 			return "", nil, nil, accessErr(http.StatusBadRequest, "%s accepted the key but lists no chat models for it.", info.Name)
 		}
 	}
-	return base, models, modelRoutes(info, base, models, advertised), nil
+	return base, models, modelRoutes(base, models, advertised), nil
 }
 
 // validateZaiKey is NeoPi's Z.ai key check (validate "chat-completions"): a
@@ -248,23 +263,100 @@ func validateZaiKey(ctx context.Context, key string) error {
 	}
 }
 
+// validateGatewayKey lists a gateway's models the way NeoPi's discovery does:
+// GET <base>/models with NeoPi's user agent and, for OpenCode, its install-id
+// session header. NeoPi authenticates with a bearer; Zen keys are also
+// accepted as X-Api-Key, so a key the bearer probe refuses is retried that way
+// instead of being reported as rejected.
+func validateGatewayKey(ctx context.Context, gateway, key string) ([]string, error) {
+	base := registry.GatewayDiscoveryBaseURL(gateway)
+	models, status, err := gatewayModelList(ctx, gateway, base, key, true)
+	if status == http.StatusUnauthorized || status == http.StatusForbidden {
+		if retry, retryStatus, retryErr := gatewayModelList(ctx, gateway, base, key, false); retryErr == nil {
+			return retry, nil
+		} else if retryStatus == http.StatusUnauthorized || retryStatus == http.StatusForbidden {
+			return nil, &AccessError{Status: http.StatusBadRequest, keyRejected: true, Message: fmt.Sprintf("%s rejected this key (HTTP %d). Check that the whole key was pasted and that it is still active.", gatewayName(gateway), status)}
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return models, nil
+}
+
+// gatewayModelList performs one model-list probe and returns the model ids.
+func gatewayModelList(ctx context.Context, gateway, base, key string, bearer bool) ([]string, int, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(base, "/")+"/models", nil)
+	if err != nil {
+		return nil, 0, accessErr(http.StatusBadRequest, "The base URL is not a valid address.")
+	}
+	request.Header.Set("Accept", "application/json")
+	if bearer {
+		request.Header.Set("Authorization", "Bearer "+key)
+	} else {
+		request.Header.Set("X-Api-Key", key)
+	}
+	request.Header.Set("User-Agent", openaiwire.NeoPiUserAgent)
+	if gateway == registry.GatewayOpenCodeGo || gateway == registry.GatewayOpenCodeZen {
+		request.Header.Set("x-opencode-session", gatewayValidationInstallID(gateway))
+	}
+	response, err := accessHTTPClient.Do(request)
+	if err != nil {
+		return nil, 0, accessErr(http.StatusBadGateway, "Could not reach %s. Try again in a moment.", gatewayName(gateway))
+	}
+	defer func() { _ = response.Body.Close() }()
+	if response.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 1<<20))
+		if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+			return nil, response.StatusCode, accessErr(http.StatusBadRequest, "%s rejected this key (HTTP %d).", gatewayName(gateway), response.StatusCode)
+		}
+		return nil, response.StatusCode, accessErr(http.StatusBadGateway, "%s answered HTTP %d when listing models. Try again in a moment.", gatewayName(gateway), response.StatusCode)
+	}
+	body, err := io.ReadAll(io.LimitReader(response.Body, 16<<20))
+	if err != nil {
+		return nil, 0, accessErr(http.StatusBadGateway, "The model list from %s could not be read. Try again in a moment.", gatewayName(gateway))
+	}
+	var models []string
+	for _, entry := range gjson.GetBytes(body, "data").Array() {
+		if id := strings.TrimSpace(entry.Get("id").String()); id != "" {
+			models = append(models, id)
+		}
+	}
+	if len(models) == 0 {
+		return nil, 0, accessErr(http.StatusBadRequest, "%s accepted the key but listed no models for it. Check the key's subscription.", gatewayName(gateway))
+	}
+	sort.Strings(models)
+	return models, 0, nil
+}
+
+// gatewayValidationInstallID is NeoPi's stable install identity for a
+// key-validation probe; the key is not yet attached to an account.
+func gatewayValidationInstallID(gateway string) string {
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte("cli-proxy-api:gateway:install\x00"+gateway+"\x00validation")).String()
+}
+
+// gatewayName is the display name of a gateway provider id.
+func gatewayName(gateway string) string {
+	switch gateway {
+	case registry.GatewayOpenCodeGo:
+		return "OpenCode Go"
+	case registry.GatewayOpenCodeZen:
+		return "OpenCode Zen"
+	case registry.GatewayVercel:
+		return "Vercel AI Gateway"
+	}
+	return gateway
+}
+
 // modelRoutes decides each model's upstream API: what the model list
-// advertises, else the provider's family rules; models left on chat
+// advertises; models left on chat
 // completions at the entry's base URL need no route. An advertised base URL is
 // kept only on the entry's own scheme and host, so a model list can never send
 // the key elsewhere.
-func modelRoutes(info ProviderInfo, base string, models []string, advertised map[string]modelRoute) map[string]modelRoute {
+func modelRoutes(base string, models []string, advertised map[string]modelRoute) map[string]modelRoute {
 	out := map[string]modelRoute{}
 	for _, id := range models {
 		route := advertised[id]
-		if route.dialect == "" {
-			for _, rule := range info.dialectRules {
-				if strings.HasPrefix(id, rule.prefix) {
-					route.dialect = rule.dialect
-					break
-				}
-			}
-		}
 		if route.baseURL != "" && (route.baseURL == base || !sameOrigin(route.baseURL, base)) {
 			route.baseURL = ""
 		}

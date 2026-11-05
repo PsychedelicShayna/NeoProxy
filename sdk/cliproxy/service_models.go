@@ -91,7 +91,9 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	var models []*ModelInfo
 	switch provider {
 	case constant.Gemini:
-		models = registry.GetGeminiModels()
+		// NeoPi serves its bundled catalog until the account's /v1beta/models
+		// listing answers; a configured model list replaces it.
+		models = s.registerNeoPiDiscovered(googleDiscovery, a)
 		if entry := resolveConfigGeminiKeyForConfig(cfg, a); entry != nil {
 			if len(entry.Models) > 0 {
 				models = buildGeminiConfigModels(entry)
@@ -194,7 +196,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	case "nous-portal":
 		models = applyExcludedModels(nousModelsForAuth(ctx, cfg, a), excluded)
 	case "meta":
-		models = registry.GetMetaModels()
+		models = s.registerNeoPiDiscovered(metaDiscoveryFor(a), a)
 		if entry := resolveConfigMetaKeyForConfig(cfg, a); entry != nil {
 			if len(entry.Models) > 0 {
 				models = buildMetaConfigModels(entry)
@@ -250,7 +252,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 					return false
 				}
 				isCompatAuth = true
-				ms := buildOpenAICompatibilityConfigModels(compat)
+				ms := s.neoPiResponsesModelsFor(a, s.gatewayOrCompatModels(compat, a))
 				if providerKey == "" {
 					providerKey = "openai-compatibility"
 				}
@@ -276,7 +278,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 					if providerKey == "" {
 						providerKey = "openai-compatibility"
 					}
-					ms := cached.models
+					ms := s.neoPiResponsesModelsFor(a, cached.models)
 					if len(ms) > 0 {
 						ms = s.appendPluginModels(providerKey, ms, nil)
 						published = s.registerResolvedModelsForAuthFenced(a, fence, providerKey, applyModelPrefixes(ms, a.Prefix, cfg.ForceModelPrefix))
@@ -844,6 +846,26 @@ func buildConfiguredModelInfo(model modelEntry, ownedBy, modelType string, creat
 		info.IsCompat = compatModel.GetIsCompat()
 	}
 	return info
+}
+
+// gatewayOrCompatModels serves a multi-wire gateway entry (OpenCode Go/Zen,
+// the Vercel AI Gateway) NeoPi's own catalog, and every other entry its
+// configured models.
+func (s *Service) gatewayOrCompatModels(compat *config.OpenAICompatibility, a *coreauth.Auth) []*ModelInfo {
+	if compat != nil {
+		if gateway := registry.GatewayProviderFor(compat.BaseURL); gateway != "" {
+			for _, discovery := range gatewayDiscoveries {
+				if discovery.provider == gateway {
+					models := s.registerNeoPiDiscovered(discovery, a)
+					for _, model := range models {
+						model.OwnedBy = compat.Name
+					}
+					return models
+				}
+			}
+		}
+	}
+	return buildOpenAICompatibilityConfigModels(compat)
 }
 
 func buildOpenAICompatibilityConfigModels(compat *config.OpenAICompatibility) []*ModelInfo {

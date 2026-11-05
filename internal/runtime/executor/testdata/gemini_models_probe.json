@@ -1,0 +1,31 @@
+{
+  "models": [
+    {"name": "models/gemini-3.1-pro-preview", "displayName": "Gemini 3.1 Pro Preview", "supportedGenerationMethods": ["generateContent", "countTokens"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-3-flash-preview", "displayName": "gemini-3-flash-preview", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 4096},
+    {"name": "models/gemini-2.5-flash", "displayName": "Gemini 2.5 Flash", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1000000},
+    {"name": "models/gemini-3.9-flash", "displayName": "Gemini 3.9 Flash", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-3.2-pro", "displayName": "Gemini 3.2 Pro", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-3.2-flash-lite", "displayName": "Gemini 3.2 Flash Lite", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-2.6-pro", "displayName": "Gemini 2.6 Pro", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-2.6-flash", "displayName": "Gemini 2.6 Flash", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-2.5-flash-lite-new", "displayName": "Gemini 2.5 Flash-Lite New", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-4-flash", "displayName": "Gemini 4 Flash", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-4-pro", "displayName": "Gemini 4 Pro", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-4-argon-cyber-permissive", "displayName": "Gemini 4 Argon Cyber Permissive", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 32768},
+    {"name": "models/gemini-exp-1206", "displayName": "Gemini Experimental 1206", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 2097152, "outputTokenLimit": 8192},
+    {"name": "models/gemini-pro-vision", "displayName": "Gemini Pro Vision", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 12288, "outputTokenLimit": 4096},
+    {"name": "models/gemma-5-9b-it", "displayName": "Gemma 5 9B", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 131072, "outputTokenLimit": 8192},
+    {"name": "models/gemma-4-100b-it", "displayName": "Gemma 4 100B", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 262144, "outputTokenLimit": 32768},
+    {"name": "models/gemma-3n-e4b-it", "displayName": "Gemma 3n E4B", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 8192, "outputTokenLimit": 2048},
+    {"name": "models/learnlm-2.0-flash-experimental", "displayName": "LearnLM 2.0 Flash Experimental", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 32768},
+    {"name": "models/aqa", "displayName": "Model that performs Attributed Question Answering.", "supportedGenerationMethods": ["generateAnswer"], "inputTokenLimit": 7168, "outputTokenLimit": 1024},
+    {"name": "models/imagen-4.0-generate-001", "displayName": "Imagen 4", "supportedGenerationMethods": ["predict"], "inputTokenLimit": 480, "outputTokenLimit": 8192},
+    {"name": "models/gemini-embedding-001", "displayName": "Gemini Embedding 001", "supportedGenerationMethods": ["embedContent"], "inputTokenLimit": 2048, "outputTokenLimit": 1},
+    {"name": "models/gemini-robotics-er-2.0-preview", "displayName": "Gemini Robotics ER 2.0 Preview", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 131072, "outputTokenLimit": 65536},
+    {"name": "models/deep-research-pro-preview-12-2025", "displayName": "Deep Research Pro Preview", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 131072, "outputTokenLimit": 65536},
+    {"name": "models/gemini-2.5-flash-thinking-exp", "displayName": "Gemini 2.5 Flash Thinking Exp", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/nano-banana-pro-preview", "displayName": "Nano Banana Pro", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 131072, "outputTokenLimit": 32768},
+    {"name": "models/gemini-3.5-flash-preview-09-2026", "displayName": "Gemini 3.5 Flash Preview", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536},
+    {"name": "models/gemini-3-pro-low", "displayName": "Gemini 3 Pro Low", "supportedGenerationMethods": ["generateContent"], "inputTokenLimit": 1048576, "outputTokenLimit": 65536}
+  ]
+}

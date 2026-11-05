@@ -209,7 +209,7 @@ func TestCustomMagicHeaders_Gemini(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotHeaders = r.Header.Clone()
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"candidates":[{"content":{"parts":[{"text":"hello"}]}}]}`))
+		_, _ = w.Write([]byte(`{"candidates":[{"content":{"parts":[{"text":"hello"}]},"finishReason":"STOP"}]}`))
 	}))
 	defer server.Close()
 
@@ -261,7 +261,7 @@ func TestCustomMagicHeaders_GeminiInteractions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	executor := NewGeminiExecutor(&config.Config{})
+	executor := NewGeminiInteractionsExecutor(&config.Config{})
 	auth := &cliproxyauth.Auth{
 		Provider: "gemini-interactions",
 		Attributes: map[string]string{
@@ -604,7 +604,7 @@ func TestCustomMagicHeaders_CPASessionID_Gemini(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotHeaders = r.Header.Clone()
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"candidates":[{"content":{"parts":[{"text":"hello"}]}}]}`))
+		_, _ = w.Write([]byte(`{"candidates":[{"content":{"parts":[{"text":"hello"}]},"finishReason":"STOP"}]}`))
 	}))
 	defer server.Close()
 
@@ -649,7 +649,7 @@ func TestCustomMagicHeaders_CPASessionID_GeminiInteractions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	executor := NewGeminiExecutor(&config.Config{})
+	executor := NewGeminiInteractionsExecutor(&config.Config{})
 	auth := &cliproxyauth.Auth{
 		Provider: "gemini-interactions",
 		Attributes: map[string]string{

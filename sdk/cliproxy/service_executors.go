@@ -8,6 +8,7 @@ import (
 	zaiauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/zai"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/constant"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginhost"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
@@ -301,6 +302,19 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 		if compatProviderKey == "" {
 			compatProviderKey = "openai-compatibility"
 		}
+		if gateway := registry.GatewayProviderFor(a.Attributes["base_url"]); gateway != "" {
+			// NeoPi serves OpenCode Go/Zen and the Vercel AI Gateway itself,
+			// each model on the API its catalog routes it to.
+			if !forceReplace {
+				if existing, ok := s.coreManager.Executor(compatProviderKey); ok {
+					if g, isGateway := existing.(*executor.GatewayExecutor); isGateway && g.UsesConfig(cfg) && g.UsesGateway(gateway) {
+						return
+					}
+				}
+			}
+			s.coreManager.RegisterExecutor(executor.NewGatewayExecutor(compatProviderKey, gateway, cfg))
+			return
+		}
 		if zaiauth.IsCodingPlanBaseURL(a.Attributes["base_url"]) {
 			// NeoPi serves Z.ai keys itself: Anthropic Messages for most of its
 			// catalog, Chat Completions for GLM-5.3-Flash.
@@ -312,6 +326,19 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 				}
 			}
 			s.coreManager.RegisterExecutor(executor.NewZaiExecutor(compatProviderKey, cfg))
+			return
+		}
+		if registry.ResponsesProviderForBaseURL(a.Attributes["base_url"]) != "" {
+			// NeoPi serves Sakana and Abliteration keys (and keys at Meta's Model
+			// API address) itself, over its generic openai-responses transport.
+			if !forceReplace {
+				if existing, ok := s.coreManager.Executor(compatProviderKey); ok {
+					if responses, isResponses := existing.(*executor.NeoPiResponsesExecutor); isResponses && responses.UsesConfig(cfg) {
+						return
+					}
+				}
+			}
+			s.coreManager.RegisterExecutor(executor.NewNeoPiResponsesExecutor(compatProviderKey, cfg))
 			return
 		}
 		s.registerOpenAICompatProviderExecutor(compatProviderKey, a, cfg, forceReplace, false)
@@ -357,7 +384,7 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 	case "devin":
 		s.coreManager.RegisterExecutor(executor.NewDevinExecutor(cfg))
 	case "meta":
-		s.coreManager.RegisterExecutor(executor.NewMetaExecutor(cfg))
+		s.coreManager.RegisterExecutor(executor.NewNeoPiResponsesExecutor("meta", cfg))
 	case "cursor":
 		s.coreManager.RegisterExecutor(executor.NewCursorExecutor(cfg))
 	case "nous-portal":

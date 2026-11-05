@@ -117,23 +117,6 @@ const (
 	defaultAPIKeyUSD       = 20
 )
 
-// OpenCode's model lists name each model's API (chat-completions, responses,
-// messages, generate-content) and its base URL. These family rules only cover
-// ids listed without that metadata. Every OpenCode inference request must carry
-// x-opencode-session, or the gateway answers 400 MissingSessionID.
-var openCodeDialectRules = []dialectRule{
-	{"claude-", "messages"},
-	{"gpt-", "responses"},
-	{"grok-", "responses"},
-	{"muse-", "responses"},
-}
-
-const openCodeSessionHeader = "x-opencode-session"
-
-// openCodeHeaders replace the engine's default OpenAI-compatible User-Agent,
-// which opencode.ai's Cloudflare front rejects (error 1010, HTTP 403).
-var openCodeHeaders = map[string]string{"User-Agent": "NeoProxy"}
-
 func openAIKey(base, hint, getKey string) *ProviderAPIKey {
 	return &ProviderAPIKey{Style: "openai", BaseURL: base, KeyHint: hint, GetKeyURL: getKey}
 }
@@ -186,7 +169,7 @@ var providerCatalog = []ProviderInfo{
 		Plans:        []ProviderPlan{}},
 	{ID: "meta", Name: "Meta AI", Vendor: "Meta", Hue: 280, Chroma: providerChroma, Methods: []string{"subscription", "apiKey"},
 		Subscription: device("Opens Meta in a new tab and shows a code to confirm there."),
-		APIKey:       openAIKey("https://api.meta.ai/v1", "LLM|...", "https://llama.developer.meta.com/"),
+		APIKey:       openAIKey("https://api.meta.ai/v1", "LLM|...", "https://developer.meta.com/ai/"),
 		Plans:        []ProviderPlan{}, engine: "meta"},
 	{ID: "openrouter", Name: "OpenRouter", Vendor: "OpenRouter", Hue: 300, Chroma: providerChroma, Methods: []string{"apiKey"},
 		APIKey: openAIKey("https://openrouter.ai/api/v1", "sk-or-v1-...", "https://openrouter.ai/settings/keys"), Plans: []ProviderPlan{}},
@@ -218,15 +201,13 @@ var providerCatalog = []ProviderInfo{
 		regions:    []string{qwenTokenPlanIntlURL, qwenTokenPlanCNURL},
 		skipModels: []string{"fun-asr", "happyhorse-", "qwen-audio-", "qwen-image-", "text-embedding-", "wan"}},
 	{ID: "opencode-go", Name: "OpenCode Go", Vendor: "OpenCode", Hue: 242, Chroma: providerChroma, Methods: []string{"apiKey"},
-		APIKey:       openAIKey("https://opencode.ai/zen/go/v1", "oc_... (OpenCode Go key)", "https://opencode.ai/auth"),
-		Plans:        []ProviderPlan{{"go", "Go", 10}, {"go-plus", "Go Plus", 40}, {"go-teams", "Go Teams (per member)", 20}},
-		dialectRules: openCodeDialectRules, sessionHeader: openCodeSessionHeader, headers: openCodeHeaders},
+		APIKey: openAIKey("https://opencode.ai/inference/go/v1", "oc_... (OpenCode Go key)", "https://opencode.ai/auth"),
+		Plans:  []ProviderPlan{{"go", "Go", 10}, {"go-plus", "Go Plus", 40}, {"go-teams", "Go Teams (per member)", 20}}},
 	{ID: "opencode-zen", Name: "OpenCode Zen", Vendor: "OpenCode", Hue: 160, Chroma: tintChroma, Methods: []string{"apiKey"},
-		APIKey:       openAIKey("https://opencode.ai/zen/v1", "oc_... (OpenCode Zen key)", "https://opencode.ai/auth"),
-		Plans:        []ProviderPlan{},
-		dialectRules: openCodeDialectRules, sessionHeader: openCodeSessionHeader, headers: openCodeHeaders},
+		APIKey: openAIKey("https://opencode.ai/zen/v1", "oc_... (OpenCode Zen key)", "https://opencode.ai/auth"),
+		Plans:  []ProviderPlan{}},
 	{ID: "sakana", Name: "Sakana AI", Vendor: "Sakana AI", Hue: 357, Chroma: providerChroma, Methods: []string{"apiKey"},
-		APIKey: openAIKey("https://api.sakana.ai/v1", "fish_...", "https://console.sakana.ai/api-keys"), Plans: []ProviderPlan{},
+		APIKey: openAIKey("https://api.sakana.ai/v1", "sk-...", "https://console.sakana.ai/api-keys"), Plans: []ProviderPlan{},
 		dialect: "responses"},
 	{ID: "abliteration", Name: "Abliteration", Vendor: "Abliteration", Hue: 57, Chroma: providerChroma, Methods: []string{"apiKey"},
 		APIKey: openAIKey("https://api.abliteration.ai/v1", "ak_...", "https://abliteration.ai/console"), Plans: []ProviderPlan{},

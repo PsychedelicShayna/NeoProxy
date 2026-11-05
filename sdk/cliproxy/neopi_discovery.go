@@ -2,6 +2,7 @@ package cliproxy
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,6 +24,9 @@ type neoPiDiscovery struct {
 	ttl, retry, timeout time.Duration
 	bundled             func() []*ModelInfo
 	fetch               func(context.Context, *config.Config, *coreauth.Auth) ([]*ModelInfo, error)
+	// match selects the accounts the discovery serves when provider alone
+	// cannot (keys at an address, one provider with two NeoPi catalogs).
+	match func(*coreauth.Auth) bool
 
 	mu      sync.Mutex
 	entries map[string]*neoPiDiscoveryEntry
@@ -47,9 +51,73 @@ var (
 	// 2h cache TTL and its 15s discovery bound.
 	devinDiscovery = &neoPiDiscovery{provider: "devin", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 15 * time.Second,
 		bundled: registry.DevinBundledModels, fetch: executor.FetchDevinModels, entries: map[string]*neoPiDiscoveryEntry{}}
+	// gatewayDiscoveries list each gateway's /models roster: NeoPi's model
+	// manager default 2h cache TTL and 10s discovery bound.
+	gatewayDiscoveries = func() []*neoPiDiscovery {
+		out := make([]*neoPiDiscovery, 0, len(registry.GatewayProviders()))
+		for _, provider := range registry.GatewayProviders() {
+			provider := provider
+			out = append(out, &neoPiDiscovery{provider: provider, match: gatewayOwns(provider), ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 10 * time.Second,
+				bundled: func() []*ModelInfo { return registry.GatewayBundledModels(provider, provider) },
+				fetch:   gatewayModelFetcher(provider), entries: map[string]*neoPiDiscoveryEntry{}})
+		}
+		return out
+	}()
 
-	neoPiDiscoveries = []*neoPiDiscovery{kimiDiscovery, devinDiscovery}
+	// googleDiscovery lists GET /v1beta/models; NeoPi keeps its bundled rows and
+	// overlays the listing, so its bundled catalog stays authoritative.
+	googleDiscovery = &neoPiDiscovery{provider: "gemini", ttl: 6 * time.Hour, retry: 5 * time.Minute, timeout: 30 * time.Second,
+		bundled: registry.GoogleBundledModels, fetch: executor.FetchGoogleModels, entries: map[string]*neoPiDiscoveryEntry{}}
+
+	// museCodeDiscovery lists a Meta sign-in's models: NeoPi's muse-code
+	// manager (authoritative `/v1/models` over the subscription key).
+	museCodeDiscovery = newResponsesDiscovery(registry.ResponsesMuseCode, "meta")
+	// metaAPIKeyDiscovery lists a Meta Model API key's models.
+	metaAPIKeyDiscovery = newResponsesDiscovery(registry.ResponsesMeta, "meta")
+	// sakanaDiscovery and abliterationDiscovery list the openai-compatibility
+	// keys at those gateways, NeoPi's authoritative `/v1/models` managers.
+	sakanaDiscovery       = newResponsesDiscovery(registry.ResponsesSakana, "")
+	abliterationDiscovery = newResponsesDiscovery(registry.ResponsesAbliterate, "")
+
+	neoPiDiscoveries = append([]*neoPiDiscovery{kimiDiscovery, devinDiscovery, googleDiscovery, museCodeDiscovery, metaAPIKeyDiscovery, sakanaDiscovery, abliterationDiscovery}, gatewayDiscoveries...)
 )
+
+// gatewayOwns matches the openai-compatibility accounts pointed at a gateway.
+func gatewayOwns(gateway string) func(*coreauth.Auth) bool {
+	return func(a *coreauth.Auth) bool {
+		if a == nil || a.Attributes == nil {
+			return false
+		}
+		if _, _, ok := openAICompatInfoFromAuth(a); !ok {
+			return false
+		}
+		return registry.GatewayProviderFor(a.Attributes["base_url"]) == gateway
+	}
+}
+
+// gatewayModelFetcher lists a gateway's models the way NeoPi's discovery does.
+func gatewayModelFetcher(gateway string) func(context.Context, *config.Config, *coreauth.Auth) ([]*ModelInfo, error) {
+	return func(ctx context.Context, cfg *config.Config, a *coreauth.Auth) ([]*ModelInfo, error) {
+		return executor.FetchGatewayModels(ctx, cfg, a, gateway)
+	}
+}
+
+// newResponsesDiscovery is the discovery of one NeoPi Responses provider: the
+// model manager's 2h cache and 10s discovery bound over executor.FetchResponsesModels.
+// provider is the engine provider its accounts carry, or "" for the
+// openai-compatibility keys served by address.
+func newResponsesDiscovery(neoPiProvider, provider string) *neoPiDiscovery {
+	return &neoPiDiscovery{provider: provider, ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 10 * time.Second,
+		match: func(a *coreauth.Auth) bool { return executor.ResponsesProviderOfAuth(a) == neoPiProvider },
+		bundled: func() []*ModelInfo {
+			owner, modelType := "meta", "meta"
+			if provider == "" {
+				owner, modelType = neoPiProvider, "openai-compatibility"
+			}
+			return registry.ResponsesModels(neoPiProvider, owner, modelType, nil)
+		},
+		fetch: executor.FetchResponsesModels, entries: map[string]*neoPiDiscoveryEntry{}}
+}
 
 // models returns the models to register for a and whether its cached listing
 // needs a (re)fetch.
@@ -129,7 +197,7 @@ func (s *Service) queueNeoPiDiscovery(d *neoPiDiscovery, a *coreauth.Auth) {
 		if s.coreManager == nil {
 			return
 		}
-		if latest, ok := s.coreManager.GetByID(snapshot.ID); ok && latest != nil && !latest.Disabled && latest.Provider == d.provider {
+		if latest, ok := s.coreManager.GetByID(snapshot.ID); ok && latest != nil && !latest.Disabled && d.serves(latest) {
 			s.refreshModelRegistrationForAuth(latest)
 		}
 	}()
@@ -164,7 +232,7 @@ func (s *Service) runNeoPiDiscovery(ctx context.Context) {
 				continue
 			}
 			for _, d := range neoPiDiscoveries {
-				if a.Provider != d.provider {
+				if !d.serves(a) {
 					continue
 				}
 				if _, stale := d.models(a, now); stale {
@@ -173,4 +241,45 @@ func (s *Service) runNeoPiDiscovery(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// serves reports whether the discovery lists a's models.
+func (d *neoPiDiscovery) serves(a *coreauth.Auth) bool {
+	if a == nil {
+		return false
+	}
+	if d.match != nil {
+		return d.match(a)
+	}
+	return a.Provider == d.provider
+}
+
+// metaDiscoveryFor selects the NeoPi catalog a Meta account lists: a sign-in
+// is Muse Code's, a key is the Model API's.
+func metaDiscoveryFor(a *coreauth.Auth) *neoPiDiscovery {
+	if museCodeDiscovery.serves(a) {
+		return museCodeDiscovery
+	}
+	return metaAPIKeyDiscovery
+}
+
+// neoPiResponsesModelsFor replaces the configured model list of an
+// openai-compatibility key at a Sakana or Abliteration address with NeoPi's
+// discovered catalog; any other account keeps fallback.
+func (s *Service) neoPiResponsesModelsFor(a *coreauth.Auth, fallback []*ModelInfo) []*ModelInfo {
+	for _, d := range []*neoPiDiscovery{sakanaDiscovery, abliterationDiscovery} {
+		if !d.serves(a) {
+			continue
+		}
+		owner := strings.TrimSpace(a.Attributes["compat_name"])
+		if owner == "" {
+			owner = strings.TrimSpace(a.Provider)
+		}
+		models := s.registerNeoPiDiscovered(d, a)
+		for _, model := range models {
+			model.OwnedBy = owner
+		}
+		return models
+	}
+	return fallback
 }

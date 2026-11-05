@@ -49,6 +49,13 @@ type neoPiThirdPartyProvider struct {
 	catalog func(req cliproxyexecutor.Request, model string) *registry.NeoPiModel
 	bearer  func(auth *cliproxyauth.Auth) string
 	headers func() http.Header
+	// apiKeyHeader authenticates with X-Api-Key instead of Authorization:
+	// OpenCode's Anthropic-compatible endpoint rejects bearer-only requests
+	// (401 Missing API key).
+	apiKeyHeader bool
+	// sessionHeader carries the conversation id next to the endpoint's own
+	// protocol header (OpenCode's x-opencode-session).
+	sessionHeader string
 }
 
 func NewClaudeExecutor(cfg *config.Config) *ClaudeExecutor {

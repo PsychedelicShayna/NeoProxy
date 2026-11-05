@@ -596,7 +596,7 @@ func TestResolveMetaToken_ConcurrentSingleflight(t *testing.T) {
 			var token string
 			var errToken error
 			if i%2 == 0 {
-				prepared, err := manager.PrepareRequestAuth(context.Background(), executor.NewMetaExecutor(h.cfg), auth.Clone())
+				prepared, err := manager.PrepareRequestAuth(context.Background(), executor.NewNeoPiResponsesExecutor("meta", h.cfg), auth.Clone())
 				errToken = err
 				token = metaTokenFromAuth(prepared)
 			} else {

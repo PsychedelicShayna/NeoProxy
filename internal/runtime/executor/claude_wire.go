@@ -344,6 +344,7 @@ func projectNeoPiAnthropic(input []byte, model, base, version string, identity n
 		effort = ""
 	}
 	party := profile.thirdParty
+	var reasoning string
 	if party != nil && profile.Reasoning {
 		// NeoPi's streamSimple sends a reasoning model's thinking off unless an
 		// effort was requested; a mandatory-thinking model then runs at its
@@ -360,6 +361,17 @@ func projectNeoPiAnthropic(input []byte, model, base, version string, identity n
 		if !requested && party.requiresEffort && len(party.efforts) > 0 {
 			effort, requested = party.efforts[0], true
 		}
+		// NeoPi's mapEffortToAnthropicAdaptiveEffort: the model's effort map,
+		// and minimal is the wire's low. The budget keeps the requested rung.
+		reasoning = effort
+		if mode := profile.Thinking.Mode; !party.directOptions && (mode == "anthropic-adaptive" || mode == "anthropic-budget-effort") {
+			if mapped, ok := party.effortMap[effort]; ok {
+				effort = mapped
+			}
+			if effort == "minimal" {
+				effort = "low"
+			}
+		}
 		off, enabled = !requested, requested
 	}
 	var wireThinking json.RawMessage
@@ -368,6 +380,11 @@ func projectNeoPiAnthropic(input []byte, model, base, version string, identity n
 			wireThinking = json.RawMessage(`{"type":"adaptive"}`)
 			if profile.Thinking.SupportsDisplay != nil && *profile.Thinking.SupportsDisplay {
 				wireThinking = neoPiSet(wireThinking, "display", "summarized")
+			}
+			// A caller's max_tokens is the output it asked for: NeoPi's
+			// streamSimple gives adaptive thinking its budget on top of it.
+			if given := root.Get("max_tokens").Int(); party != nil && !party.directOptions && given > 0 {
+				maxTokens = min(given+neoPiEffortBudgets[reasoning], profile.MaxTokens)
 			}
 		} else if off {
 			switch profile.Compat.DisabledThinking {
@@ -390,8 +407,8 @@ func projectNeoPiAnthropic(input []byte, model, base, version string, identity n
 		}
 	} else if enabled {
 		budget := thinking.Get("budget_tokens").Int()
-		if party != nil && effort != "" {
-			budget = neoPiEffortBudgets[effort]
+		if party != nil && reasoning != "" {
+			budget = neoPiEffortBudgets[reasoning]
 		}
 		if budget <= 0 {
 			budget = 1024

@@ -262,7 +262,7 @@ func TestApplyPatchResponsesInvalidTerminalUsage(t *testing.T) {
 			case "xai":
 				exec = NewXAIExecutor(&config.Config{})
 			case "meta":
-				exec = NewMetaExecutor(&config.Config{})
+				exec = NewNeoPiResponsesExecutor("meta", &config.Config{})
 			}
 			auth := &cliproxyauth.Auth{ID: "task6-invalid-terminal", Provider: provider, Attributes: map[string]string{"api_key": "test", "base_url": server.URL}}
 			checkUsage := task6CaptureFailureUsage(t, auth.ID)
@@ -334,7 +334,7 @@ data: {"type":"response.completed","response":{"output":[{"type":"function_call"
 
 			var exec cliproxyauth.ProviderExecutor
 			if tc.provider == "meta" {
-				exec = NewMetaExecutor(&config.Config{})
+				exec = NewNeoPiResponsesExecutor("meta", &config.Config{})
 			} else {
 				exec = NewXAIExecutor(&config.Config{})
 			}
@@ -406,7 +406,7 @@ func TestApplyPatchHTTPGatewayErrorMatrix(t *testing.T) {
 				case "xai":
 					exec = NewXAIExecutor(&config.Config{})
 				case "meta":
-					exec = NewMetaExecutor(&config.Config{})
+					exec = NewNeoPiResponsesExecutor("meta", &config.Config{})
 				}
 				auth := &cliproxyauth.Auth{ID: "task6-http-" + provider + mode, Provider: exec.Identifier(), Attributes: map[string]string{"api_key": "test", "base_url": server.URL}}
 				if provider == "claude-oauth" {

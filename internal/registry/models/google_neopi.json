@@ -1,0 +1,1413 @@
+{
+  "source": "NeoPi OWN getBundledModels(\"google\") and fetchGeminiModels over testdata/gemini_models_probe.json",
+  "models": [
+    {
+      "id": "deep-research-max-preview-04-2026",
+      "name": "Deep Research Max Preview (Apr-21-2026)",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget"
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "deep-research-preview-04-2026",
+      "name": "Deep Research Preview (Apr-21-2026)",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget"
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-1.5-flash",
+      "name": "Gemini 1.5 Flash",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1000000,
+      "maxTokens": 8192,
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-1.5-flash-8b",
+      "name": "Gemini 1.5 Flash-8B",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1000000,
+      "maxTokens": 8192,
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-1.5-pro",
+      "name": "Gemini 1.5 Pro",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1000000,
+      "maxTokens": 8192,
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.0-flash",
+      "name": "Gemini 2.0 Flash",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 8192,
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.0-flash-lite",
+      "name": "Gemini 2.0 Flash-Lite",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 8192,
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-computer-use-preview-10-2025",
+      "name": "Gemini 2.5 Computer Use Preview 10-2025",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 128000,
+      "maxTokens": 64000,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget"
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-flash-image",
+      "name": "Nano Banana",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 32768,
+      "maxTokens": 32768,
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash-Lite",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-flash-lite-preview-06-17",
+      "name": "Gemini 2.5 Flash Lite Preview 06-17",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-flash-lite-preview-09-2025",
+      "name": "Gemini 2.5 Flash Lite Preview (09/2025)",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-flash-preview-04-17",
+      "name": "Gemini 2.5 Flash Preview 04-17",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-flash-preview-05-20",
+      "name": "Gemini 2.5 Flash Preview 05-20",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-flash-preview-09-2025",
+      "name": "Gemini 2.5 Flash Preview (09/2025)",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-pro",
+      "name": "Gemini 2.5 Pro",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "requiresEffort": true,
+        "effortBudgets": {
+          "high": 32768,
+          "low": 2048,
+          "max": 32768,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 32768
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-pro-preview-05-06",
+      "name": "Gemini 2.5 Pro Preview 05-06",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "requiresEffort": true,
+        "effortBudgets": {
+          "high": 32768,
+          "low": 2048,
+          "max": 32768,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 32768
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-2.5-pro-preview-06-05",
+      "name": "Gemini 2.5 Pro Preview 06-05",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "requiresEffort": true,
+        "effortBudgets": {
+          "high": 32768,
+          "low": 2048,
+          "max": 32768,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 32768
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-3-flash-preview",
+      "name": "Gemini 3 Flash Preview",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3-pro-image",
+      "name": "Nano Banana Pro",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 65536,
+      "maxTokens": 32768,
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3-pro-image-preview",
+      "name": "Nano Banana Pro",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 32768,
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3-pro-preview",
+      "name": "Gemini 3 Pro Preview",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "low",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.1-flash-image",
+      "name": "Nano Banana 2",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 32768,
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.1-flash-image-preview",
+      "name": "Nano Banana 2",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 65536,
+      "maxTokens": 65536,
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.1-flash-lite",
+      "name": "Gemini 3.1 Flash Lite",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.1-flash-lite-image",
+      "name": "Nano Banana 2 Lite",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 65536,
+      "maxTokens": 4096,
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.1-flash-lite-preview",
+      "name": "Gemini 3.1 Flash Lite Preview",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.1-flash-live-preview",
+      "name": "Gemini 3.1 Flash Live Preview",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.1-pro-preview",
+      "name": "Gemini 3.1 Pro Preview",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "low",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.1-pro-preview-customtools",
+      "name": "Gemini 3.1 Pro Preview Custom Tools",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "low",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "name": "Gemini 3.5 Flash",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.5-flash-lite",
+      "name": "Gemini 3.5 Flash Lite",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.6-flash",
+      "name": "Gemini 3.6 Flash",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.7-flash",
+      "name": "Gemini 3.7 Flash",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-4-argon",
+      "name": "Gemini 4 Argon",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 32768,
+      "thinking": {
+        "efforts": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": true,
+        "requiresSkipThoughtSignature": true,
+        "supportsFunctionPartId": true
+      }
+    },
+    {
+      "id": "gemini-flash-latest",
+      "name": "Gemini Flash Latest",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget"
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-flash-lite-latest",
+      "name": "Gemini Flash-Lite Latest",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget"
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-live-2.5-flash",
+      "name": "Gemini Live 2.5 Flash",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 128000,
+      "maxTokens": 8000,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-live-2.5-flash-preview-native-audio",
+      "name": "Gemini Live 2.5 Flash Preview Native Audio",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "effortBudgets": {
+          "high": 24576,
+          "low": 2048,
+          "max": 24576,
+          "medium": 8192,
+          "minimal": 128,
+          "xhigh": 24576
+        }
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-pro-latest",
+      "name": "Gemini Pro Latest",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 1048576,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget"
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemini-robotics-er-1.6-preview",
+      "name": "Gemini Robotics-ER 1.6 Preview",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 65536,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget"
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemma-3-27b-it",
+      "name": "Gemma 3 27B",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 8192,
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemma-4-26b",
+      "name": "Gemma 4 26B",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 256000,
+      "maxTokens": 8192,
+      "thinking": {
+        "efforts": [
+          "high"
+        ],
+        "mode": "google-level",
+        "suppressWhenOff": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemma-4-26b-a4b-it",
+      "name": "Gemma 4 26B A4B IT",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 262144,
+      "maxTokens": 32768,
+      "thinking": {
+        "efforts": [
+          "high"
+        ],
+        "mode": "google-level",
+        "suppressWhenOff": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemma-4-26b-it",
+      "name": "Gemma 4 26B",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 256000,
+      "maxTokens": 8192,
+      "thinking": {
+        "efforts": [
+          "high"
+        ],
+        "mode": "google-level",
+        "suppressWhenOff": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemma-4-31b",
+      "name": "Gemma 4 31B IT",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 256000,
+      "maxTokens": 8192,
+      "thinking": {
+        "efforts": [
+          "high"
+        ],
+        "mode": "google-level",
+        "suppressWhenOff": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemma-4-31b-it",
+      "name": "Gemma 4 31B IT",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 262144,
+      "maxTokens": 32768,
+      "thinking": {
+        "efforts": [
+          "high"
+        ],
+        "mode": "google-level",
+        "suppressWhenOff": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemma-4-E2B-it",
+      "name": "Gemma 4 E2B IT",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 8192,
+      "thinking": {
+        "efforts": [
+          "high"
+        ],
+        "mode": "google-level",
+        "suppressWhenOff": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    },
+    {
+      "id": "gemma-4-E4B-it",
+      "name": "Gemma 4 E4B IT",
+      "api": "google-generative-ai",
+      "provider": "google",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 131072,
+      "maxTokens": 8192,
+      "thinking": {
+        "efforts": [
+          "high"
+        ],
+        "mode": "google-level",
+        "suppressWhenOff": true
+      },
+      "googleCompat": {
+        "multimodalFunctionResponse": false,
+        "requiresSkipThoughtSignature": false,
+        "supportsFunctionPartId": false
+      }
+    }
+  ]
+}

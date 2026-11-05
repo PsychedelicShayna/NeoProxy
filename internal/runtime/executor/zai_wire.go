@@ -35,11 +35,13 @@ func neoPiThirdPartyProfile(model *registry.NeoPiModel) neoPiProfile {
 		profile.Thinking.Mode = thinking.Mode
 		profile.Thinking.SupportsDisplay = thinking.SupportsDisplay
 		party.efforts = append([]string(nil), thinking.Efforts...)
+		party.effortMap = thinking.EffortMap
 		party.requiresEffort = thinking.RequiresEffort
 	}
 	// NeoPi keys this on the provider: Kimi shares its affinity identity
 	// across its two transports.
 	party.promptCacheUserID = model.Provider == "kimi-code"
+	party.directOptions = model.Provider == "kimi-code"
 	if compat := model.AnthropicCompat; compat != nil {
 		profile.Compat.SupportsContextManagement = compat.SupportsContextManagement
 		profile.Compat.SupportsEagerToolInputStreaming = compat.SupportsEagerToolInputStreaming
@@ -64,7 +66,9 @@ func neoPiThirdPartyProfile(model *registry.NeoPiModel) neoPiProfile {
 // and only the betas the request's fields need.
 func neoPiThirdPartyHeaders(body []byte, session string, thinking bool, profile neoPiProfile) http.Header {
 	var betas []string
-	if thinking && profile.Reasoning && profile.thirdParty.outputEffort {
+	// NeoPi attaches the beta whenever the request carries an output effort:
+	// requested thinking, or the pinned lowest effort of an adaptive-only model.
+	if profile.Reasoning && profile.thirdParty.outputEffort && (thinking || gjson.GetBytes(body, "output_config.effort").Exists()) {
 		betas = append(betas, "effort-2025-11-24")
 	}
 	if profile.Thinking.SupportsDisplay == nil || !*profile.Thinking.SupportsDisplay {
