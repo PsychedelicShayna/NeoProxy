@@ -332,6 +332,7 @@ func (e *ZaiExecutor) streamCompletions(ctx context.Context, auth *cliproxyauth.
 func neoPiScanCompletions(ctx context.Context, cfg *config.Config, provider string, body io.Reader, emit func([]byte) error) error {
 	scanner := bufio.NewScanner(body)
 	scanner.Buffer(make([]byte, 64<<10), 32<<20)
+	finished := false
 	for scanner.Scan() {
 		raw := scanner.Bytes()
 		helps.AppendAPIResponseChunk(ctx, cfg, raw)
@@ -349,12 +350,18 @@ func neoPiScanCompletions(ctx context.Context, cfg *config.Config, provider stri
 		if message := gjson.GetBytes(payload, "error"); message.Exists() {
 			return statusErr{code: http.StatusBadGateway, msg: provider + ": " + message.Raw}
 		}
+		if reason := gjson.GetBytes(payload, "choices.0.finish_reason"); reason.Type == gjson.String && reason.String() != "" {
+			finished = true
+		}
 		if err := emit(append([]byte("data: "), payload...)); err != nil {
 			return err
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		return err
+	}
+	if finished {
+		return emit([]byte("data: [DONE]"))
 	}
 	return errors.New(provider + ": stream ended before [DONE]")
 }

@@ -41,6 +41,27 @@ func (serviceTestPluginExecutor) HttpRequest(context.Context, *coreauth.Auth, *h
 	return nil, nil
 }
 
+func TestNeoPiCompletionsExecutorCompatibilityAuth(t *testing.T) {
+	for _, provider := range []string{"cerebras", "deepseek", "fireworks", "groq", "huggingface", "mistral", "moonshot", "nanogpt", "nvidia", "together", "alibaba-token-plan"} {
+		t.Run(provider, func(t *testing.T) {
+			manager := coreauth.NewManager(nil, nil, nil)
+			service := &Service{cfg: &config.Config{}, coreManager: manager}
+			key := "openai-compatible-" + provider
+			auth := &coreauth.Auth{Provider: "openai-compatibility", Attributes: map[string]string{
+				"compat_name": provider, "provider_key": key, "base_url": "https://example.invalid/v1", "api_key": "test-key",
+			}}
+			service.registerExecutorForAuth(auth, false)
+			got, ok := manager.Executor(key)
+			if !ok {
+				t.Fatalf("no executor registered for %q", key)
+			}
+			if _, ok := got.(*runtimeexecutor.NeoPiCompletionsExecutor); !ok {
+				t.Fatalf("executor for %q = %T, want NeoPi completions", key, got)
+			}
+		})
+	}
+}
+
 func TestRegisterAvailableExecutors(t *testing.T) {
 	oldRegisterPluginExecutors := registerPluginExecutors
 	pluginRegisterCalls := 0

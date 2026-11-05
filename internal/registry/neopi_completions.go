@@ -186,7 +186,7 @@ func NeoPiCompletionsModelInfo(row *NeoPiModel, ownedBy string) *ModelInfo {
 		DisplayName: model.Name, ContextLength: model.ContextWindow, MaxContextLength: model.ContextWindow, MaxCompletionTokens: model.MaxTokens,
 		SupportedInputModalities: slices.Clone(model.Input), NeoPi: model}
 	if model.Reasoning && model.Thinking != nil {
-		info.Thinking = &ThinkingSupport{Levels: slices.Clone(model.Thinking.Efforts), ZeroAllowed: true}
+		info.Thinking = &ThinkingSupport{Levels: slices.Clone(model.Thinking.Efforts), ZeroAllowed: !model.Thinking.RequiresEffort || model.Thinking.SuppressWhenOff}
 	}
 	return info
 }

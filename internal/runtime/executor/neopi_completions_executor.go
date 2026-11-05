@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/rand/v2"
 	"net/http"
 	"strings"
 	"time"
@@ -39,7 +38,7 @@ type NeoPiCompletionsProfile struct {
 	URL func(row *registry.NeoPiModel) string
 	// Headers runs after NeoPi's own headers are set, for providers that add
 	// identity headers of their own.
-	Headers func(ctx context.Context, auth *cliproxyauth.Auth, incoming http.Header, key string, row *registry.NeoPiModel, headers http.Header)
+	Headers func(ctx context.Context, auth *cliproxyauth.Auth, incoming http.Header, key string, row *registry.NeoPiModel, headers http.Header, sessionID string)
 	// Body runs after NeoPi's request shaping, for provider-only body fields.
 	Body func(ctx context.Context, auth *cliproxyauth.Auth, row *registry.NeoPiModel, body []byte) ([]byte, error)
 	// ModelID transforms the model id already resolved by NeoPi's compat rules.
@@ -54,7 +53,6 @@ type NeoPiCompletionsExecutor struct {
 	profile  NeoPiCompletionsProfile
 	cfg      *config.Config
 	counter  *OpenAICompatExecutor
-	random   func() float64
 	wait     func(context.Context, time.Duration) error
 }
 
@@ -68,7 +66,6 @@ func NewNeoPiCompletionsExecutor(provider string, cfg *config.Config, profile Ne
 		profile:  profile,
 		cfg:      cfg,
 		counter:  NewOpenAICompatExecutor(provider, cfg),
-		random:   rand.Float64,
 		wait:     neoPiWait,
 	}
 }
@@ -248,7 +245,8 @@ func (e *NeoPiCompletionsExecutor) prepare(ctx context.Context, auth *cliproxyau
 	if translated, err = helps.ApplyRequestThinking(translated, req, opts, opts.SourceFormat.String(), "openai", e.provider); err != nil {
 		return nil, err
 	}
-	body, err := neoPiCompletionsRequest(translated, row, neoPiCompletionsCall{SessionID: e.sessionID(req, opts)})
+	sessionID := e.sessionID(req, opts)
+	body, err := neoPiCompletionsRequest(translated, row, neoPiCompletionsCall{SessionID: sessionID})
 	if err != nil {
 		return nil, statusErr{code: http.StatusBadGateway, msg: e.provider + ": " + err.Error()}
 	}
@@ -266,7 +264,7 @@ func (e *NeoPiCompletionsExecutor) prepare(ctx context.Context, auth *cliproxyau
 	body = helps.NewPayloadFinalizer(e.cfg, e.provider, row.ID, "openai", "", originalTranslated, req, opts)(body)
 	headers := neoPiCompletionsHeaders(ctx, auth, opts.Headers, key, row)
 	if e.profile.Headers != nil {
-		e.profile.Headers(ctx, auth, opts.Headers, key, row, headers)
+		e.profile.Headers(ctx, auth, opts.Headers, key, row, headers, sessionID)
 	}
 	return &neoPiCompletionsPrepared{body: body, headers: headers, url: e.url(row), model: row.ID}, nil
 }
@@ -332,6 +330,13 @@ func (e *NeoPiCompletionsExecutor) open(ctx context.Context, auth *cliproxyauth.
 		if !neoPiRetryableStatus(response.StatusCode) || attempt+1 >= maxAttempts {
 			return nil, &neoPiUpstreamError{code: response.StatusCode, body: string(data), headers: response.Header}
 		}
+		// Proxy concurrency-admission failures are handled by session recovery,
+		// not the transport retry loop.
+		if strings.TrimSpace(response.Header.Get("rate_limit_type")) == "max_parallel_requests" ||
+			gjson.GetBytes(data, "rate_limit_type").String() == "max_parallel_requests" ||
+			gjson.GetBytes(data, "error.rate_limit_type").String() == "max_parallel_requests" {
+			return nil, &neoPiUpstreamError{code: response.StatusCode, body: string(data), headers: response.Header}
+		}
 		// NeoPi's transport honours a Retry-After hint up to a minute; a longer
 		// one is surfaced instead of slept on.
 		hint, ok := neoPiRetryAfter(response.Header, e.now())
@@ -350,17 +355,12 @@ func neoPiRetryableStatus(status int) bool {
 }
 
 // retryDelay is fetchWithRetry's schedule: the server hint when there is one,
-// else 500ms doubling per attempt, capped at a minute, with jitter.
+// else 500ms doubling per attempt, capped at a minute.
 func (e *NeoPiCompletionsExecutor) retryDelay(attempt int, hint time.Duration, _ http.Header) time.Duration {
-	const maxDelay = time.Minute
-	base := time.Duration(math.Min(500*math.Pow(2, float64(attempt)), float64(maxDelay)))
-	delay := base
 	if hint > 0 {
-		delay = min(hint, maxDelay)
-	} else if e.random != nil {
-		delay = time.Duration(float64(base) * (0.75 + e.random()*0.25))
+		return min(hint, time.Minute)
 	}
-	return delay
+	return time.Duration(math.Min(float64(500*time.Millisecond)*math.Pow(2, float64(attempt)), float64(time.Minute)))
 }
 
 func (e *NeoPiCompletionsExecutor) now() time.Time { return time.Now() }
@@ -386,15 +386,25 @@ func neoPiCompletionsAPIKey(auth *cliproxyauth.Auth) string {
 }
 
 // row resolves the NeoPi record the request must be shaped from.
-func (e *NeoPiCompletionsExecutor) row(_ *cliproxyauth.Auth, req cliproxyexecutor.Request) *registry.NeoPiModel {
+func (e *NeoPiCompletionsExecutor) row(auth *cliproxyauth.Auth, req cliproxyexecutor.Request) *registry.NeoPiModel {
+	var row *registry.NeoPiModel
 	if info, ok := cliproxyauth.ResolvedModelInfo(req); ok && info != nil && info.NeoPi != nil && info.NeoPi.API == "openai-completions" {
-		return info.NeoPi
+		row = info.NeoPi
+	} else {
+		resolve := e.profile.Row
+		if resolve == nil {
+			resolve = registry.NeoPiCompletionsModel
+		}
+		row = resolve(e.profile.Provider, req.Model)
 	}
-	resolve := e.profile.Row
-	if resolve == nil {
-		resolve = registry.NeoPiCompletionsModel
+	// Token Plan credentials can select China or a custom regional endpoint.
+	if row != nil && e.profile.Provider == "alibaba-token-plan" && auth != nil {
+		if baseURL := strings.TrimSpace(auth.Attributes["base_url"]); baseURL != "" {
+			row = row.Clone()
+			row.BaseURL = baseURL
+		}
 	}
-	return resolve(e.profile.Provider, req.Model)
+	return row
 }
 
 // url is the endpoint NeoPi posts the shaped request to.

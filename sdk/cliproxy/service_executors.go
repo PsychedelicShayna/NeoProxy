@@ -295,6 +295,28 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 			}
 		}
 	}
+	providerKey := strings.ToLower(strings.TrimSpace(a.Provider))
+	catalogProvider := providerKey
+	if compatKey, compatName, ok := openAICompatInfoFromAuth(a); ok {
+		providerKey = compatKey
+		catalogProvider = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(compatName)), "openai-compatible-")
+		if catalogProvider == "" {
+			catalogProvider = strings.TrimPrefix(compatKey, "openai-compatible-")
+		}
+	}
+	switch catalogProvider {
+	case "cerebras", "deepseek", "fireworks", "groq", "huggingface", "mistral",
+		"moonshot", "nanogpt", "nvidia", "together", "alibaba-token-plan":
+		if !forceReplace {
+			if existing, ok := s.coreManager.Executor(providerKey); ok {
+				if completions, ok := existing.(*executor.NeoPiCompletionsExecutor); ok && completions.UsesConfig(cfg) {
+					return
+				}
+			}
+		}
+		s.coreManager.RegisterExecutor(executor.NewNeoPiCompletionsExecutor(providerKey, cfg, executor.NeoPiCompletionsProfile{Provider: catalogProvider}))
+		return
+	}
 	if compatProviderKey, _, isCompat := openAICompatInfoFromAuth(a); isCompat {
 		if compatProviderKey == "" {
 			compatProviderKey = strings.ToLower(strings.TrimSpace(a.Provider))

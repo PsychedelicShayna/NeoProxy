@@ -48,6 +48,7 @@ func TestNeoPiCompletionsRequestParity(t *testing.T) {
 			auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": capture.APIKey}}
 			for _, fixture := range capture.Fixtures {
 				if fixture.Error != "" {
+					t.Errorf("%s: NeoPi capture failed: %s", fixture.Name, fixture.Error)
 					continue
 				}
 				t.Run(fixture.Name, func(t *testing.T) {
@@ -127,4 +128,24 @@ func readNeoPiCompletionsCapture(t *testing.T, path string) neoPiCompletionsCapt
 		t.Fatalf("%s has no fixtures", path)
 	}
 	return capture
+}
+
+func TestNeoPiCompletionsTimeoutDisabled(t *testing.T) {
+	zero := 0
+	row := &registry.NeoPiModel{CompletionsCompat: &registry.NeoPiCompletionsCompat{StreamFirstEventTimeoutMs: &zero}}
+	if value := neoPiCompletionsHeaders(context.Background(), nil, nil, "key", row).Get("X-Stainless-Timeout"); value != "" {
+		t.Fatalf("disabled timeout sent %q", value)
+	}
+}
+
+func TestNeoPiCompletionsFinishedEOF(t *testing.T) {
+	input := `data: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}` + "\n\n"
+	var lines []string
+	err := neoPiScanCompletions(context.Background(), nil, "test", strings.NewReader(input), func(line []byte) error {
+		lines = append(lines, string(line))
+		return nil
+	})
+	if err != nil || len(lines) != 2 || lines[1] != "data: [DONE]" {
+		t.Fatalf("lines = %q, error = %v", lines, err)
+	}
 }
