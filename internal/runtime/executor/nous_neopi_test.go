@@ -186,3 +186,49 @@ func TestNousExecutorSendsDiscoveredModelWithAccountCredential(t *testing.T) {
 		})
 	}
 }
+
+// A Marineris account serves Codex-class models over NeoPi's openai-responses
+// provider at the gateway address it carries, with the gateway key as bearer,
+// and Grok-class models over openai-completions at the same address.
+func TestMarinerisExecutorRoutesRowsByAPI(t *testing.T) {
+	type seen struct{ path, auth, body string }
+	var requests []seen
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		requests = append(requests, seen{r.URL.Path, r.Header.Get("Authorization"), string(body)})
+		w.Header().Set("Content-Type", "text/event-stream")
+		if strings.HasSuffix(r.URL.Path, "/responses") {
+			_, _ = io.WriteString(w, "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"object\":\"response\",\"status\":\"completed\",\"model\":\"gpt-6.1-sol\",\"output\":[{\"type\":\"message\",\"id\":\"m\",\"role\":\"assistant\",\"status\":\"completed\",\"content\":[{\"type\":\"output_text\",\"text\":\"Hi.\"}]}],\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
+			return
+		}
+		_, _ = io.WriteString(w, "data: {\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi.\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")
+	}))
+	defer server.Close()
+	auth := &cliproxyauth.Auth{ID: "m", Provider: "openai-compatible-marineris", Attributes: map[string]string{"api_key": "mrn_key", "base_url": server.URL + "/v1", "compat_name": "marineris"}}
+	exec := NewMarinerisExecutor("marineris", nil)
+	for _, row := range []string{"gpt-6.1-sol", "grok-4.6-reasoning"} {
+		model := registry.MarinerisMapModel(gjson.Parse(`{"id":"`+row+`"}`), server.URL+"/v1")
+		if model == nil {
+			t.Fatalf("%s did not map", row)
+		}
+		info := &registry.ModelInfo{ID: model.ID, NeoPi: model}
+		payload := `{"model":"` + row + `","messages":[{"role":"user","content":"Say hi."}]}`
+		source := sdktranslator.FormatOpenAI
+		if model.API == "openai-responses" {
+			payload = `{"model":"` + row + `","input":[{"role":"user","content":[{"type":"input_text","text":"Say hi."}]}]}`
+			source = sdktranslator.FormatOpenAIResponse
+		}
+		req := cliproxyexecutor.Request{Model: row, Payload: []byte(payload), Metadata: map[string]any{"cliproxy.resolved_oauth_model_info": info}}
+		if _, err := exec.Execute(context.Background(), auth, req, cliproxyexecutor.Options{SourceFormat: source}); err != nil {
+			t.Fatalf("%s: %v", row, err)
+		}
+	}
+	if len(requests) != 2 || requests[0].path != "/v1/responses" || requests[1].path != "/v1/chat/completions" {
+		t.Fatalf("requests = %+v", requests)
+	}
+	for _, request := range requests {
+		if request.auth != "Bearer mrn_key" {
+			t.Errorf("%s: authorization = %q", request.path, request.auth)
+		}
+	}
+}

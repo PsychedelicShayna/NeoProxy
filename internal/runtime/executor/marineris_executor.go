@@ -31,7 +31,9 @@ func NewMarinerisExecutor(provider string, cfg *config.Config) *MarinerisExecuto
 		// A gateway lists only what its key is scoped to: there is no bundled row.
 		Row: func(_, _ string) *registry.NeoPiModel { return nil },
 		// The gateway address is the account's, not the catalog's.
-		URL: func(row *registry.NeoPiModel) string { return strings.TrimRight(row.BaseURL, "/") + "/chat/completions" },
+		URL: func(row *registry.NeoPiModel) string {
+			return strings.TrimRight(row.BaseURL, "/") + "/chat/completions"
+		},
 	}
 	return &MarinerisExecutor{
 		NeoPiCompletionsExecutor: NewNeoPiCompletionsExecutor(provider, cfg, profile),
