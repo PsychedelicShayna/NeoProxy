@@ -48,7 +48,13 @@ var (
 	devinDiscovery = &neoPiDiscovery{provider: "devin", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 15 * time.Second,
 		bundled: registry.DevinBundledModels, fetch: executor.FetchDevinModels, entries: map[string]*neoPiDiscoveryEntry{}}
 
-	neoPiDiscoveries = []*neoPiDiscovery{kimiDiscovery, devinDiscovery}
+	// antigravityDiscovery posts fetchAvailableModels: the model manager's
+	// default 2h cache TTL and retry. The account's roster is authoritative
+	// once it answers; NeoPi serves its bundled seed until then.
+	antigravityDiscovery = &neoPiDiscovery{provider: "antigravity", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 30 * time.Second,
+		bundled: registry.AntigravityBundledModels, fetch: executor.FetchAntigravityModels, entries: map[string]*neoPiDiscoveryEntry{}}
+
+	neoPiDiscoveries = []*neoPiDiscovery{kimiDiscovery, devinDiscovery, antigravityDiscovery}
 )
 
 // models returns the models to register for a and whether its cached listing

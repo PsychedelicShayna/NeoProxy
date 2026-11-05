@@ -556,71 +556,7 @@ func TestRuntimeAuthSyncHook_NilAndEmptyAuth(t *testing.T) {
 	}
 }
 
-func TestRuntimeAuthSyncHook_DoesNotBlockOnUnrelatedAntigravityProbes(t *testing.T) {
-	reg := internalregistry.GetGlobalRegistry()
-	authID := "codex-probe-wait-auth"
-	reg.UnregisterClient(authID)
-	t.Cleanup(func() {
-		reg.UnregisterClient(authID)
-	})
-
-	manager := coreauth.NewManager(nil, nil, nil)
-	manager.RegisterExecutor(&syncTestExecutor{})
-	auth := &coreauth.Auth{
-		ID:       authID,
-		Provider: "codex",
-		Status:   coreauth.StatusActive,
-		Attributes: map[string]string{
-			"plan_type": "pro",
-			"path":      "/path/to/codex-probe-wait.json",
-		},
-	}
-	if _, errRegister := manager.Register(context.Background(), auth); errRegister != nil {
-		t.Fatalf("register auth: %v", errRegister)
-	}
-
-	service := &Service{
-		cfg:         &config.Config{},
-		coreManager: manager,
-		pluginHost:  pluginhost.New(),
-	}
-	service.antigravityProbeWg.Add(1)
-	done := make(chan error, 1)
-	finished := make(chan struct{})
-	t.Cleanup(func() {
-		service.antigravityProbeWg.Done()
-		select {
-		case <-finished:
-		case <-time.After(2 * time.Second):
-		}
-	})
-
-	hook := service.runtimeAuthSyncHook()
-	if hook == nil {
-		t.Fatal("runtimeAuthSyncHook() returned nil")
-	}
-
-	go func() {
-		defer close(finished)
-		done <- hook(context.Background(), auth)
-	}()
-
-	select {
-	case errHook := <-done:
-		if errHook != nil {
-			t.Fatalf("hook failed: %v", errHook)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("runtimeAuthSyncHook blocked waiting for unrelated antigravity probes")
-	}
-
-	models := reg.GetModelsForClient(authID)
-	if len(models) == 0 {
-		t.Fatal("expected models registered for enabled auth, got none")
-	}
-}
-
-func TestHandleAuthUpdates_DeleteDoesNotBlockOnUnrelatedAntigravityProbes(t *testing.T) {
+func TestHandleAuthUpdates_DeleteUnregistersModels(t *testing.T) {
 	reg := internalregistry.GetGlobalRegistry()
 	authID := "codex-probe-wait-delete-auth"
 	reg.UnregisterClient(authID)
@@ -653,12 +589,10 @@ func TestHandleAuthUpdates_DeleteDoesNotBlockOnUnrelatedAntigravityProbes(t *tes
 		t.Fatal("expected models registered before delete")
 	}
 
-	runAuthUpdateWithoutProbeWait(t, service, func() {
-		service.handleAuthUpdate(context.Background(), watcher.AuthUpdate{
-			Action: watcher.AuthUpdateActionDelete,
-			ID:     authID,
-			Auth:   auth,
-		})
+	service.handleAuthUpdate(context.Background(), watcher.AuthUpdate{
+		Action: watcher.AuthUpdateActionDelete,
+		ID:     authID,
+		Auth:   auth,
 	})
 
 	if _, ok := manager.GetByID(authID); ok {
@@ -666,73 +600,6 @@ func TestHandleAuthUpdates_DeleteDoesNotBlockOnUnrelatedAntigravityProbes(t *tes
 	}
 	if len(reg.GetModelsForClient(authID)) != 0 {
 		t.Fatal("expected models unregistered after delete")
-	}
-}
-
-func TestHandleAuthUpdates_PluginVirtualModifyDoesNotBlockOnUnrelatedAntigravityProbes(t *testing.T) {
-	reg := internalregistry.GetGlobalRegistry()
-	authID := "plugin-virtual-probe-wait-auth"
-	reg.UnregisterClient(authID)
-	t.Cleanup(func() {
-		reg.UnregisterClient(authID)
-	})
-
-	manager := coreauth.NewManager(nil, nil, nil)
-	auth := &coreauth.Auth{
-		ID:       authID,
-		Provider: "codex",
-		Status:   coreauth.StatusActive,
-		Attributes: map[string]string{
-			"plan_type": "pro",
-			"path":      "/path/to/plugin-virtual-probe-wait.json",
-		},
-	}
-	coreauth.MarkPluginVirtualAuth(auth, "/path/to/plugin-source.json", 0)
-	if _, errRegister := manager.Register(context.Background(), auth); errRegister != nil {
-		t.Fatalf("register auth: %v", errRegister)
-	}
-
-	service := &Service{
-		cfg:         &config.Config{},
-		coreManager: manager,
-		pluginHost:  pluginhost.New(),
-	}
-
-	runAuthUpdateWithoutProbeWait(t, service, func() {
-		service.handleAuthUpdate(context.Background(), watcher.AuthUpdate{
-			Action: watcher.AuthUpdateActionModify,
-			ID:     authID,
-			Auth:   auth,
-		})
-	})
-}
-
-func runAuthUpdateWithoutProbeWait(t *testing.T, service *Service, run func()) {
-	t.Helper()
-	if service == nil {
-		t.Fatal("service is nil")
-	}
-	service.antigravityProbeWg.Add(1)
-	done := make(chan struct{})
-	finished := make(chan struct{})
-	t.Cleanup(func() {
-		service.antigravityProbeWg.Done()
-		select {
-		case <-finished:
-		case <-time.After(2 * time.Second):
-		}
-	})
-
-	go func() {
-		defer close(finished)
-		run()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("auth update blocked waiting for unrelated antigravity probes")
 	}
 }
 

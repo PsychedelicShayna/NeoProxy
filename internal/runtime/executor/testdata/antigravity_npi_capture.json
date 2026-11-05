@@ -1,0 +1,2635 @@
+{
+  "source": "NeoPi OWN streamGoogleGeminiCli via streamSimple (loopback Cloud Code Assist fake)",
+  "project": "capture-project-0001",
+  "credentials": {
+    "token": "capture-access-token",
+    "projectId": "capture-project-0001",
+    "refreshToken": "capture-refresh",
+    "email": "capture@example.com",
+    "expiresAt": 1793848560191
+  },
+  "models": {
+    "gemini-3.1-pro": {
+      "id": "gemini-3.1-pro",
+      "name": "gemini-3.1-pro",
+      "api": "google-gemini-cli",
+      "provider": "google-antigravity",
+      "baseUrl": "http://127.0.0.1",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 200000,
+      "maxTokens": 64000,
+      "thinking": {
+        "efforts": [
+          "low",
+          "high"
+        ],
+        "mode": "budget",
+        "requiresEffort": true,
+        "effortBudgets": {
+          "low": 1001,
+          "high": 10001
+        }
+      },
+      "geminiCompat": {
+        "identityClass": "gemini",
+        "supportsFunctionPartId": false,
+        "requiresSkipThoughtSignature": false,
+        "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+        "dropUnsignedThinking": false,
+        "ccaLegacyParametersSchema": false,
+        "multimodalFunctionResponse": true,
+        "flashStreamLeakWorkaround": false,
+        "claudeThinkingBetaHeader": false,
+        "antigravityClaudeToolMode": false
+      }
+    },
+    "gemini-3.7-flash": {
+      "id": "gemini-3.7-flash",
+      "name": "gemini-3.7-flash",
+      "api": "google-gemini-cli",
+      "provider": "google-antigravity",
+      "baseUrl": "http://127.0.0.1",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 200000,
+      "maxTokens": 64000,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "google-level",
+        "requiresEffort": true,
+        "effortRouting": {
+          "minimal": "gemini-3.7-flash-low",
+          "low": "gemini-3.7-flash-low",
+          "medium": "gemini-3.7-flash-medium",
+          "high": "gemini-3.7-flash-high"
+        }
+      },
+      "geminiCompat": {
+        "identityClass": "gemini",
+        "supportsFunctionPartId": false,
+        "requiresSkipThoughtSignature": false,
+        "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+        "dropUnsignedThinking": false,
+        "ccaLegacyParametersSchema": false,
+        "multimodalFunctionResponse": true,
+        "streamFirstEventTimeoutMs": 60000,
+        "flashStreamLeakWorkaround": true,
+        "claudeThinkingBetaHeader": false,
+        "antigravityClaudeToolMode": false
+      }
+    },
+    "gemini-3.5-flash": {
+      "id": "gemini-3.5-flash",
+      "name": "gemini-3.5-flash",
+      "api": "google-gemini-cli",
+      "provider": "google-antigravity",
+      "baseUrl": "http://127.0.0.1",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 200000,
+      "maxTokens": 64000,
+      "thinking": {
+        "efforts": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "requiresEffort": true,
+        "suppressWhenOff": true,
+        "effortBudgets": {
+          "minimal": 1000,
+          "low": 1000,
+          "medium": 4000,
+          "high": 10000
+        }
+      },
+      "geminiCompat": {
+        "identityClass": "gemini",
+        "supportsFunctionPartId": false,
+        "requiresSkipThoughtSignature": false,
+        "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+        "dropUnsignedThinking": false,
+        "ccaLegacyParametersSchema": false,
+        "multimodalFunctionResponse": true,
+        "streamFirstEventTimeoutMs": 60000,
+        "flashStreamLeakWorkaround": true,
+        "claudeThinkingBetaHeader": false,
+        "antigravityClaudeToolMode": false
+      }
+    },
+    "claude-opus-5-5": {
+      "id": "claude-opus-5-5",
+      "name": "claude-opus-5-5",
+      "api": "google-gemini-cli",
+      "provider": "google-antigravity",
+      "baseUrl": "http://127.0.0.1",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 200000,
+      "maxTokens": 64000,
+      "thinking": {
+        "efforts": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "requiresEffort": true
+      },
+      "geminiCompat": {
+        "identityClass": "anthropic",
+        "supportsFunctionPartId": true,
+        "requiresSkipThoughtSignature": false,
+        "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+        "dropUnsignedThinking": true,
+        "ccaLegacyParametersSchema": true,
+        "multimodalFunctionResponse": false,
+        "flashStreamLeakWorkaround": false,
+        "claudeThinkingBetaHeader": false,
+        "antigravityClaudeToolMode": true,
+        "antigravityUsageLabel": "true",
+        "maxImageDimension": 8000,
+        "maxImagePayloadBytes": 5242880
+      }
+    },
+    "gemini-3.1-flash-image": {
+      "id": "gemini-3.1-flash-image",
+      "name": "gemini-3.1-flash-image",
+      "api": "google-gemini-cli",
+      "provider": "google-antigravity",
+      "baseUrl": "http://127.0.0.1",
+      "reasoning": false,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 200000,
+      "maxTokens": 64000,
+      "geminiCompat": {
+        "identityClass": "gemini",
+        "supportsFunctionPartId": false,
+        "requiresSkipThoughtSignature": false,
+        "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+        "dropUnsignedThinking": false,
+        "ccaLegacyParametersSchema": false,
+        "multimodalFunctionResponse": true,
+        "streamFirstEventTimeoutMs": 60000,
+        "flashStreamLeakWorkaround": true,
+        "claudeThinkingBetaHeader": false,
+        "antigravityClaudeToolMode": false
+      }
+    },
+    "gemini-3.1-pro-profiled": {
+      "id": "gemini-3.1-pro",
+      "name": "gemini-3.1-pro",
+      "api": "google-gemini-cli",
+      "provider": "google-antigravity",
+      "baseUrl": "http://127.0.0.1",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 200000,
+      "maxTokens": 64000,
+      "requestModelId": "gemini-3.1-pro",
+      "thinking": {
+        "efforts": [
+          "low",
+          "high"
+        ],
+        "mode": "budget",
+        "requiresEffort": true,
+        "effortRouting": {
+          "low": "gemini-3.1-pro-low",
+          "high": "gemini-3.1-pro-high"
+        },
+        "effortBudgets": {
+          "low": 1001,
+          "high": 10001
+        }
+      },
+      "antigravityWireProfiles": {
+        "gemini-3.1-pro-low": {
+          "modelEnum": "MODEL_PLACEHOLDER_M36",
+          "maxOutputTokens": 65535
+        }
+      },
+      "geminiCompat": {
+        "identityClass": "gemini",
+        "supportsFunctionPartId": false,
+        "requiresSkipThoughtSignature": false,
+        "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+        "dropUnsignedThinking": false,
+        "ccaLegacyParametersSchema": false,
+        "multimodalFunctionResponse": true,
+        "flashStreamLeakWorkaround": false,
+        "claudeThinkingBetaHeader": false,
+        "antigravityClaudeToolMode": false
+      }
+    },
+    "claude-opus-5-5-beta": {
+      "id": "claude-opus-5-5",
+      "name": "claude-opus-5-5",
+      "api": "google-gemini-cli",
+      "provider": "google-antigravity",
+      "baseUrl": "http://127.0.0.1",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "contextWindow": 200000,
+      "maxTokens": 64000,
+      "thinking": {
+        "efforts": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "mode": "budget",
+        "requiresEffort": true
+      },
+      "geminiCompat": {
+        "identityClass": "anthropic",
+        "supportsFunctionPartId": true,
+        "requiresSkipThoughtSignature": false,
+        "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+        "dropUnsignedThinking": true,
+        "ccaLegacyParametersSchema": true,
+        "multimodalFunctionResponse": false,
+        "flashStreamLeakWorkaround": false,
+        "claudeThinkingBetaHeader": true,
+        "antigravityClaudeToolMode": true,
+        "antigravityUsageLabel": "true",
+        "maxImageDimension": 8000,
+        "maxImagePayloadBytes": 5242880
+      }
+    }
+  },
+  "fixtures": [
+    {
+      "name": "plain",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Hello!"
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Say hello."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "752",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/cd15cb47-ca62-498b-811d-242bcdb9ef9a/1760000000000/76a151ed-44c0-42b3-8ca5-1114a8bec07f/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Say hello.\"}]}],\"labels\":{\"cascade_id\":\"cd15cb47-ca62-498b-811d-242bcdb9ef9a\",\"last_step_index\":\"0\",\"request_id\":\"76a151ed-44c0-42b3-8ca5-1114a8bec07f-0\",\"root_cascade_id\":\"cd15cb47-ca62-498b-811d-242bcdb9ef9a\",\"trajectory_id\":\"76a151ed-44c0-42b3-8ca5-1114a8bec07f\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-8185766279226859245\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello!"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "system-tools",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "functionCall": {
+                            "name": "lookup",
+                            "args": {
+                              "term": "a"
+                            }
+                          },
+                          "thoughtSignature": "dG9vbC1zaWduYXR1cmU="
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 20,
+                  "candidatesTokenCount": 6,
+                  "totalTokenCount": 26
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Use lookup."
+          }
+        ],
+        "system": [
+          {
+            "type": "text",
+            "text": "First system."
+          },
+          {
+            "type": "text",
+            "text": "Second system."
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup",
+            "description": "Look up a term.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Max hits."
+                }
+              },
+              "required": [
+                "term"
+              ]
+            }
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "1176",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/dbb32705-e9eb-4801-be20-eb173421b7f5/1760000000000/f6c366cb-501a-4c99-b03f-0ad44df80e3c/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Use lookup.\"}]}],\"systemInstruction\":{\"role\":\"user\",\"parts\":[{\"text\":\"First system.\"},{\"text\":\"Second system.\"}]},\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":\"Look up a term.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"term\":{\"type\":\"string\"},\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"}},\"required\":[\"term\"],\"propertyOrdering\":[\"term\",\"limit\"]}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"VALIDATED\"}},\"labels\":{\"cascade_id\":\"dbb32705-e9eb-4801-be20-eb173421b7f5\",\"last_step_index\":\"0\",\"request_id\":\"f6c366cb-501a-4c99-b03f-0ad44df80e3c-0\",\"root_cascade_id\":\"dbb32705-e9eb-4801-be20-eb173421b7f5\",\"trajectory_id\":\"f6c366cb-501a-4c99-b03f-0ad44df80e3c\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-7842689116730498897\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "lookup_1760000000000_1",
+            "name": "lookup",
+            "arguments": {
+              "term": "a"
+            },
+            "thoughtSignature": "dG9vbC1zaWduYXR1cmU="
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 20,
+          "output": 6,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 26,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "sampling",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "4."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Count."
+          }
+        ],
+        "max_tokens": 777,
+        "temperature": 0.3,
+        "top_p": 0.5,
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "776",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/5a7e948b-8fde-495b-b355-a5ace080c31f/1760000000000/e7f47770-d62b-4382-bb75-c0da052f40f8/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Count.\"}]}],\"labels\":{\"cascade_id\":\"5a7e948b-8fde-495b-b355-a5ace080c31f\",\"last_step_index\":\"0\",\"request_id\":\"e7f47770-d62b-4382-bb75-c0da052f40f8-0\",\"root_cascade_id\":\"5a7e948b-8fde-495b-b355-a5ace080c31f\",\"trajectory_id\":\"e7f47770-d62b-4382-bb75-c0da052f40f8\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"temperature\":0.3,\"maxOutputTokens\":1778,\"topP\":0.5,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-4742150692206585653\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "tool-history",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Answer: ",
+                          "thoughtSignature": "c2lnLTE="
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "found it."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 30,
+                  "candidatesTokenCount": 8,
+                  "totalTokenCount": 38
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Use lookup."
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "Need lookup.",
+                "signature": "c2lnbmF0dXJlLWNhcHR1cmU="
+              },
+              {
+                "type": "text",
+                "text": "Looking.",
+                "textSignature": "dGV4dC1zaWduYXR1cmU="
+              },
+              {
+                "type": "tool_use",
+                "id": "call_capture_1",
+                "name": "lookup",
+                "input": {
+                  "term": "a"
+                },
+                "thoughtSignature": "dG9vbC1zaWduYXR1cmU="
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "call_capture_1",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Found."
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup",
+            "description": "Look up a term.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Max hits."
+                }
+              },
+              "required": [
+                "term"
+              ]
+            }
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "1446",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/1dfbaedc-5ee0-4f30-941b-aebf4b077832/1760000000000/7d832f97-33d2-475e-83fd-0fa5d466bdbf/3\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Use lookup.\"}]},{\"role\":\"model\",\"parts\":[{\"thought\":true,\"text\":\"Need lookup.\",\"thoughtSignature\":\"c2lnbmF0dXJlLWNhcHR1cmU=\"},{\"text\":\"Looking.\",\"thoughtSignature\":\"dGV4dC1zaWduYXR1cmU=\"},{\"functionCall\":{\"name\":\"lookup\",\"args\":{\"term\":\"a\"}},\"thoughtSignature\":\"dG9vbC1zaWduYXR1cmU=\"}]},{\"role\":\"user\",\"parts\":[{\"functionResponse\":{\"name\":\"lookup\",\"response\":{\"output\":\"Found.\"}}}]}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":\"Look up a term.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"term\":{\"type\":\"string\"},\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"}},\"required\":[\"term\"],\"propertyOrdering\":[\"term\",\"limit\"]}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"VALIDATED\"}},\"labels\":{\"cascade_id\":\"1dfbaedc-5ee0-4f30-941b-aebf4b077832\",\"last_step_index\":\"2\",\"request_id\":\"7d832f97-33d2-475e-83fd-0fa5d466bdbf-0\",\"root_cascade_id\":\"1dfbaedc-5ee0-4f30-941b-aebf4b077832\",\"trajectory_id\":\"7d832f97-33d2-475e-83fd-0fa5d466bdbf\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-7281452887053009208\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Answer: found it.",
+            "textSignature": "c2lnLTE="
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 30,
+          "output": 8,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 38,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "tool-result-error-image",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Sorry."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Shoot."
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "call_capture_2",
+                "name": "lookup",
+                "input": {
+                  "term": "b"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "tool_result",
+                "tool_use_id": "call_capture_2",
+                "is_error": true,
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Failed."
+                  },
+                  {
+                    "type": "image",
+                    "source": {
+                      "type": "base64",
+                      "media_type": "image/png",
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup",
+            "description": "Look up a term.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Max hits."
+                }
+              },
+              "required": [
+                "term"
+              ]
+            }
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "1458",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/a9fec140-af92-4f07-bb9f-0ffa782c2a2e/1760000000000/1e7d547d-49aa-4449-82bc-0c1b5d2a8f99/3\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Shoot.\"}]},{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"name\":\"lookup\",\"args\":{\"term\":\"b\"}},\"thoughtSignature\":\"skip_thought_signature_validator\"}]},{\"role\":\"user\",\"parts\":[{\"functionResponse\":{\"name\":\"lookup\",\"response\":{\"error\":\"Failed.\"},\"parts\":[{\"inlineData\":{\"mimeType\":\"image/png\",\"data\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=\"}}]}}]}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":\"Look up a term.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"term\":{\"type\":\"string\"},\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"}},\"required\":[\"term\"],\"propertyOrdering\":[\"term\",\"limit\"]}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"VALIDATED\"}},\"labels\":{\"cascade_id\":\"a9fec140-af92-4f07-bb9f-0ffa782c2a2e\",\"last_step_index\":\"2\",\"request_id\":\"1e7d547d-49aa-4449-82bc-0c1b5d2a8f99-0\",\"root_cascade_id\":\"a9fec140-af92-4f07-bb9f-0ffa782c2a2e\",\"trajectory_id\":\"1e7d547d-49aa-4449-82bc-0c1b5d2a8f99\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6142225960874663668\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Sorry."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "missing-tool-result",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Ok."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Use lookup."
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool_use",
+                "id": "call_capture_3",
+                "name": "lookup",
+                "input": {
+                  "term": "c"
+                }
+              }
+            ]
+          },
+          {
+            "role": "user",
+            "content": "Never mind."
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup",
+            "description": "Look up a term.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Max hits."
+                }
+              },
+              "required": [
+                "term"
+              ]
+            }
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "1370",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/fe904279-e9f4-4558-b20d-fad1e4546039/1760000000000/bd9bab1d-a8c2-4b7e-83d6-81772e92a4e3/3\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Use lookup.\"}]},{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"name\":\"lookup\",\"args\":{\"term\":\"c\"}},\"thoughtSignature\":\"skip_thought_signature_validator\"}]},{\"role\":\"user\",\"parts\":[{\"functionResponse\":{\"name\":\"lookup\",\"response\":{\"error\":\"No result provided\"}}}]},{\"role\":\"user\",\"parts\":[{\"text\":\"Never mind.\"}]}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":\"Look up a term.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"term\":{\"type\":\"string\"},\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"}},\"required\":[\"term\"],\"propertyOrdering\":[\"term\",\"limit\"]}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"VALIDATED\"}},\"labels\":{\"cascade_id\":\"fe904279-e9f4-4558-b20d-fad1e4546039\",\"last_step_index\":\"2\",\"request_id\":\"bd9bab1d-a8c2-4b7e-83d6-81772e92a4e3-0\",\"root_cascade_id\":\"fe904279-e9f4-4558-b20d-fad1e4546039\",\"trajectory_id\":\"bd9bab1d-a8c2-4b7e-83d6-81772e92a4e3\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-965105204604673067\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Ok."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "user-image",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "A pixel."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Describe."
+              },
+              {
+                "type": "image",
+                "source": {
+                  "type": "base64",
+                  "media_type": "image/png",
+                  "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "893",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/44fe3b98-301d-4af6-9986-fa2c0ed18493/1760000000000/077f0e60-18c0-4a4d-a9a3-0412812e9530/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Describe.\"},{\"inlineData\":{\"mimeType\":\"image/png\",\"data\":\"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=\"}}]}],\"labels\":{\"cascade_id\":\"44fe3b98-301d-4af6-9986-fa2c0ed18493\",\"last_step_index\":\"0\",\"request_id\":\"077f0e60-18c0-4a4d-a9a3-0412812e9530-0\",\"root_cascade_id\":\"44fe3b98-301d-4af6-9986-fa2c0ed18493\",\"trajectory_id\":\"077f0e60-18c0-4a4d-a9a3-0412812e9530\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-3116347295802822984\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "A pixel."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "tool-choice-any",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Sure."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Look it up."
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup",
+            "description": "Look up a term.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Max hits."
+                }
+              },
+              "required": [
+                "term"
+              ]
+            }
+          }
+        ],
+        "tool_choice": {
+          "type": "any"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "1267",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/edfed216-069f-49e2-ad07-6674aa385d7a/1760000000000/246ef29f-a29d-42b2-835b-022d2e443b58/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Look it up.\"}]},{\"role\":\"user\",\"parts\":[{\"text\":\"TOOL-ONLY TURN. This turn accepts a tool call and nothing else; a text reply here is discarded unread and you will be re-prompted. Emit the tool call now.\\n\"}]}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":\"Look up a term.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"term\":{\"type\":\"string\"},\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"}},\"required\":[\"term\"],\"propertyOrdering\":[\"term\",\"limit\"]}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"ANY\"}},\"labels\":{\"cascade_id\":\"edfed216-069f-49e2-ad07-6674aa385d7a\",\"last_step_index\":\"0\",\"request_id\":\"246ef29f-a29d-42b2-835b-022d2e443b58-0\",\"root_cascade_id\":\"edfed216-069f-49e2-ad07-6674aa385d7a\",\"trajectory_id\":\"246ef29f-a29d-42b2-835b-022d2e443b58\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-8504150269379546145\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Sure."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "tool-choice-none",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Answer."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Just answer."
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup",
+            "description": "Look up a term.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Max hits."
+                }
+              },
+              "required": [
+                "term"
+              ]
+            }
+          }
+        ],
+        "tool_choice": {
+          "type": "none"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "1075",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/29f37ad7-5f49-4150-9e26-b3147fbdf351/1760000000000/264bf53c-c4d9-4f4a-b0b1-2a9d67279113/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Just answer.\"}]}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":\"Look up a term.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"term\":{\"type\":\"string\"},\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"}},\"required\":[\"term\"],\"propertyOrdering\":[\"term\",\"limit\"]}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"NONE\"}},\"labels\":{\"cascade_id\":\"29f37ad7-5f49-4150-9e26-b3147fbdf351\",\"last_step_index\":\"0\",\"request_id\":\"264bf53c-c4d9-4f4a-b0b1-2a9d67279113-0\",\"root_cascade_id\":\"29f37ad7-5f49-4150-9e26-b3147fbdf351\",\"trajectory_id\":\"264bf53c-c4d9-4f4a-b0b1-2a9d67279113\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6380676873212510831\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Answer."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "tool-choice-named",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Sure."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Look it up."
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup",
+            "description": "Look up a term.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Max hits."
+                }
+              },
+              "required": [
+                "term"
+              ]
+            }
+          }
+        ],
+        "tool_choice": {
+          "type": "tool",
+          "name": "lookup"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "1301",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/87e8e027-5532-4278-95b2-61f85ea05d44/1760000000000/9746c2c4-37be-47a3-9c52-f7b59e7a887b/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Look it up.\"}]},{\"role\":\"user\",\"parts\":[{\"text\":\"TOOL-ONLY TURN. This turn accepts a tool call and nothing else; a text reply here is discarded unread and you will be re-prompted. Emit the tool call now.\\n\"}]}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":\"Look up a term.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"term\":{\"type\":\"string\"},\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"}},\"required\":[\"term\"],\"propertyOrdering\":[\"term\",\"limit\"]}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"ANY\",\"allowedFunctionNames\":[\"lookup\"]}},\"labels\":{\"cascade_id\":\"87e8e027-5532-4278-95b2-61f85ea05d44\",\"last_step_index\":\"0\",\"request_id\":\"9746c2c4-37be-47a3-9c52-f7b59e7a887b-0\",\"root_cascade_id\":\"87e8e027-5532-4278-95b2-61f85ea05d44\",\"trajectory_id\":\"9746c2c4-37be-47a3-9c52-f7b59e7a887b\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-8591982371918285763\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Sure."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "claude-beta",
+      "model": "claude-opus-5-5-beta",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Okay."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "claude-opus-5-5-beta",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Think."
+          }
+        ],
+        "thinking": {
+          "type": "adaptive"
+        },
+        "output_config": {
+          "effort": "medium"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "anthropic-beta": "interleaved-thinking-2025-05-14",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "806",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/e0a1486c-6e95-4e62-a0cb-f17cddc945c6/1760000000000/a8f5a04f-fd2c-4cb1-ba93-6ed618d402fd/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Think.\"}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"VALIDATED\"}},\"labels\":{\"cascade_id\":\"e0a1486c-6e95-4e62-a0cb-f17cddc945c6\",\"last_step_index\":\"0\",\"request_id\":\"a8f5a04f-fd2c-4cb1-ba93-6ed618d402fd-0\",\"root_cascade_id\":\"e0a1486c-6e95-4e62-a0cb-f17cddc945c6\",\"trajectory_id\":\"a8f5a04f-fd2c-4cb1-ba93-6ed618d402fd\",\"used_claude\":\"true\",\"used_claude_conservative\":\"true\",\"used_non_gemini_model\":\"true\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":8192}},\"sessionId\":\"-7414312323918030721\"},\"model\":\"claude-opus-5-5\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Okay."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "claude-thinking",
+      "model": "claude-opus-5-5",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Considering.",
+                          "thought": true
+                        },
+                        {
+                          "text": "",
+                          "thoughtSignature": "dGhvdWdodC1zaWc="
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Done."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 9,
+                  "candidatesTokenCount": 4,
+                  "thoughtsTokenCount": 7,
+                  "totalTokenCount": 20
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "claude-opus-5-5",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Think."
+          }
+        ],
+        "tools": [
+          {
+            "name": "lookup",
+            "description": "Look up a term.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "term": {
+                  "type": "string"
+                },
+                "limit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Max hits."
+                }
+              },
+              "required": [
+                "term"
+              ]
+            }
+          }
+        ],
+        "thinking": {
+          "type": "adaptive"
+        },
+        "output_config": {
+          "effort": "high"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "1037",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/7d7cff0e-2060-4147-b98d-9bd8ffe20a15/1760000000000/e46070c0-c364-40a8-a2eb-22ce7d00e599/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Think.\"}]}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":\"Look up a term.\",\"parameters\":{\"type\":\"object\",\"properties\":{\"term\":{\"type\":\"string\"},\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"}},\"required\":[\"term\"]}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"VALIDATED\"}},\"labels\":{\"cascade_id\":\"7d7cff0e-2060-4147-b98d-9bd8ffe20a15\",\"last_step_index\":\"0\",\"request_id\":\"e46070c0-c364-40a8-a2eb-22ce7d00e599-0\",\"root_cascade_id\":\"7d7cff0e-2060-4147-b98d-9bd8ffe20a15\",\"trajectory_id\":\"e46070c0-c364-40a8-a2eb-22ce7d00e599\",\"used_claude\":\"true\",\"used_claude_conservative\":\"true\",\"used_non_gemini_model\":\"true\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":16384}},\"sessionId\":\"-2313323212588752562\"},\"model\":\"claude-opus-5-5\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "Considering.",
+            "thinkingSignature": "dGhvdWdodC1zaWc=",
+            "summary": true
+          },
+          {
+            "type": "text",
+            "text": "Done."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 9,
+          "output": 11,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 20,
+          "reasoningTokens": 7,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "gemini-level",
+      "model": "gemini-3.7-flash",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Deep."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.7-flash",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Think hard."
+          }
+        ],
+        "thinking": {
+          "type": "adaptive"
+        },
+        "output_config": {
+          "effort": "high"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "761",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/845efc1f-0140-4832-9faf-94e4d915830f/1760000000000/d1ed404b-5954-4615-8ad1-3ad4284e86fa/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Think hard.\"}]}],\"labels\":{\"cascade_id\":\"845efc1f-0140-4832-9faf-94e4d915830f\",\"last_step_index\":\"0\",\"request_id\":\"d1ed404b-5954-4615-8ad1-3ad4284e86fa-0\",\"root_cascade_id\":\"845efc1f-0140-4832-9faf-94e4d915830f\",\"trajectory_id\":\"d1ed404b-5954-4615-8ad1-3ad4284e86fa\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"HIGH\"}},\"sessionId\":\"-3995550472953995459\"},\"model\":\"gemini-3.7-flash-high\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Deep."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "gemini-level-minimal",
+      "model": "gemini-3.7-flash",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Shallow."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.7-flash",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Think a bit."
+          }
+        ],
+        "thinking": {
+          "type": "adaptive"
+        },
+        "output_config": {
+          "effort": "minimal"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "760",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/4f207a22-9f57-4f3f-bae7-b5da453cfda8/1760000000000/1bbbb888-85db-4f52-9a1e-7e20b8136f2a/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Think a bit.\"}]}],\"labels\":{\"cascade_id\":\"4f207a22-9f57-4f3f-bae7-b5da453cfda8\",\"last_step_index\":\"0\",\"request_id\":\"1bbbb888-85db-4f52-9a1e-7e20b8136f2a-0\",\"root_cascade_id\":\"4f207a22-9f57-4f3f-bae7-b5da453cfda8\",\"trajectory_id\":\"1bbbb888-85db-4f52-9a1e-7e20b8136f2a\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingLevel\":\"LOW\"}},\"sessionId\":\"-8987674855503392598\"},\"model\":\"gemini-3.7-flash-low\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Shallow."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "budget-model",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Thought."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Think."
+          }
+        ],
+        "thinking": {
+          "type": "adaptive"
+        },
+        "output_config": {
+          "effort": "low"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "748",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/28911d43-1cbf-45b9-9d55-75db7c88d785/1760000000000/72df86d0-5c1c-4b61-8ac1-0715c433b8d4/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Think.\"}]}],\"labels\":{\"cascade_id\":\"28911d43-1cbf-45b9-9d55-75db7c88d785\",\"last_step_index\":\"0\",\"request_id\":\"72df86d0-5c1c-4b61-8ac1-0715c433b8d4-0\",\"root_cascade_id\":\"28911d43-1cbf-45b9-9d55-75db7c88d785\",\"trajectory_id\":\"72df86d0-5c1c-4b61-8ac1-0715c433b8d4\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-1166850871902086379\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Thought."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "suppress-off",
+      "model": "gemini-3.5-flash",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Plain."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.5-flash",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "No thinking."
+          }
+        ],
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "754",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/86a5785f-aebc-499e-a9d4-9cb9641f1f1f/1760000000000/46f6d10b-cae1-4e6f-a544-0736c591dbd7/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"No thinking.\"}]}],\"labels\":{\"cascade_id\":\"86a5785f-aebc-499e-a9d4-9cb9641f1f1f\",\"last_step_index\":\"0\",\"request_id\":\"46f6d10b-cae1-4e6f-a544-0736c591dbd7-0\",\"root_cascade_id\":\"86a5785f-aebc-499e-a9d4-9cb9641f1f1f\",\"trajectory_id\":\"46f6d10b-cae1-4e6f-a544-0736c591dbd7\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":false,\"thinkingBudget\":0}},\"sessionId\":\"-7750545775079954843\"},\"model\":\"gemini-3.5-flash\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Plain."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "profiled",
+      "model": "gemini-3.1-pro-profiled",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Profiled."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Profile me."
+          }
+        ],
+        "thinking": {
+          "type": "adaptive"
+        },
+        "output_config": {
+          "effort": "low"
+        }
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "794",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/bbb0c48d-06cf-4971-b746-9092bff4a9eb/1760000000000/16c12067-123d-4ab6-88ce-978db155ccda/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Profile me.\"}]}],\"labels\":{\"cascade_id\":\"bbb0c48d-06cf-4971-b746-9092bff4a9eb\",\"last_step_index\":\"0\",\"model_enum\":\"MODEL_PLACEHOLDER_M36\",\"request_id\":\"16c12067-123d-4ab6-88ce-978db155ccda-0\",\"root_cascade_id\":\"bbb0c48d-06cf-4971-b746-9092bff4a9eb\",\"trajectory_id\":\"16c12067-123d-4ab6-88ce-978db155ccda\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":65535,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-8048255540720166984\"},\"model\":\"gemini-3.1-pro-low\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Profiled."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "empty-retry",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": ""
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 3,
+                  "candidatesTokenCount": 0,
+                  "totalTokenCount": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "   "
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 3,
+                  "candidatesTokenCount": 0,
+                  "totalTokenCount": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Third time."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Try again."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "752",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/44192a27-0267-4e81-8e57-da2bf90d8178/1760000000000/ec3f85ab-cd0d-48c1-870c-a090b730aed0/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Try again.\"}]}],\"labels\":{\"cascade_id\":\"44192a27-0267-4e81-8e57-da2bf90d8178\",\"last_step_index\":\"0\",\"request_id\":\"ec3f85ab-cd0d-48c1-870c-a090b730aed0-0\",\"root_cascade_id\":\"44192a27-0267-4e81-8e57-da2bf90d8178\",\"trajectory_id\":\"ec3f85ab-cd0d-48c1-870c-a090b730aed0\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6981558264421291286\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        },
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "752",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/44192a27-0267-4e81-8e57-da2bf90d8178/1760000000000/ec3f85ab-cd0d-48c1-870c-a090b730aed0/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Try again.\"}]}],\"labels\":{\"cascade_id\":\"44192a27-0267-4e81-8e57-da2bf90d8178\",\"last_step_index\":\"0\",\"request_id\":\"ec3f85ab-cd0d-48c1-870c-a090b730aed0-0\",\"root_cascade_id\":\"44192a27-0267-4e81-8e57-da2bf90d8178\",\"trajectory_id\":\"ec3f85ab-cd0d-48c1-870c-a090b730aed0\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6981558264421291286\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        },
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "752",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/44192a27-0267-4e81-8e57-da2bf90d8178/1760000000000/ec3f85ab-cd0d-48c1-870c-a090b730aed0/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Try again.\"}]}],\"labels\":{\"cascade_id\":\"44192a27-0267-4e81-8e57-da2bf90d8178\",\"last_step_index\":\"0\",\"request_id\":\"ec3f85ab-cd0d-48c1-870c-a090b730aed0-0\",\"root_cascade_id\":\"44192a27-0267-4e81-8e57-da2bf90d8178\",\"trajectory_id\":\"ec3f85ab-cd0d-48c1-870c-a090b730aed0\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6981558264421291286\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "   Third time."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "in-band-error",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "error": {
+                "code": 429,
+                "message": "Resource exhausted",
+                "status": "RESOURCE_EXHAUSTED"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Fail."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "747",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/df7c8e6f-6f6a-46f6-8657-74af154ed46e/1760000000000/2b12091b-fa4a-4b2a-bae8-f8e07b0b2daa/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Fail.\"}]}],\"labels\":{\"cascade_id\":\"df7c8e6f-6f6a-46f6-8657-74af154ed46e\",\"last_step_index\":\"0\",\"request_id\":\"2b12091b-fa4a-4b2a-bae8-f8e07b0b2daa-0\",\"root_cascade_id\":\"df7c8e6f-6f6a-46f6-8657-74af154ed46e\",\"trajectory_id\":\"2b12091b-fa4a-4b2a-bae8-f8e07b0b2daa\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6732005039405354612\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": null,
+      "error": {
+        "stopReason": "error",
+        "errorMessage": "Cloud Code Assist stream error: Resource exhausted (RESOURCE_EXHAUSTED)"
+      }
+    },
+    {
+      "name": "http-error",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "status": 400,
+          "body": "  invalid request  \n"
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Reject."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "749",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/f01c68b9-27f7-43b2-8a53-4e4f046f53ec/1760000000000/8791bdb0-88a9-47b1-9aca-848c8167b855/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Reject.\"}]}],\"labels\":{\"cascade_id\":\"f01c68b9-27f7-43b2-8a53-4e4f046f53ec\",\"last_step_index\":\"0\",\"request_id\":\"8791bdb0-88a9-47b1-9aca-848c8167b855-0\",\"root_cascade_id\":\"f01c68b9-27f7-43b2-8a53-4e4f046f53ec\",\"trajectory_id\":\"8791bdb0-88a9-47b1-9aca-848c8167b855\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-1999105041826291980\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": null,
+      "error": {
+        "stopReason": "error",
+        "errorMessage": "Cloud Code Assist API error (400):   invalid request  \n"
+      }
+    },
+    {
+      "name": "http-retry",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "status": 503,
+          "body": "temporarily unavailable"
+        },
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "text": "Recovered."
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 11,
+                  "candidatesTokenCount": 5,
+                  "thoughtsTokenCount": 2,
+                  "totalTokenCount": 18,
+                  "cachedContentTokenCount": 3
+                },
+                "modelVersion": "capture",
+                "responseId": "resp-capture"
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Recover."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "750",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/fd42b323-e5ec-45ca-a21f-7335d3a0dc61/1760000000000/fe646e5d-e9e6-4f91-b670-4e8ad6dc8a66/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Recover.\"}]}],\"labels\":{\"cascade_id\":\"fd42b323-e5ec-45ca-a21f-7335d3a0dc61\",\"last_step_index\":\"0\",\"request_id\":\"fe646e5d-e9e6-4f91-b670-4e8ad6dc8a66-0\",\"root_cascade_id\":\"fd42b323-e5ec-45ca-a21f-7335d3a0dc61\",\"trajectory_id\":\"fe646e5d-e9e6-4f91-b670-4e8ad6dc8a66\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6331579845357738683\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        },
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "750",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/fd42b323-e5ec-45ca-a21f-7335d3a0dc61/1760000000000/fe646e5d-e9e6-4f91-b670-4e8ad6dc8a66/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Recover.\"}]}],\"labels\":{\"cascade_id\":\"fd42b323-e5ec-45ca-a21f-7335d3a0dc61\",\"last_step_index\":\"0\",\"request_id\":\"fe646e5d-e9e6-4f91-b670-4e8ad6dc8a66-0\",\"root_cascade_id\":\"fd42b323-e5ec-45ca-a21f-7335d3a0dc61\",\"trajectory_id\":\"fe646e5d-e9e6-4f91-b670-4e8ad6dc8a66\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6331579845357738683\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Recovered."
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 8,
+          "output": 7,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 18,
+          "reasoningTokens": 2,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "retired-tool-call",
+      "model": "gemini-3.1-pro",
+      "script": [
+        {
+          "chunks": [
+            {
+              "response": {
+                "candidates": [
+                  {
+                    "content": {
+                      "role": "model",
+                      "parts": [
+                        {
+                          "functionCall": {
+                            "name": "lookup",
+                            "args": {
+                              "term": "x"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "finishReason": "STOP"
+                  }
+                ],
+                "usageMetadata": {
+                  "promptTokenCount": 5,
+                  "candidatesTokenCount": 3,
+                  "totalTokenCount": 8
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "downstream": {
+        "model": "gemini-3.1-pro",
+        "stream": true,
+        "messages": [
+          {
+            "role": "user",
+            "content": "Two calls."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "path": "/v1internal:streamGenerateContent?alt=sse",
+          "headers": {
+            "accept": "*/*",
+            "accept-encoding": "gzip",
+            "authorization": "Bearer capture-access-token",
+            "connection": "keep-alive",
+            "content-length": "752",
+            "content-type": "application/json",
+            "host": "127.0.0.1:35397",
+            "user-agent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)"
+          },
+          "body": "{\"project\":\"capture-project-0001\",\"requestId\":\"agent/de78d312-05a9-451c-8944-469d00cc1e57/1760000000000/675f955b-e83b-4682-8ca4-2726e48fd815/1\",\"request\":{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"Two calls.\"}]}],\"labels\":{\"cascade_id\":\"de78d312-05a9-451c-8944-469d00cc1e57\",\"last_step_index\":\"0\",\"request_id\":\"675f955b-e83b-4682-8ca4-2726e48fd815-0\",\"root_cascade_id\":\"de78d312-05a9-451c-8944-469d00cc1e57\",\"trajectory_id\":\"675f955b-e83b-4682-8ca4-2726e48fd815\",\"used_claude\":\"false\",\"used_claude_conservative\":\"false\",\"used_non_gemini_model\":\"false\"},\"generationConfig\":{\"maxOutputTokens\":64000,\"thinkingConfig\":{\"includeThoughts\":true,\"thinkingBudget\":1001}},\"sessionId\":\"-6340880802057999114\"},\"model\":\"gemini-3.1-pro\",\"userAgent\":\"antigravity\"}"
+        }
+      ],
+      "reply": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "lookup_1760000000000_2",
+            "name": "lookup",
+            "arguments": {
+              "term": "x"
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 5,
+          "output": 3,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 8,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    }
+  ]
+}

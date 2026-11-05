@@ -44,6 +44,9 @@ func neoPiAggregateMessage(transcript []byte) ([]byte, error) {
 			switch delta.Get("type").String() {
 			case "text_delta":
 				blocks[index] = neoPiSet(blocks[index], "text", gjson.GetBytes(blocks[index], "text").String()+delta.Get("text").String())
+				if signature := delta.Get("textSignature"); signature.Type == gjson.String {
+					blocks[index] = neoPiSet(blocks[index], "textSignature", signature.String())
+				}
 			case "thinking_delta":
 				blocks[index] = neoPiSet(blocks[index], "thinking", gjson.GetBytes(blocks[index], "thinking").String()+delta.Get("thinking").String())
 			case "signature_delta":

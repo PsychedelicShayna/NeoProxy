@@ -29,6 +29,44 @@ type NeoPiModel struct {
 	RequestModelID string `json:"requestModelId,omitempty"`
 	// DevinCompat is the compat NeoPi resolves for a devin-agent row.
 	DevinCompat *NeoPiDevinCompat `json:"devinCompat,omitempty"`
+	// GeminiCompat is the compat NeoPi resolves for a google-gemini-cli row
+	// (Antigravity's Cloud Code Assist wire).
+	GeminiCompat *NeoPiGeminiCompat `json:"geminiCompat,omitempty"`
+	// AntigravityWireProfiles is Model.antigravityWireProfiles: the request
+	// constants discovery read from the account's roster, keyed by wire id.
+	AntigravityWireProfiles map[string]NeoPiAntigravityWireProfile `json:"antigravityWireProfiles,omitempty"`
+}
+
+// NeoPiGeminiCompat is GeminiCliCompat plus the model identity class the
+// Cloud Code Assist request builder branches on (Model.identity.class:
+// "anthropic", "gemini", "gpt-oss", ...), under NeoPi's names.
+type NeoPiGeminiCompat struct {
+	IdentityClass                                   string `json:"identityClass"`
+	SupportsFunctionPartID                          bool   `json:"supportsFunctionPartId"`
+	RequiresSkipThoughtSignature                    bool   `json:"requiresSkipThoughtSignature"`
+	RequiresSkipThoughtSignatureOnFirstFunctionCall bool   `json:"requiresSkipThoughtSignatureOnFirstFunctionCall"`
+	DropUnsignedThinking                            bool   `json:"dropUnsignedThinking"`
+	CCALegacyParametersSchema                       bool   `json:"ccaLegacyParametersSchema"`
+	MultimodalFunctionResponse                      bool   `json:"multimodalFunctionResponse"`
+	StreamFirstEventTimeoutMs                       int    `json:"streamFirstEventTimeoutMs,omitempty"`
+	FlashStreamLeakWorkaround                       bool   `json:"flashStreamLeakWorkaround"`
+	ClaudeThinkingBetaHeader                        bool   `json:"claudeThinkingBetaHeader"`
+	AntigravityClaudeToolMode                       bool   `json:"antigravityClaudeToolMode"`
+	AntigravityUsageLabel                           string `json:"antigravityUsageLabel,omitempty"`
+	// MaxImageDimension and MaxImagePayloadBytes declare an image contract
+	// (Claude behind Antigravity); zero means undeclared.
+	MaxImageDimension    int `json:"maxImageDimension,omitempty"`
+	MaxImagePayloadBytes int `json:"maxImagePayloadBytes,omitempty"`
+}
+
+// NeoPiAntigravityWireProfile is AntigravityModelWireProfile: the constants
+// the native client sends for one SKU. ThinkingBudget is a pointer because a
+// zero budget and `-1` (dynamic) are both meaningful.
+type NeoPiAntigravityWireProfile struct {
+	ModelEnum       string `json:"modelEnum,omitempty"`
+	MaxOutputTokens int    `json:"maxOutputTokens,omitempty"`
+	ThinkingLevel   string `json:"thinkingLevel,omitempty"`
+	ThinkingBudget  *int   `json:"thinkingBudget,omitempty"`
 }
 
 // NeoPiDevinCompat is DevinCompat: whether the row is an AssignModel router
@@ -51,6 +89,13 @@ type NeoPiThinking struct {
 	// EffortRouting maps an effort (or "off") to the wire id that serves it.
 	EffortRouting map[string]string `json:"effortRouting,omitempty"`
 	DefaultLevel  string            `json:"defaultLevel,omitempty"`
+	// EffortBudgets maps an effort to its thinking-token budget (budget-mode families).
+	EffortBudgets map[string]int `json:"effortBudgets,omitempty"`
+	// Unverified marks a ladder derived for a row whose capabilities no source
+	// reports: it is offered as an opt-in and carries no off switch.
+	Unverified bool `json:"unverified,omitempty"`
+	// SuppressWhenOff makes a thinking-off request send an explicit zero-thinking config.
+	SuppressWhenOff bool `json:"suppressWhenOff,omitempty"`
 }
 
 // NeoPiAnthropicCompat is the resolved compat NeoPi's Anthropic Messages
@@ -169,6 +214,18 @@ func (m *NeoPiModel) Clone() *NeoPiModel {
 		compat := *m.DevinCompat
 		out.DevinCompat = &compat
 	}
+	if m.GeminiCompat != nil {
+		compat := *m.GeminiCompat
+		out.GeminiCompat = &compat
+	}
+	out.AntigravityWireProfiles = maps.Clone(m.AntigravityWireProfiles)
+	for id, profile := range out.AntigravityWireProfiles {
+		if profile.ThinkingBudget != nil {
+			budget := *profile.ThinkingBudget
+			profile.ThinkingBudget = &budget
+			out.AntigravityWireProfiles[id] = profile
+		}
+	}
 	return &out
 }
 
@@ -181,6 +238,7 @@ func (t *NeoPiThinking) Clone() *NeoPiThinking {
 	out.Efforts = slices.Clone(t.Efforts)
 	out.EffortMap = maps.Clone(t.EffortMap)
 	out.EffortRouting = maps.Clone(t.EffortRouting)
+	out.EffortBudgets = maps.Clone(t.EffortBudgets)
 	if t.SupportsDisplay != nil {
 		display := *t.SupportsDisplay
 		out.SupportsDisplay = &display

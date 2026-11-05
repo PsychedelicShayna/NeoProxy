@@ -44,7 +44,6 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	// resolution: a registration superseded while it is being computed must
 	// not overwrite or remove the newer registration when it finishes last.
 	fence := newModelRegistrationFence(a, cfg)
-	s.cancelStaleAntigravityProbes(a.ID)
 	if a.Disabled {
 		if s != nil && s.coreManager != nil {
 			if current, ok := s.coreManager.GetByID(a.ID); ok && current != nil && !current.Disabled {
@@ -130,22 +129,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 		models = registry.GetAIStudioModels()
 		models = applyExcludedModels(models, excluded)
 	case "antigravity":
-		if !(cfg != nil && cfg.Home.Enabled) {
-			expectedRegEpoch := GlobalModelRegistry().ClientRegistrationEpoch(a.ID)
-			expectedKey := s.antigravityCapabilityKey(a)
-			hints := s.cachedAntigravityHints(a)
-			if hints.ModelIDs != nil {
-				// Publish known catalogs through the same fenced, state-preserving
-				// path as refreshes. An expired catalog remains usable while HTTP
-				// is pending, including its quota and suspension projections.
-				s.applyAntigravityModelHints(ctx, a, provider, hints, expectedKey, a.RegistrationEpoch, expectedRegEpoch)
-				s.asyncProbeAntigravityCapabilities(ctx, a, provider)
-				return true
-			}
-		} else {
-			models = registry.GetAntigravityModels()
-		}
-		models = applyExcludedModels(models, excluded)
+		models = applyExcludedModels(s.registerNeoPiDiscovered(antigravityDiscovery, a), excluded)
 	case "claude":
 		if entry := resolveConfigClaudeKeyForConfig(cfg, a); entry != nil {
 			if len(entry.Models) > 0 {
@@ -328,16 +312,10 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 		models = applyOAuthSettingsForAuth(cfg, provider, authKind, models)
 		prefix, forcePrefix := a.Prefix, cfg != nil && cfg.ForceModelPrefix
 		published = s.registerResolvedModelsForAuthFenced(a, fence, key, applyModelPrefixes(models, prefix, forcePrefix))
-		if strings.EqualFold(strings.TrimSpace(a.Provider), "antigravity") {
-			s.asyncProbeAntigravityCapabilities(ctx, a, key)
-		}
 		return published
 	}
 
 	published = s.unregisterModelsForAuthFenced(a, fence)
-	if provider == "antigravity" {
-		s.asyncProbeAntigravityCapabilities(ctx, a, key)
-	}
 	return published
 }
 
@@ -345,15 +323,22 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 // one auth and reconciles any concurrent auth changes that race with the
 // refresh. Callers are expected to pre-filter provider membership.
 //
-// Re-registration is deliberate: most providers start a fresh registry snapshot.
-// Native Antigravity catalogs instead use fenced replacement to preserve quota
-// and suspension state while account entitlement refreshes are pending.
+// Re-registration is deliberate: providers start a fresh registry snapshot.
 func (s *Service) refreshModelRegistrationForAuth(current *coreauth.Auth) bool {
 	return s.refreshModelRegistrationForAuthWithContext(context.Background(), current, nil)
 }
 
 func (s *Service) refreshModelRegistrationForAuthWithCache(current *coreauth.Auth, compatCache *openAICompatibilityRegistrationCache) bool {
 	return s.refreshModelRegistrationForAuthWithContext(context.Background(), current, compatCache)
+}
+
+// reconcileRegisteredModelStates re-projects the auth's persisted quota and
+// suspension state onto its freshly registered models.
+func (s *Service) reconcileRegisteredModelStates(ctx context.Context, auth *coreauth.Auth) {
+	if auth == nil || s.coreManager == nil {
+		return
+	}
+	s.coreManager.ReconcileRegistryModelStates(ctx, auth.ID)
 }
 
 func (s *Service) refreshModelRegistrationForAuthWithContext(ctx context.Context, current *coreauth.Auth, compatCache *openAICompatibilityRegistrationCache) bool {

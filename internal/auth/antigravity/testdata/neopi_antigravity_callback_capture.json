@@ -1,0 +1,173 @@
+{
+  "source": "NeoPi OWN parseCallbackInput",
+  "cases": [
+    {
+      "input": "http://127.0.0.1:51121/oauth-callback?code=4%2F0Acode&state=abc123",
+      "code": "4/0Acode",
+      "state": "abc123",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "http://127.0.0.1:51121/oauth-callback?code=4/0Acode",
+      "code": "4/0Acode",
+      "state": null,
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "http://127.0.0.1:51121/oauth-callback?state=abc123",
+      "code": null,
+      "state": "abc123",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "http://127.0.0.1:51121/oauth-callback?error=access_denied&state=abc123",
+      "code": null,
+      "state": "abc123",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "http://127.0.0.1:51121/oauth-callback?code=a+b%20c&code=second&state=s",
+      "code": "a b c",
+      "state": "s",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "  http://localhost:1/oauth-callback?code=padded&state=s  ",
+      "code": "padded",
+      "state": "s",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "https://example.com/?code=&state=s",
+      "code": "",
+      "state": "s",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "code=4%2F0Acode&state=abc123",
+      "code": "4/0Acode",
+      "state": "abc123",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "?code=lead&state=q",
+      "code": "lead",
+      "state": "q",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "#code=frag&state=f",
+      "code": "frag",
+      "state": "f",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "code=only",
+      "code": "only",
+      "state": null,
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "state=only&code=reordered",
+      "code": "reordered",
+      "state": "only",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "code=a;b&state=semi",
+      "code": "a;b",
+      "state": "semi",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "4/0AbareCode",
+      "code": "4/0AbareCode",
+      "state": null,
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "4/0AbareCode#state123",
+      "code": "4/0AbareCode",
+      "state": "state123",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "a#b#c",
+      "code": "a",
+      "state": "b",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "#onlystate",
+      "code": "",
+      "state": "onlystate",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "4/0Acode#",
+      "code": "4/0Acode",
+      "state": "",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "",
+      "code": null,
+      "state": null,
+      "hasCode": false,
+      "hasState": false
+    },
+    {
+      "input": "   ",
+      "code": null,
+      "state": null,
+      "hasCode": false,
+      "hasState": false
+    },
+    {
+      "input": "abc:def",
+      "code": null,
+      "state": null,
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "foo://bar?code=custom&state=x",
+      "code": "custom",
+      "state": "x",
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "4/0A_-bare",
+      "code": "4/0A_-bare",
+      "state": null,
+      "hasCode": true,
+      "hasState": true
+    },
+    {
+      "input": "ya29.not-a-code with spaces",
+      "code": "ya29.not-a-code with spaces",
+      "state": null,
+      "hasCode": true,
+      "hasState": true
+    }
+  ]
+}

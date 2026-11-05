@@ -24,12 +24,11 @@ const (
 
 // staticModelsJSON mirrors the top-level structure of models.json.
 type staticModelsJSON struct {
-	Gemini      []*ModelInfo `json:"gemini"`
-	Vertex      []*ModelInfo `json:"vertex"`
-	AIStudio    []*ModelInfo `json:"aistudio"`
-	Antigravity []*ModelInfo `json:"antigravity"`
-	XAI         []*ModelInfo `json:"xai"`
-	Meta        []*ModelInfo `json:"meta"`
+	Gemini   []*ModelInfo `json:"gemini"`
+	Vertex   []*ModelInfo `json:"vertex"`
+	AIStudio []*ModelInfo `json:"aistudio"`
+	XAI      []*ModelInfo `json:"xai"`
+	Meta     []*ModelInfo `json:"meta"`
 }
 
 // GetClaudeModels returns NeoPi's bundled Anthropic definitions.
@@ -50,11 +49,6 @@ func GetGeminiVertexModels() []*ModelInfo {
 // GetAIStudioModels returns model definitions for AI Studio.
 func GetAIStudioModels() []*ModelInfo {
 	return cloneModelInfos(getModels().AIStudio)
-}
-
-// GetAntigravityModels returns the standard Antigravity model definitions.
-func GetAntigravityModels() []*ModelInfo {
-	return cloneModelInfos(getModels().Antigravity)
 }
 
 // AntigravityWebSearchModelFor returns the Antigravity model that should run a
@@ -369,7 +363,7 @@ func GetStaticModelDefinitionsByChannel(channel string) []*ModelInfo {
 	case "kimi":
 		return KimiBundledModels()
 	case "antigravity":
-		return GetAntigravityModels()
+		return AntigravityBundledModels()
 	case "xai", "x-ai", "grok":
 		return GetXAIModels()
 	case "devin":
@@ -426,7 +420,7 @@ func LookupStaticModelInfo(modelID string) *ModelInfo {
 		data.AIStudio,
 		GetCodexModels(),
 		KimiBundledModels(),
-		data.Antigravity,
+		AntigravityBundledModels(),
 		data.XAI,
 		DevinBundledModels(),
 		GetMetaModels(),

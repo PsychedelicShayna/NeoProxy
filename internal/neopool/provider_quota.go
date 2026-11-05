@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/anthropicnpi"
+	antigravityauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/antigravity"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 	devinauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/devin"
 	kimiauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/kimi"
@@ -134,6 +135,8 @@ func quotaProvider(a *coreauth.Auth) string {
 		return "kimi"
 	case "devin":
 		return "devin"
+	case "antigravity":
+		return "antigravity"
 	}
 	return ""
 }
@@ -385,6 +388,61 @@ func devinUsageWindows(usage *devinauth.Usage) []Window {
 	return out
 }
 
+// antigravityUsageWindows adapts NeoPi's Antigravity report to the routing
+// model. NeoPi ranks a credential per backend counter (Google, Anthropic,
+// OpenAI), so an account-wide window is the most consumed limit of that window
+// kind across every counter, and its reset the earliest one any counter
+// reports. Windows NeoPi's budget model does not know are not projected, and a
+// limit without a fraction is reported but unknown to routing.
+func antigravityUsageWindows(usage *antigravityauth.Usage) []Window {
+	kinds := map[string]string{"5h": "5h", "daily": "day", "weekly": "week"}
+	order := []string{"5h", "day", "week"}
+	used := map[string]float64{}
+	resets := map[string]time.Time{}
+	starts := map[string]time.Time{}
+	reported := map[string]bool{}
+	if usage != nil {
+		for _, limit := range usage.Limits {
+			if limit.Window == nil {
+				continue
+			}
+			kind, ok := kinds[limit.Window.ID]
+			if !ok {
+				continue
+			}
+			reported[kind] = true
+			if limit.Amount.UsedFraction == nil {
+				continue
+			}
+			fraction := math.Min(*limit.Amount.UsedFraction, 1)
+			if current, seen := used[kind]; !seen || fraction > current {
+				used[kind] = fraction
+			}
+			if limit.Window.ResetsAt != nil && *limit.Window.ResetsAt > 0 {
+				reset := time.UnixMilli(int64(*limit.Window.ResetsAt))
+				if current, seen := resets[kind]; !seen || reset.Before(current) {
+					resets[kind] = reset
+					if limit.Window.DurationMs != nil {
+						starts[kind] = reset.Add(-time.Duration(*limit.Window.DurationMs) * time.Millisecond)
+					}
+				}
+			}
+		}
+	}
+	out := []Window{}
+	for _, kind := range order {
+		if !reported[kind] {
+			continue
+		}
+		if _, seen := used[kind]; !seen {
+			out = append(out, Window{Kind: kind, Source: quotaSourceReported, Unit: "percent", Capacity: 100})
+			continue
+		}
+		out = append(out, percentWindow(kind, used[kind]*100, starts[kind], resets[kind]))
+	}
+	return out
+}
+
 // fetch asks the provider for the account's current windows.
 func (q *quotaProber) fetch(ctx context.Context, a *coreauth.Auth, now time.Time) ([]Window, error) {
 	token := quotaAccessToken(a)
@@ -453,6 +511,32 @@ func (q *quotaProber) fetch(ctx context.Context, a *coreauth.Auth, now time.Time
 			return nil, err
 		}
 		return devinUsageWindows(usage), nil
+	case "antigravity":
+		projectID, _ := a.Metadata["project_id"].(string)
+		if projectID == "" {
+			projectID = a.Attributes["project_id"]
+		}
+		if projectID == "" {
+			return nil, fmt.Errorf("antigravity usage: credential has no project id")
+		}
+		email, _ := a.Metadata["email"].(string)
+		expires, _ := a.ExpirationTime()
+		usage, err := antigravityauth.FetchUsage(ctx, antigravityauth.UsageRequest{
+			Client:      client,
+			BaseURL:     a.Attributes["base_url"],
+			AccessToken: token,
+			ProjectID:   projectID,
+			Email:       email,
+			ExpiresAt:   expires,
+			Now:         func() time.Time { return now },
+		})
+		if err != nil {
+			return nil, err
+		}
+		if usage == nil {
+			return nil, fmt.Errorf("antigravity usage: no report")
+		}
+		return antigravityUsageWindows(usage), nil
 	}
 	return nil, fmt.Errorf("provider has no usage endpoint")
 }
@@ -509,9 +593,13 @@ func (q *quotaProber) windows(a *coreauth.Auth, now time.Time) []Window {
 		return append([]Window(nil), entry.windows...)
 	}
 	kinds := []string{"5h", "week"}
-	if quotaProvider(a) == "xai" {
+	switch quotaProvider(a) {
+	case "xai":
 		// SuperGrok reports weekly credits (or a monthly quota), no 5h window.
 		kinds = []string{"week"}
+	case "antigravity":
+		// Cloud Code Assist reports rolling 5h, daily and weekly buckets.
+		kinds = []string{"5h", "day", "week"}
 	}
 	if len(entry.windows) > 0 {
 		kinds = kinds[:0]

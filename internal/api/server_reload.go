@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/access"
@@ -13,7 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/logging"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/managementasset"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/redisqueue"
-	"github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor"
 	responsesclaude "github.com/router-for-me/CLIProxyAPI/v8/internal/translator/claude/openai/responses"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	sdkAuth "github.com/router-for-me/CLIProxyAPI/v8/sdk/auth"
@@ -119,10 +117,6 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 
 	applySignatureCacheConfig(oldCfg, cfg)
 	applyClaudeToolSearchConfig(cfg)
-
-	if oldCfg != nil && !reflect.DeepEqual(oldCfg.Antigravity.ConnectionPool, cfg.Antigravity.ConnectionPool) {
-		executor.ResetAntigravityTransports()
-	}
 
 	if s.handlers != nil && s.handlers.AuthManager != nil {
 		s.handlers.AuthManager.SetRetryConfig(cfg.RequestRetry, time.Duration(cfg.MaxRetryInterval)*time.Second, cfg.MaxRetryCredentials)

@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor/helps"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	cliproxyexecutor "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executor"
 	sdktranslator "github.com/router-for-me/CLIProxyAPI/v8/sdk/translator"
@@ -98,23 +98,22 @@ func TestPayloadBarrierAntigravityRebuiltAttempts(t *testing.T) {
 		Override: []config.PayloadRule{{Models: []config.PayloadModelRule{{Name: "gemini-*"}}, Params: map[string]any{"generationConfig.maxOutputTokens": 123, "toolConfig.functionCallingConfig.mode": "CUSTOM"}}},
 		Filter:   []config.PayloadFilterRule{{Models: []config.PayloadModelRule{{Name: "gemini-*"}}, Params: []string{"sessionId", "contents.0"}}},
 	}}
-	req := cliproxyexecutor.Request{Model: "gemini-3.1-pro-preview"}
-	body := []byte(`{"request":{"contents":[{"role":"user","parts":[{"text":"first"}]},{"role":"user","parts":[{"text":"second"}]}]}}`)
-	ctx := helps.WithPayloadFinalizer(context.Background(), helps.NewPayloadFinalizer(cfg, "antigravity", req.Model, "antigravity", "request", body, req, cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatGemini}))
-	executor := NewAntigravityExecutor(cfg)
-	auth := &cliproxyauth.Auth{Metadata: map[string]any{"project_id": "project-test"}}
+	record := &registry.NeoPiModel{ID: "gemini-3.1-pro", Name: "Gemini 3.1 Pro", API: "google-gemini-cli", Provider: "google-antigravity",
+		Reasoning: true, Input: []string{"text"}, ContextWindow: 200000, MaxTokens: 64000,
+		Thinking: &registry.NeoPiThinking{Efforts: []string{"low", "high"}, Mode: "budget"}}
+	info := &registry.ModelInfo{ID: record.ID, Type: "antigravity", OwnedBy: "antigravity", NeoPi: record}
+	downstream := []byte(`{"model":"gemini-3.1-pro","stream":true,"messages":[{"role":"user","content":"first"},{"role":"user","content":"second"}]}`)
+	req := cliproxyexecutor.Request{Model: record.ID, Payload: downstream, Metadata: map[string]any{"cliproxy.resolved_oauth_model_info": info}}
+	opts := cliproxyexecutor.Options{SourceFormat: sdktranslator.FormatClaude, OriginalRequest: downstream}
 	for attempt := 0; attempt < 2; attempt++ {
-		request, errBuild := executor.buildRequest(ctx, auth, "token", req.Model, body, attempt == 1, "", "https://example.invalid", "injected-session")
-		if errBuild != nil {
-			t.Fatal(errBuild)
+		executor := NewAntigravityExecutor(cfg)
+		auth := &cliproxyauth.Auth{ID: "payload-barrier", Provider: "antigravity",
+			Metadata: map[string]any{"access_token": "token", "project_id": "project-test"}}
+		prepared, errPrepare := executor.prepare(context.Background(), auth, req, opts)
+		if errPrepare != nil {
+			t.Fatal(errPrepare)
 		}
-		wire, errRead := io.ReadAll(request.Body)
-		if errRead != nil {
-			t.Fatal(errRead)
-		}
-		if errClose := request.Body.Close(); errClose != nil {
-			t.Fatal(errClose)
-		}
+		wire := prepared.body
 		if gjson.GetBytes(wire, "request.generationConfig.maxOutputTokens").Int() != 123 {
 			t.Fatalf("built-in cleanup undid override: %s", wire)
 		}

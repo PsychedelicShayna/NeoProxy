@@ -1,0 +1,302 @@
+{
+ "source": "NeoPi OWN fetchAntigravityDiscoveryModels over scripted endpoints",
+ "scenarios": [
+  {
+   "name": "daily answers",
+   "projectId": "capture-project",
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{\"project\":\"capture-project\"}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": [
+    "claude-sonnet-4-6",
+    "gemini-3.1-pro"
+   ]
+  },
+  {
+   "name": "no project",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": [
+    "claude-sonnet-4-6",
+    "gemini-3.1-pro"
+   ]
+  },
+  {
+   "name": "daily 500 then sandbox",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    },
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": [
+    "claude-sonnet-4-6",
+    "gemini-3.1-pro"
+   ]
+  },
+  {
+   "name": "daily 401 then sandbox",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    },
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": [
+    "claude-sonnet-4-6",
+    "gemini-3.1-pro"
+   ]
+  },
+  {
+   "name": "both rejected 403",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    },
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": 403,
+   "models": []
+  },
+  {
+   "name": "daily 401 sandbox 500",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    },
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": null
+  },
+  {
+   "name": "daily invalid json",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    },
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": [
+    "claude-sonnet-4-6",
+    "gemini-3.1-pro"
+   ]
+  },
+  {
+   "name": "daily non-object json",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": []
+  },
+  {
+   "name": "daily network error",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    },
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": [
+    "claude-sonnet-4-6",
+    "gemini-3.1-pro"
+   ]
+  },
+  {
+   "name": "both network errors",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    },
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": null
+  },
+  {
+   "name": "empty roster",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": []
+  },
+  {
+   "name": "daily 429 then sandbox",
+   "projectId": null,
+   "requests": [
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    },
+    {
+     "method": "POST",
+     "url": "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:fetchAvailableModels",
+     "authorization": "Bearer capture-token",
+     "contentType": "application/json",
+     "userAgent": "antigravity/hub/2.26.0 (aidev_client; os_type=linux; arch=amd64; cl=1005016104)",
+     "acceptEncoding": "gzip",
+     "body": "{}"
+    }
+   ],
+   "rejectedStatus": null,
+   "models": [
+    "claude-sonnet-4-6",
+    "gemini-3.1-pro"
+   ]
+  }
+ ]
+}

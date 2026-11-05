@@ -37,7 +37,7 @@ func TestExecutorsRefuseRefreshLockedCredentials(t *testing.T) {
 				return err
 			},
 			"antigravity": func(a *cliproxyauth.Auth) error {
-				_, _, err := NewAntigravityExecutor(cfg).ensureAccessToken(context.Background(), a)
+				_, err := NewAntigravityExecutor(cfg).Refresh(context.Background(), a)
 				return err
 			},
 			"xai": func(a *cliproxyauth.Auth) error {

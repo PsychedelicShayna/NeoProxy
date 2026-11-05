@@ -1,0 +1,981 @@
+{
+ "source": "NeoPi OWN getBundledModels(google-antigravity)",
+ "models": [
+  {
+   "id": "claude-opus-4-5",
+   "name": "Claude Opus 4.5",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 200000,
+   "maxTokens": 64000,
+   "requestModelId": "claude-opus-4-5-thinking",
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget",
+    "effortRouting": {
+     "high": "claude-opus-4-5-thinking",
+     "low": "claude-opus-4-5-thinking",
+     "medium": "claude-opus-4-5-thinking",
+     "minimal": "claude-opus-4-5-thinking",
+     "off": "claude-opus-4-5"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "anthropic",
+    "supportsFunctionPartId": true,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": true,
+    "ccaLegacyParametersSchema": true,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": true,
+    "antigravityClaudeToolMode": true,
+    "antigravityUsageLabel": "true",
+    "maxImageDimension": 8000,
+    "maxImagePayloadBytes": 5242880
+   }
+  },
+  {
+   "id": "claude-opus-4-6",
+   "name": "Claude Opus 4.6",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 250000,
+   "maxTokens": 64000,
+   "requestModelId": "claude-opus-4-6-thinking",
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget"
+   },
+   "geminiCompat": {
+    "identityClass": "anthropic",
+    "supportsFunctionPartId": true,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": true,
+    "ccaLegacyParametersSchema": true,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": true,
+    "antigravityClaudeToolMode": true,
+    "antigravityUsageLabel": "true",
+    "maxImageDimension": 8000,
+    "maxImagePayloadBytes": 5242880
+   }
+  },
+  {
+   "id": "claude-opus-5-5",
+   "name": "Claude Opus 5.5",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1000000,
+   "maxTokens": 128000,
+   "requestModelId": "claude-opus-5-5-low",
+   "thinking": {
+    "efforts": [
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget",
+    "requiresEffort": true,
+    "effortRouting": {
+     "high": "claude-opus-5-5-high",
+     "low": "claude-opus-5-5-low",
+     "medium": "claude-opus-5-5-medium"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "anthropic",
+    "supportsFunctionPartId": true,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": true,
+    "ccaLegacyParametersSchema": true,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": true,
+    "antigravityUsageLabel": "true",
+    "maxImageDimension": 8000,
+    "maxImagePayloadBytes": 5242880
+   },
+   "antigravityWireProfiles": {
+    "claude-opus-5-5-high": {
+     "maxOutputTokens": 128000,
+     "modelEnum": "MODEL_PLACEHOLDER_M402",
+     "thinkingLevel": "HIGH"
+    },
+    "claude-opus-5-5-low": {
+     "maxOutputTokens": 128000,
+     "modelEnum": "MODEL_PLACEHOLDER_M400",
+     "thinkingLevel": "LOW"
+    },
+    "claude-opus-5-5-medium": {
+     "maxOutputTokens": 128000,
+     "modelEnum": "MODEL_PLACEHOLDER_M401",
+     "thinkingLevel": "MEDIUM"
+    }
+   }
+  },
+  {
+   "id": "claude-sonnet-4-5",
+   "name": "Claude Sonnet 4.5",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1000000,
+   "maxTokens": 64000,
+   "requestModelId": "claude-sonnet-4-5",
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget",
+    "effortRouting": {
+     "high": "claude-sonnet-4-5-thinking",
+     "low": "claude-sonnet-4-5-thinking",
+     "medium": "claude-sonnet-4-5-thinking",
+     "minimal": "claude-sonnet-4-5-thinking",
+     "off": "claude-sonnet-4-5"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "anthropic",
+    "supportsFunctionPartId": true,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": true,
+    "ccaLegacyParametersSchema": true,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": true,
+    "antigravityClaudeToolMode": true,
+    "antigravityUsageLabel": "true",
+    "maxImageDimension": 8000,
+    "maxImagePayloadBytes": 5242880
+   }
+  },
+  {
+   "id": "claude-sonnet-4-6",
+   "name": "Claude Sonnet 4.6",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 250000,
+   "maxTokens": 64000,
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget"
+   },
+   "geminiCompat": {
+    "identityClass": "anthropic",
+    "supportsFunctionPartId": true,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": true,
+    "ccaLegacyParametersSchema": true,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": true,
+    "antigravityClaudeToolMode": true,
+    "antigravityUsageLabel": "true",
+    "maxImageDimension": 8000,
+    "maxImagePayloadBytes": 5242880
+   }
+  },
+  {
+   "id": "claude-sonnet-5-5",
+   "name": "Claude Sonnet 5.5",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1000000,
+   "maxTokens": 128000,
+   "requestModelId": "claude-sonnet-5-5-low",
+   "thinking": {
+    "efforts": [
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget",
+    "requiresEffort": true,
+    "effortRouting": {
+     "high": "claude-sonnet-5-5-high",
+     "low": "claude-sonnet-5-5-low",
+     "medium": "claude-sonnet-5-5-medium"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "anthropic",
+    "supportsFunctionPartId": true,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": true,
+    "ccaLegacyParametersSchema": true,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": true,
+    "antigravityUsageLabel": "true",
+    "maxImageDimension": 8000,
+    "maxImagePayloadBytes": 5242880
+   },
+   "antigravityWireProfiles": {
+    "claude-sonnet-5-5-high": {
+     "maxOutputTokens": 128000,
+     "modelEnum": "MODEL_PLACEHOLDER_M405",
+     "thinkingLevel": "HIGH"
+    },
+    "claude-sonnet-5-5-low": {
+     "maxOutputTokens": 128000,
+     "modelEnum": "MODEL_PLACEHOLDER_M403",
+     "thinkingLevel": "LOW"
+    },
+    "claude-sonnet-5-5-medium": {
+     "maxOutputTokens": 128000,
+     "modelEnum": "MODEL_PLACEHOLDER_M404",
+     "thinkingLevel": "MEDIUM"
+    }
+   }
+  },
+  {
+   "id": "gemini-2.5-flash",
+   "name": "Gemini 2.5 Flash",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65535,
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget",
+    "effortRouting": {
+     "high": "gemini-2.5-flash-thinking",
+     "low": "gemini-2.5-flash-thinking",
+     "medium": "gemini-2.5-flash-thinking",
+     "minimal": "gemini-2.5-flash-thinking",
+     "off": "gemini-2.5-flash"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": true,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false,
+    "streamFirstEventTimeoutMs": 60000
+   },
+   "antigravityWireProfiles": {
+    "gemini-2.5-flash": {
+     "maxOutputTokens": 65535,
+     "modelEnum": "MODEL_GOOGLE_GEMINI_2_5_FLASH",
+     "thinkingLevel": "LOW"
+    },
+    "gemini-2.5-flash-thinking": {
+     "maxOutputTokens": 65535,
+     "modelEnum": "MODEL_GOOGLE_GEMINI_2_5_FLASH_THINKING",
+     "thinkingLevel": "LOW"
+    }
+   }
+  },
+  {
+   "id": "gemini-2.5-flash-lite",
+   "name": "Gemini 2.5 Flash-Lite",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65535,
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget"
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   },
+   "antigravityWireProfiles": {
+    "gemini-2.5-flash-lite": {
+     "maxOutputTokens": 65535,
+     "modelEnum": "MODEL_GOOGLE_GEMINI_2_5_FLASH_LITE",
+     "thinkingLevel": "LOW"
+    }
+   }
+  },
+  {
+   "id": "gemini-2.5-pro",
+   "name": "Gemini 2.5 Pro",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65536,
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget",
+    "requiresEffort": true
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   }
+  },
+  {
+   "id": "gemini-3-pro",
+   "name": "Gemini 3 Pro",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65535,
+   "requestModelId": "gemini-3-pro-low",
+   "thinking": {
+    "efforts": [
+     "low",
+     "high"
+    ],
+    "mode": "google-level",
+    "requiresEffort": true,
+    "suppressWhenOff": true,
+    "effortRouting": {
+     "high": "gemini-3-pro-high",
+     "low": "gemini-3-pro-low",
+     "off": "gemini-3-pro-low"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   }
+  },
+  {
+   "id": "gemini-3-pro-image",
+   "name": "Nano Banana Pro",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": false,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 65536,
+   "maxTokens": 32768,
+   "kind": "image",
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   }
+  },
+  {
+   "id": "gemini-3.1-flash-image",
+   "name": "Nano Banana 2",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": false,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 65536,
+   "maxTokens": 65536,
+   "kind": "image",
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": true,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false,
+    "streamFirstEventTimeoutMs": 60000
+   },
+   "antigravityWireProfiles": {
+    "gemini-3.1-flash-image": {
+     "maxOutputTokens": 65536,
+     "modelEnum": "MODEL_PLACEHOLDER_M21"
+    }
+   }
+  },
+  {
+   "id": "gemini-3.1-flash-lite",
+   "name": "Gemini 3.1 Flash Lite",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65535,
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "google-level",
+    "requiresEffort": true
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   },
+   "antigravityWireProfiles": {
+    "gemini-3.1-flash-lite": {
+     "maxOutputTokens": 65535,
+     "modelEnum": "MODEL_PLACEHOLDER_M50",
+     "thinkingLevel": "LOW"
+    }
+   }
+  },
+  {
+   "id": "gemini-3.1-pro",
+   "name": "Gemini 3.1 Pro Preview",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65535,
+   "requestModelId": "gemini-3.1-pro-low",
+   "thinking": {
+    "efforts": [
+     "low",
+     "high"
+    ],
+    "mode": "budget",
+    "requiresEffort": true,
+    "suppressWhenOff": true,
+    "effortRouting": {
+     "high": "gemini-pro-agent",
+     "low": "gemini-3.1-pro-low",
+     "off": "gemini-3.1-pro-low"
+    },
+    "effortBudgets": {
+     "high": 10001,
+     "low": 1001
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   }
+  },
+  {
+   "id": "gemini-3.5-flash-lite",
+   "name": "Gemini 3.5 Flash Lite",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65535,
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "google-level",
+    "requiresEffort": true
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   },
+   "antigravityWireProfiles": {
+    "gemini-3.5-flash-lite": {
+     "maxOutputTokens": 65535,
+     "modelEnum": "MODEL_PLACEHOLDER_M198",
+     "thinkingLevel": "LOW"
+    }
+   }
+  },
+  {
+   "id": "gemini-3.6-flash",
+   "name": "Gemini 3.6 Flash",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65536,
+   "requestModelId": "gemini-3.6-flash-low",
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "google-level",
+    "requiresEffort": true,
+    "effortRouting": {
+     "high": "gemini-3.6-flash-high",
+     "low": "gemini-3.6-flash-low",
+     "medium": "gemini-3.6-flash-medium",
+     "minimal": "gemini-3.6-flash-low"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": true,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false,
+    "streamFirstEventTimeoutMs": 60000
+   }
+  },
+  {
+   "id": "gemini-3.7-flash",
+   "name": "Gemini 3.7 Flash",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65536,
+   "requestModelId": "gemini-3.7-flash-low",
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "google-level",
+    "requiresEffort": true,
+    "effortRouting": {
+     "high": "gemini-3.7-flash-high",
+     "low": "gemini-3.7-flash-low",
+     "medium": "gemini-3.7-flash-medium",
+     "minimal": "gemini-3.7-flash-low"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": true,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false,
+    "streamFirstEventTimeoutMs": 60000
+   }
+  },
+  {
+   "id": "gemini-3.8-flash",
+   "name": "Gemini 3.8 Flash",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65536,
+   "requestModelId": "gemini-3.8-flash-low",
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "google-level",
+    "requiresEffort": true,
+    "effortRouting": {
+     "high": "gemini-3.8-flash-high",
+     "low": "gemini-3.8-flash-low",
+     "medium": "gemini-3.8-flash-medium",
+     "minimal": "gemini-3.8-flash-low"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": true,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false,
+    "streamFirstEventTimeoutMs": 60000
+   },
+   "antigravityWireProfiles": {
+    "gemini-3.8-flash-high": {
+     "maxOutputTokens": 65536,
+     "modelEnum": "MODEL_PLACEHOLDER_M318",
+     "thinkingBudget": -1
+    },
+    "gemini-3.8-flash-low": {
+     "maxOutputTokens": 65536,
+     "modelEnum": "MODEL_PLACEHOLDER_M320",
+     "thinkingBudget": 1000
+    },
+    "gemini-3.8-flash-medium": {
+     "maxOutputTokens": 65536,
+     "modelEnum": "MODEL_PLACEHOLDER_M319",
+     "thinkingBudget": 4000
+    },
+    "gemini-3.8-flash-tiered": {
+     "maxOutputTokens": 65536,
+     "modelEnum": "MODEL_PLACEHOLDER_M322",
+     "thinkingBudget": -1
+    }
+   }
+  },
+  {
+   "id": "gemini-4-argon",
+   "name": "Gemini 4 Argon",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text",
+    "image"
+   ],
+   "contextWindow": 1048576,
+   "maxTokens": 65536,
+   "requestModelId": "gemini-4-argon-low",
+   "thinking": {
+    "efforts": [
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "google-level",
+    "requiresEffort": true,
+    "effortRouting": {
+     "high": "gemini-4-argon-high",
+     "low": "gemini-4-argon-low",
+     "medium": "gemini-4-argon-medium"
+    }
+   },
+   "geminiCompat": {
+    "identityClass": "gemini",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": true,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": true,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   },
+   "antigravityWireProfiles": {
+    "gemini-4-argon-high": {
+     "maxOutputTokens": 65536,
+     "modelEnum": "MODEL_PLACEHOLDER_M417",
+     "thinkingBudget": -1,
+     "thinkingLevel": "HIGH"
+    },
+    "gemini-4-argon-low": {
+     "maxOutputTokens": 65536,
+     "modelEnum": "MODEL_PLACEHOLDER_M419",
+     "thinkingBudget": -1,
+     "thinkingLevel": "LOW"
+    },
+    "gemini-4-argon-medium": {
+     "maxOutputTokens": 65536,
+     "modelEnum": "MODEL_PLACEHOLDER_M418",
+     "thinkingBudget": -1,
+     "thinkingLevel": "MEDIUM"
+    }
+   }
+  },
+  {
+   "id": "gpt-oss-120b",
+   "name": "GPT OSS 120B",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": true,
+   "input": [
+    "text"
+   ],
+   "contextWindow": 131072,
+   "maxTokens": 32768,
+   "requestModelId": "gpt-oss-120b-medium",
+   "thinking": {
+    "efforts": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "mode": "budget"
+   },
+   "geminiCompat": {
+    "identityClass": "gpt-oss",
+    "supportsFunctionPartId": true,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   },
+   "antigravityWireProfiles": {
+    "gpt-oss-120b-medium": {
+     "maxOutputTokens": 32768,
+     "modelEnum": "MODEL_OPENAI_GPT_OSS_120B_MEDIUM",
+     "thinkingBudget": 8192
+    }
+   }
+  },
+  {
+   "id": "tab_flash_lite_preview",
+   "name": "tab_flash_lite_preview",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": false,
+   "input": [
+    "text"
+   ],
+   "contextWindow": 16384,
+   "maxTokens": 4096,
+   "geminiCompat": {
+    "identityClass": "unknown",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   },
+   "antigravityWireProfiles": {
+    "tab_flash_lite_preview": {
+     "maxOutputTokens": 4096,
+     "modelEnum": "MODEL_PLACEHOLDER_M19"
+    }
+   }
+  },
+  {
+   "id": "tab_jump_flash_lite_preview",
+   "name": "tab_jump_flash_lite_preview",
+   "api": "google-gemini-cli",
+   "provider": "google-antigravity",
+   "baseUrl": "https://daily-cloudcode-pa.googleapis.com",
+   "reasoning": false,
+   "input": [
+    "text"
+   ],
+   "contextWindow": 16384,
+   "maxTokens": 4096,
+   "geminiCompat": {
+    "identityClass": "unknown",
+    "supportsFunctionPartId": false,
+    "requiresSkipThoughtSignature": false,
+    "requiresSkipThoughtSignatureOnFirstFunctionCall": false,
+    "dropUnsignedThinking": false,
+    "ccaLegacyParametersSchema": false,
+    "multimodalFunctionResponse": false,
+    "flashStreamLeakWorkaround": false,
+    "claudeThinkingBetaHeader": false,
+    "antigravityClaudeToolMode": false
+   },
+   "antigravityWireProfiles": {
+    "tab_jump_flash_lite_preview": {
+     "maxOutputTokens": 4096,
+     "modelEnum": "MODEL_PLACEHOLDER_M28"
+    }
+   }
+  }
+ ]
+}
