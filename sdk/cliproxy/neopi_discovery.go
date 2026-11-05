@@ -19,6 +19,10 @@ import (
 // re-registers the account.
 type neoPiDiscovery struct {
 	provider string
+	// owns reports whether an account belongs to this discovery. Providers
+	// with one dedicated account kind compare the provider id; a gateway
+	// owns the openai-compatibility entries pointed at its endpoint.
+	owns func(*coreauth.Auth) bool
 	// ttl is how long a listing stays fresh; retry backs off after a failure.
 	ttl, retry, timeout time.Duration
 	bundled             func() []*ModelInfo
@@ -47,9 +51,52 @@ var (
 	// 2h cache TTL and its 15s discovery bound.
 	devinDiscovery = &neoPiDiscovery{provider: "devin", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 15 * time.Second,
 		bundled: registry.DevinBundledModels, fetch: executor.FetchDevinModels, entries: map[string]*neoPiDiscoveryEntry{}}
+	// gatewayDiscoveries list each gateway's /models roster: NeoPi's model
+	// manager default 2h cache TTL and 10s discovery bound.
+	gatewayDiscoveries = func() []*neoPiDiscovery {
+		out := make([]*neoPiDiscovery, 0, len(registry.GatewayProviders()))
+		for _, provider := range registry.GatewayProviders() {
+			provider := provider
+			out = append(out, &neoPiDiscovery{provider: provider, owns: gatewayOwns(provider), ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 10 * time.Second,
+				bundled: func() []*ModelInfo { return registry.GatewayBundledModels(provider, provider) },
+				fetch:   gatewayModelFetcher(provider), entries: map[string]*neoPiDiscoveryEntry{}})
+		}
+		return out
+	}()
 
-	neoPiDiscoveries = []*neoPiDiscovery{kimiDiscovery, devinDiscovery}
+	neoPiDiscoveries = append([]*neoPiDiscovery{kimiDiscovery, devinDiscovery}, gatewayDiscoveries...)
 )
+
+// owns reports whether an account is served by this discovery.
+func (d *neoPiDiscovery) ownsAccount(a *coreauth.Auth) bool {
+	if a == nil {
+		return false
+	}
+	if a.Provider == d.provider {
+		return true
+	}
+	return d.owns != nil && d.owns(a)
+}
+
+// gatewayOwns matches the openai-compatibility accounts pointed at a gateway.
+func gatewayOwns(gateway string) func(*coreauth.Auth) bool {
+	return func(a *coreauth.Auth) bool {
+		if a == nil || a.Attributes == nil {
+			return false
+		}
+		if _, _, ok := openAICompatInfoFromAuth(a); !ok {
+			return false
+		}
+		return registry.GatewayProviderFor(a.Attributes["base_url"]) == gateway
+	}
+}
+
+// gatewayModelFetcher lists a gateway's models the way NeoPi's discovery does.
+func gatewayModelFetcher(gateway string) func(context.Context, *config.Config, *coreauth.Auth) ([]*ModelInfo, error) {
+	return func(ctx context.Context, cfg *config.Config, a *coreauth.Auth) ([]*ModelInfo, error) {
+		return executor.FetchGatewayModels(ctx, cfg, a, gateway)
+	}
+}
 
 // models returns the models to register for a and whether its cached listing
 // needs a (re)fetch.
@@ -129,7 +176,7 @@ func (s *Service) queueNeoPiDiscovery(d *neoPiDiscovery, a *coreauth.Auth) {
 		if s.coreManager == nil {
 			return
 		}
-		if latest, ok := s.coreManager.GetByID(snapshot.ID); ok && latest != nil && !latest.Disabled && latest.Provider == d.provider {
+		if latest, ok := s.coreManager.GetByID(snapshot.ID); ok && latest != nil && !latest.Disabled && d.ownsAccount(latest) {
 			s.refreshModelRegistrationForAuth(latest)
 		}
 	}()
@@ -164,7 +211,7 @@ func (s *Service) runNeoPiDiscovery(ctx context.Context) {
 				continue
 			}
 			for _, d := range neoPiDiscoveries {
-				if a.Provider != d.provider {
+				if !d.ownsAccount(a) {
 					continue
 				}
 				if _, stale := d.models(a, now); stale {

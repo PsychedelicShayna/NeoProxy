@@ -3,6 +3,7 @@ package neopool
 import (
 	"context"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"net/url"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/anthropicnpi"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/codex"
 	devinauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/devin"
@@ -19,8 +21,11 @@ import (
 	xaiauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/xai"
 	zaiauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/zai"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/neo"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/openaiwire"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 )
 
 // Native OAuth subscriptions (Claude, Codex/ChatGPT) report their own 5h and
@@ -117,6 +122,10 @@ func quotaProvider(a *coreauth.Auth) string {
 	if zaiauth.IsCodingPlanBaseURL(a.Attributes["base_url"]) {
 		return "zai"
 	}
+	// OpenCode Go reports its subscription windows for the account's key.
+	if registry.GatewayProviderFor(a.Attributes["base_url"]) == registry.GatewayOpenCodeGo && quotaAccessToken(a) != "" {
+		return "opencode-go"
+	}
 	if a.AuthKind() != coreauth.AuthKindOAuth {
 		return ""
 	}
@@ -136,6 +145,113 @@ func quotaProvider(a *coreauth.Auth) string {
 		return "devin"
 	}
 	return ""
+}
+
+// openCodeGoUsage is NeoPi's GET /zen/go/v1/usage report.
+type openCodeGoUsage struct {
+	Rolling *openCodeGoWindow `json:"-"`
+	Weekly  *openCodeGoWindow `json:"-"`
+	Monthly *openCodeGoWindow `json:"-"`
+}
+
+// openCodeGoWindow is one window of the report: a floored, clamped 0-100
+// percent, a status and the server-computed reset.
+type openCodeGoWindow struct {
+	Percent  float64
+	Status   string
+	ResetsAt time.Time
+}
+
+// openCodeGoUsageURL maps the account's inference endpoint back to the Zen
+// account endpoint NeoPi reads usage from.
+func openCodeGoUsageURL(baseURL string) string {
+	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if trimmed, ok := strings.CutSuffix(base, "/v1"); ok {
+		base = trimmed
+	}
+	if base == "https://opencode.ai/inference/go" {
+		base = "https://opencode.ai/zen/go"
+	}
+	if base == "" {
+		base = "https://opencode.ai/zen/go"
+	}
+	return base + "/v1/usage"
+}
+
+// fetchOpenCodeGoUsage is NeoPi's usage provider: bearer key, NeoPi's user
+// agent and the install-id session header. 401/403 mean the key is not usable
+// (NeoPi throws, so the credential is flagged); any other failure is transient.
+func fetchOpenCodeGoUsage(ctx context.Context, client *http.Client, a *coreauth.Auth, key string) (*openCodeGoUsage, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, openCodeGoUsageURL(a.Attributes["base_url"]), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Accept", "application/json")
+	request.Header.Set("Authorization", "Bearer "+key)
+	request.Header.Set("User-Agent", openaiwire.NeoPiUserAgent)
+	request.Header.Set("x-opencode-session", uuid.NewSHA1(uuid.NameSpaceOID, []byte("cli-proxy-api:gateway:install\x00opencode-go\x00"+a.ID)).String())
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = response.Body.Close() }()
+	body, err := io.ReadAll(io.LimitReader(response.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+		if message := gjson.GetBytes(body, "error.message").String(); message != "" {
+			return nil, fmt.Errorf("OpenCode Go usage endpoint returned %d: %s", response.StatusCode, message)
+		}
+		return nil, fmt.Errorf("OpenCode Go usage endpoint returned %d", response.StatusCode)
+	}
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("OpenCode Go usage endpoint returned %d", response.StatusCode)
+	}
+	usage := &openCodeGoUsage{
+		Rolling: openCodeGoWindowAt(body, "rolling"),
+		Weekly:  openCodeGoWindowAt(body, "weekly"),
+		Monthly: openCodeGoWindowAt(body, "monthly"),
+	}
+	// All-or-nothing: a partial report must not replace the last good one.
+	if usage.Rolling == nil || usage.Weekly == nil || usage.Monthly == nil {
+		return nil, fmt.Errorf("OpenCode Go usage response missing or malformed windows")
+	}
+	return usage, nil
+}
+
+// openCodeGoWindowAt decodes one window; nil when any field is malformed.
+func openCodeGoWindowAt(body []byte, key string) *openCodeGoWindow {
+	window := gjson.GetBytes(body, "usage."+key)
+	percent := window.Get("percent")
+	status := window.Get("status").String()
+	if percent.Type != gjson.Number || percent.Float() < 0 || percent.Float() > 100 || (status != "ok" && status != "rate-limited") {
+		return nil
+	}
+	resets, err := time.Parse(time.RFC3339Nano, window.Get("resetsAt").String())
+	if err != nil {
+		return nil
+	}
+	return &openCodeGoWindow{Percent: percent.Float(), Status: status, ResetsAt: resets}
+}
+
+// openCodeGoUsageWindows adapts NeoPi's report: the rolling 5h and weekly
+// windows gate routing, the monthly window is display-only.
+func openCodeGoUsageWindows(usage *openCodeGoUsage) []Window {
+	if usage == nil {
+		return nil
+	}
+	windows := []Window{
+		percentWindow("5h", usage.Rolling.Percent, usage.Rolling.ResetsAt.Add(-5*time.Hour), usage.Rolling.ResetsAt),
+		percentWindow("week", usage.Weekly.Percent, usage.Weekly.ResetsAt.Add(-7*24*time.Hour), usage.Weekly.ResetsAt),
+	}
+	// The monthly window anchors on the subscription anniversary (no fixed
+	// span) and never gates routing: an exhausted monthly can still serve a
+	// key whose console balance fallback is enabled.
+	month := percentWindow("month", usage.Monthly.Percent, time.Time{}, usage.Monthly.ResetsAt)
+	month.StartsAt = 0
+	month.Known = false
+	return append(windows, month)
 }
 
 func quotaAccessToken(a *coreauth.Auth) string {
@@ -432,6 +548,12 @@ func (q *quotaProber) fetch(ctx context.Context, a *coreauth.Auth, now time.Time
 			return nil, err
 		}
 		return zaiUsageWindows(usage), nil
+	case "opencode-go":
+		usage, err := fetchOpenCodeGoUsage(ctx, client, a, token)
+		if err != nil {
+			return nil, err
+		}
+		return openCodeGoUsageWindows(usage), nil
 	case "kimi":
 		// NeoPi skips the probe while the stored token is expired; the next
 		// poll carries the refreshed one.

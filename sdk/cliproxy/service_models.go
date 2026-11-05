@@ -250,7 +250,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 					return false
 				}
 				isCompatAuth = true
-				ms := buildOpenAICompatibilityConfigModels(compat)
+				ms := s.gatewayOrCompatModels(compat, a)
 				if providerKey == "" {
 					providerKey = "openai-compatibility"
 				}
@@ -844,6 +844,26 @@ func buildConfiguredModelInfo(model modelEntry, ownedBy, modelType string, creat
 		info.IsCompat = compatModel.GetIsCompat()
 	}
 	return info
+}
+
+// gatewayOrCompatModels serves a multi-wire gateway entry (OpenCode Go/Zen,
+// the Vercel AI Gateway) NeoPi's own catalog, and every other entry its
+// configured models.
+func (s *Service) gatewayOrCompatModels(compat *config.OpenAICompatibility, a *coreauth.Auth) []*ModelInfo {
+	if compat != nil {
+		if gateway := registry.GatewayProviderFor(compat.BaseURL); gateway != "" {
+			for _, discovery := range gatewayDiscoveries {
+				if discovery.provider == gateway {
+					models := s.registerNeoPiDiscovered(discovery, a)
+					for _, model := range models {
+						model.OwnedBy = compat.Name
+					}
+					return models
+				}
+			}
+		}
+	}
+	return buildOpenAICompatibilityConfigModels(compat)
 }
 
 func buildOpenAICompatibilityConfigModels(compat *config.OpenAICompatibility) []*ModelInfo {
