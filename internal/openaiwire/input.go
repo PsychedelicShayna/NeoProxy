@@ -3,6 +3,7 @@ package openaiwire
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"unicode/utf16"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/codexwire"
@@ -22,7 +23,7 @@ const (
 // sanitizeOpenAIResponsesHistoryItemsForReplay and
 // adaptResponsesReplayItemsForModel, then repairs orphan outputs and calls and
 // hoists messages wedged inside tool batches.
-func buildInput(raw []json.RawMessage, compat *registry.NeoPiCompat) []json.RawMessage {
+func buildInput(raw []json.RawMessage, compat *registry.NeoPiCompat, replay reasoningReplay) []json.RawMessage {
 	if compat.FilterReasoningHistory {
 		filtered := raw[:0:0]
 		for _, item := range raw {
@@ -34,6 +35,7 @@ func buildInput(raw []json.RawMessage, compat *registry.NeoPiCompat) []json.RawM
 	}
 	items := codexwire.SanitizeHistoryReplay(raw, compat.SupportsImageDetailOriginal)
 	items = adaptReplayItems(items)
+	items = ensureRequiredReasoningReplay(items, replay)
 	items = repairOrphanToolOutputs(items)
 	items = repairOrphanToolCalls(items)
 	return hoistInterleavedToolBatchMessages(items)
@@ -332,4 +334,119 @@ func hoistInterleavedToolBatchMessages(items []json.RawMessage) []json.RawMessag
 		out = append(out, item)
 	}
 	return out
+}
+
+// syntheticReasoningText is SYNTHETIC_REASONING_REPLAY_PLACEHOLDER.
+const syntheticReasoningText = "reasoning unavailable"
+
+// reasoningReplay says which replayed assistant turns must carry a reasoning item.
+type reasoningReplay struct {
+	allTurns  bool
+	toolCalls bool
+}
+
+// rewriteField replaces one top-level field of a JSON object in place.
+func rewriteField(item json.RawMessage, name string, value json.RawMessage) json.RawMessage {
+	var fields object
+	gjson.ParseBytes(item).ForEach(func(key, field gjson.Result) bool {
+		fields = append(fields, jsjson.Field{Name: key.String(), Value: json.RawMessage(field.Raw)})
+		return true
+	})
+	fields.set(name, value)
+	return fields.bytes()
+}
+
+// responsesTurnBoundary is isResponsesAssistantTurnBoundary.
+func responsesTurnBoundary(item json.RawMessage) bool {
+	parsed := gjson.ParseBytes(item)
+	kind := parsed.Get("type").String()
+	if toolOutputKind(kind) != "" || kind == "compaction" {
+		return true
+	}
+	role := parsed.Get("role")
+	return role.Exists() && role.String() != "assistant"
+}
+
+// ensureRequiredReasoningReplay is ensureRequiredResponsesReasoningReplay
+// over the flat transcript: every assistant turn (the items between two turn
+// boundaries) that carries content, or a tool call, gets a reasoning item when
+// the target requires one, and replayed reasoning gains the required text.
+func ensureRequiredReasoningReplay(items []json.RawMessage, replay reasoningReplay) []json.RawMessage {
+	if !replay.allTurns && !replay.toolCalls {
+		return items
+	}
+	out := make([]json.RawMessage, 0, len(items))
+	turnStart := 0
+	for index := 0; index <= len(items); index++ {
+		if index < len(items) && !responsesTurnBoundary(items[index]) {
+			continue
+		}
+		hasContent, hasReasoning, hasToolCall := false, false, false
+		for turnIndex := turnStart; turnIndex < index; turnIndex++ {
+			if gjson.GetBytes(items[turnIndex], "type").String() == "reasoning" {
+				hasReasoning = true
+				continue
+			}
+			hasContent = true
+			if batchKind(items[turnIndex]) == "call" {
+				hasToolCall = true
+			}
+		}
+		required := hasContent && (replay.allTurns || (replay.toolCalls && hasToolCall))
+		if required && !hasReasoning {
+			out = append(out, syntheticReasoningItem())
+		}
+		for turnIndex := turnStart; turnIndex < index; turnIndex++ {
+			item := items[turnIndex]
+			if required && gjson.GetBytes(item, "type").String() == "reasoning" {
+				item = withRequiredReasoningText(item)
+			}
+			out = append(out, item)
+		}
+		if index < len(items) {
+			out = append(out, items[index])
+		}
+		turnStart = index + 1
+	}
+	return out
+}
+
+func syntheticReasoningItem() json.RawMessage {
+	return jsjson.Object(
+		jsjson.Field{Name: "type", Value: jsjson.Marshal("reasoning")},
+		jsjson.Field{Name: "summary", Value: jsjson.Marshal([]json.RawMessage{})},
+		jsjson.Field{Name: "content", Value: jsjson.Marshal([]json.RawMessage{jsjson.Object(
+			jsjson.Field{Name: "type", Value: jsjson.Marshal("reasoning_text")},
+			jsjson.Field{Name: "text", Value: jsjson.Marshal(syntheticReasoningText)},
+		)})},
+	)
+}
+
+// withRequiredReasoningText fills a replayed reasoning item's missing
+// reasoning_text from its summary; items carrying encrypted_content are
+// opaque and replay untouched.
+func withRequiredReasoningText(item json.RawMessage) json.RawMessage {
+	parsed := gjson.ParseBytes(item)
+	if parsed.Get("encrypted_content").Type == gjson.String {
+		return item
+	}
+	for _, part := range parsed.Get("content").Array() {
+		if part.Get("type").String() == "reasoning_text" && strings.TrimSpace(part.Get("text").String()) != "" {
+			return item
+		}
+	}
+	var summaries []string
+	for _, part := range parsed.Get("summary").Array() {
+		if text := part.Get("text").String(); strings.TrimSpace(text) != "" {
+			summaries = append(summaries, text)
+		}
+	}
+	text := strings.Join(summaries, "\n\n")
+	if text == "" {
+		text = syntheticReasoningText
+	}
+	return rewriteField(item, "content", jsjson.Marshal([]json.RawMessage{jsjson.Object(
+		jsjson.Field{Name: "type", Value: jsjson.Marshal("reasoning_text")},
+		jsjson.Field{Name: "text", Value: jsjson.Marshal(text)},
+	)}))
 }

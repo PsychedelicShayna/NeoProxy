@@ -379,6 +379,8 @@ func NormalizeOAuthProvider(provider string) (string, error) {
 		return "meta", nil
 	case "zai", "z-ai", "z.ai":
 		return "zai", nil
+	case "openrouter", "open-router":
+		return "openrouter", nil
 	default:
 		return "", errUnsupportedOAuthFlow
 	}

@@ -250,7 +250,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 					return false
 				}
 				isCompatAuth = true
-				ms := s.neoPiResponsesModelsFor(a, buildOpenAICompatibilityConfigModels(compat))
+				ms := s.neoPiResponsesModelsFor(a, s.compatModelsForAuth(a, compat))
 				if providerKey == "" {
 					providerKey = "openai-compatibility"
 				}
@@ -844,6 +844,19 @@ func buildConfiguredModelInfo(model modelEntry, ownedBy, modelType string, creat
 		info.IsCompat = compatModel.GetIsCompat()
 	}
 	return info
+}
+
+// compatModelsForAuth returns the models one openai-compatibility entry serves:
+// NeoPi's OpenRouter roster for an OpenRouter entry, else the configured list.
+func (s *Service) compatModelsForAuth(a *coreauth.Auth, compat *config.OpenAICompatibility) []*ModelInfo {
+	if compat != nil && registry.IsOpenRouterBaseURL(compat.BaseURL) {
+		models := s.registerNeoPiDiscovered(openRouterDiscovery, a)
+		for _, model := range models {
+			model.OwnedBy = compat.Name
+		}
+		return models
+	}
+	return buildOpenAICompatibilityConfigModels(compat)
 }
 
 func buildOpenAICompatibilityConfigModels(compat *config.OpenAICompatibility) []*ModelInfo {

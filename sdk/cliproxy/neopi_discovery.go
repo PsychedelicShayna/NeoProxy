@@ -20,6 +20,9 @@ import (
 // re-registers the account.
 type neoPiDiscovery struct {
 	provider string
+	// matches selects the accounts this listing belongs to when they are not
+	// registered under the provider id itself (an openai-compatibility entry).
+	matches func(*coreauth.Auth) bool
 	// ttl is how long a listing stays fresh; retry backs off after a failure.
 	ttl, retry, timeout time.Duration
 	bundled             func() []*ModelInfo
@@ -51,6 +54,12 @@ var (
 	// 2h cache TTL and its 15s discovery bound.
 	devinDiscovery = &neoPiDiscovery{provider: "devin", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 15 * time.Second,
 		bundled: registry.DevinBundledModels, fetch: executor.FetchDevinModels, entries: map[string]*neoPiDiscoveryEntry{}}
+	// openRouterDiscovery lists GET /models for an OpenRouter key or sign-in,
+	// which lives in an openai-compatibility entry. NeoPi's model manager keeps
+	// a discovery row for 2h and bounds the probe at 10s.
+	openRouterDiscovery = &neoPiDiscovery{provider: "openrouter", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 10 * time.Second,
+		bundled: func() []*ModelInfo { return registry.OpenRouterBundledModels("openrouter") }, fetch: executor.FetchOpenRouterModels,
+		entries: map[string]*neoPiDiscoveryEntry{}, match: isOpenRouterAuth}
 
 	// museCodeDiscovery lists a Meta sign-in's models: NeoPi's muse-code
 	// manager (authoritative `/v1/models` over the subscription key).
@@ -62,7 +71,7 @@ var (
 	sakanaDiscovery       = newResponsesDiscovery(registry.ResponsesSakana, "")
 	abliterationDiscovery = newResponsesDiscovery(registry.ResponsesAbliterate, "")
 
-	neoPiDiscoveries = []*neoPiDiscovery{kimiDiscovery, devinDiscovery, museCodeDiscovery, metaAPIKeyDiscovery, sakanaDiscovery, abliterationDiscovery}
+	neoPiDiscoveries = []*neoPiDiscovery{kimiDiscovery, devinDiscovery, openRouterDiscovery, museCodeDiscovery, metaAPIKeyDiscovery, sakanaDiscovery, abliterationDiscovery}
 )
 
 // newResponsesDiscovery is the discovery of one NeoPi Responses provider: the
@@ -164,6 +173,21 @@ func (s *Service) queueNeoPiDiscovery(d *neoPiDiscovery, a *coreauth.Auth) {
 			s.refreshModelRegistrationForAuth(latest)
 		}
 	}()
+}
+
+// isOpenRouterAuth reports whether an account is served by NeoPi's openrouter
+// provider: any key or entry pointing at OpenRouter's own API host.
+func isOpenRouterAuth(a *coreauth.Auth) bool {
+	if a == nil {
+		return false
+	}
+	if strings.EqualFold(strings.TrimSpace(a.Provider), "openrouter") {
+		return true
+	}
+	if a.Attributes == nil {
+		return false
+	}
+	return registry.IsOpenRouterBaseURL(a.Attributes["base_url"])
 }
 
 // forgetNeoPiDiscovery drops the cached listings of a removed account.

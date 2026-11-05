@@ -17,7 +17,7 @@ import (
 // tools take NeoPi's schema path and are quarantined when their schema would
 // make the provider reject the whole turn; other declared tools are forwarded
 // unchanged. It also returns the function names that survived.
-func convertTools(tools []json.RawMessage, compat *registry.NeoPiCompat) ([]json.RawMessage, map[string]bool) {
+func convertTools(tools []json.RawMessage, compat *registry.NeoPiCompat, strictMode bool) ([]json.RawMessage, map[string]bool) {
 	out := make([]json.RawMessage, 0, len(tools))
 	emitted := map[string]bool{}
 	for _, raw := range tools {
@@ -28,7 +28,7 @@ func convertTools(tools []json.RawMessage, compat *registry.NeoPiCompat) ([]json
 		}
 		name := tool.Get("name").String()
 		explicitFalse := tool.Get("strict").Type == gjson.False
-		strict := compat.SupportsStrictMode && !explicitFalse
+		strict := strictMode && !explicitFalse
 		parameters, effectiveStrict := codexwire.ToolParametersSchema(tool.Get("parameters"), strict, compat.RejectRootObjectUnion)
 		if violation := findStrictToolSchemaViolation(gjson.ParseBytes(parameters), "#", compat.RejectRootObjectUnion); violation != "" {
 			log.Warnf("Tool %q omitted from the openai-responses request: its parameter schema is invalid for this provider at %s (an enum/const value cannot match its declared type). Other tools are unaffected.", name, violation)
@@ -42,7 +42,7 @@ func convertTools(tools []json.RawMessage, compat *registry.NeoPiCompat) ([]json
 		}
 		if effectiveStrict {
 			fields = append(fields, jsjson.Field{Name: "strict", Value: jsjson.Marshal(true)})
-		} else if compat.SupportsStrictMode && explicitFalse {
+		} else if strictMode && explicitFalse {
 			fields = append(fields, jsjson.Field{Name: "strict", Value: jsjson.Marshal(false)})
 		}
 		out = append(out, jsjson.Object(fields...))

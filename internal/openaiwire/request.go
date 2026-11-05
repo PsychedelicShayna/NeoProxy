@@ -48,7 +48,29 @@ func ShapeResponses(model *registry.NeoPiModel, ctx Context, opts Options, acces
 	} else {
 		header.Set("User-Agent", BunUserAgent)
 	}
+	if model.Provider == "openrouter" {
+		setOpenRouterHeaders(header)
+	}
 	header.Set("Authorization", "Bearer "+accessToken)
 	header.Set("X-Stainless-Timeout", firstEventTimeoutSeconds)
 	return &Request{URL: baseURL + "/responses", Header: header, Body: BuildResponses(model, ctx, opts)}
+}
+
+// OpenRouter attribution headers, getOpenRouterHeaders: NeoPi's APP_URL and
+// PRODUCT_NAME identify the app, the cache pair opts into OpenRouter's response cache.
+const (
+	neoPiAppURL         = "https://github.com/PsychedelicShayna/neopi"
+	neoPiProductName    = "NeoPi"
+	openRouterCacheTTL  = "3600"
+	openRouterCategory  = "cli-agent"
+	openRouterCacheFlag = "true"
+)
+
+func setOpenRouterHeaders(header http.Header) {
+	header.Set("User-Agent", NeoPiUserAgent)
+	header.Set("HTTP-Referer", neoPiAppURL)
+	header.Set("X-OpenRouter-Title", neoPiProductName)
+	header.Set("X-OpenRouter-Categories", openRouterCategory)
+	header.Set("X-OpenRouter-Cache", openRouterCacheFlag)
+	header.Set("X-OpenRouter-Cache-TTL", openRouterCacheTTL)
 }

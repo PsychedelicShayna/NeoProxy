@@ -76,6 +76,13 @@ type Turn struct {
 	// Do sends one HTTP attempt.
 	Do   func(*http.Request) (*http.Response, error)
 	Wait func(ctx context.Context, delay time.Duration) error
+	// WithoutStrictTools rebuilds the request with strict tools disabled, for
+	// the one retry NeoPi grants a provider that rejected them. Nil disables it.
+	WithoutStrictTools func() *Request
+	StrictRetry        StrictToolsRetry
+	// OnStrictDisabled runs once the retry is taken, so later requests for the
+	// same model skip strict (disableStrictToolsForScope).
+	OnStrictDisabled func()
 }
 
 // replayUnsafe is isOpenAIResponsesReplayUnsafeEvent: once such an event
@@ -111,8 +118,23 @@ func (t *Turn) Run(ctx context.Context, emit func([]byte) error) error {
 	if t.Finalize != nil {
 		body = t.Finalize(body)
 	}
+	strictRetryAvailable := t.WithoutStrictTools != nil
 	for attempt := 0; ; attempt++ {
 		live, err := t.attempt(ctx, body, emit)
+		var httpErr *HTTPError
+		if strictRetryAvailable && errors.As(err, &httpErr) && ctx.Err() == nil && strictToolsApplied(body) && t.StrictRetry.shouldRetry(httpErr) {
+			strictRetryAvailable = false
+			t.Request = t.WithoutStrictTools()
+			body = t.Request.Body
+			if t.Finalize != nil {
+				body = t.Finalize(body)
+			}
+			if t.OnStrictDisabled != nil {
+				t.OnStrictDisabled()
+			}
+			attempt--
+			continue
+		}
 		var streamErr *StreamError
 		retryable := err != nil && !live && attempt < maxTransientStreamRetries && ctx.Err() == nil &&
 			(errors.As(err, &streamErr) && streamErr.incomplete || isTransportFailure(err))

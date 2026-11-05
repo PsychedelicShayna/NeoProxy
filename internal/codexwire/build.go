@@ -95,6 +95,19 @@ func NormalizePromptCacheKey(value string) string {
 	return "pc_" + bunHash36(wellFormed)
 }
 
+// NormalizeOpenRouterSessionID is normalizeOpenRouterResponsesSessionId:
+// well-formed text up to 256 UTF-16 units, otherwise a stable hashed id.
+func NormalizeOpenRouterSessionID(value string) string {
+	if value == "" {
+		return ""
+	}
+	wellFormed := strings.ToValidUTF8(value, "\uFFFD")
+	if len(utf16.Encode([]rune(wellFormed))) <= 256 {
+		return wellFormed
+	}
+	return "session_" + bunHash36(wellFormed)
+}
+
 // shouldSendServiceTier is NeoPi's gate for openai-codex-responses models.
 func shouldSendServiceTier(tier string, model *registry.CodexModel) bool {
 	if tier == "" || tier == "auto" {

@@ -302,6 +302,19 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 		if compatProviderKey == "" {
 			compatProviderKey = "openai-compatibility"
 		}
+		if registry.IsOpenRouterBaseURL(a.Attributes["base_url"]) {
+			// NeoPi serves OpenRouter keys himself: OpenAI Responses on
+			// openrouter.ai with its own attribution headers and reasoning policy.
+			if !forceReplace {
+				if existing, ok := s.coreManager.Executor(compatProviderKey); ok {
+					if openRouter, isOpenRouter := existing.(*executor.OpenRouterExecutor); isOpenRouter && openRouter.UsesConfig(cfg) {
+						return
+					}
+				}
+			}
+			s.coreManager.RegisterExecutor(executor.NewOpenRouterExecutor(compatProviderKey, cfg))
+			return
+		}
 		if zaiauth.IsCodingPlanBaseURL(a.Attributes["base_url"]) {
 			// NeoPi serves Z.ai keys itself: Anthropic Messages for most of its
 			// catalog, Chat Completions for GLM-5.3-Flash.
