@@ -122,7 +122,9 @@ const chatBody = (model: any, turns: Turn[], options: any, extra: any) => {
 	const chatTurn = (turn: Turn) => {
 		if (turn.kind === "user") return { role: "user", content: turn.text ?? turn.blocks!.map((b: any) => (b.type === "text" ? { type: "text", text: b.text } : { type: "image_url", image_url: { url: `data:image/png;base64,${b.source.data}` } })) };
 		if (turn.kind === "call") return { role: "assistant", content: "", reasoning_content: "Need lookup.", tool_calls: [{ id: "call_capture_1", type: "function", function: { name: "lookup", arguments: "{\"term\":\"a\"}" } }] };
-		return { role: "tool", tool_call_id: "call_capture_1", content: turn.blocks.map((b: any) => (b.type === "text" ? b.text : "")).join("\n") };
+		// A tool result carrying an image is content parts; text-only results are one string.
+		const parts = turn.blocks.map((b: any) => (b.type === "text" ? { type: "text", text: b.text } : { type: "image_url", image_url: { url: `data:image/png;base64,${b.source.data}` } }));
+		return { role: "tool", tool_call_id: "call_capture_1", content: turn.blocks.some((b: any) => b.type !== "text") ? parts : turn.blocks.map((b: any) => b.text).join("\n") };
 	};
 	const body: any = { model: model.id, messages: [...(extra.system ? [{ role: "system", content: extra.system }] : []), ...turns.map(chatTurn)], stream: true };
 	if (extra.tools) body.tools = [{ type: "function", function: { name: lookup.name, description: lookup.description, parameters: lookup.parameters } }];
@@ -200,7 +202,8 @@ for (const plan of plans) {
 	add("system-tool", lookupTurns, { reasoning: efforts[0], maxTokens: 512, temperature: 0.2 }, { system: "A source system.", tools: true });
 	add("tool-history", history([text("Found.")]), { reasoning: efforts[0] }, { tools: true });
 	add("tool-result-blocks", history([text("Line one."), text("  "), text("Line two.")]), { reasoning: efforts[0] }, { tools: true });
-	add("tool-result-empty-error", history([], true), { reasoning: efforts[0] }, { tools: true });
+	// Chat Completions history cannot express a tool error, so Google skips it.
+	if (model.api !== "google-generative-ai") add("tool-result-empty-error", history([], true), { reasoning: efforts[0] }, { tools: true });
 	add("forced-any", lookupTurns, { reasoning: efforts[0], toolChoice: "any" }, { tools: true });
 	add("forced-named", lookupTurns, { reasoning: efforts[0], toolChoice: { type: "tool", name: "lookup" } }, { tools: true });
 	add("user-image", [{ kind: "user", blocks: [text("Describe."), image] }], { reasoning: efforts[0] });
@@ -211,7 +214,10 @@ const contextFor = (model: any, turns: Turn[], extra: any) => ({
 	...(extra.system ? { systemPrompt: [extra.system] } : {}),
 	messages: turns.map(turn => {
 		if (turn.kind !== "call") return neopiMessage(turn);
-		return { role: "assistant", content: [{ type: "thinking", thinking: "Need lookup.", thinkingSignature: "" }, { type: "toolCall", id: "call_capture_1", name: "lookup", arguments: { term: "a" } }], api: model.api, provider: model.provider, model: model.id, usage, stopReason: "toolUse", timestamp: 0 };
+		// A Chat Completions history carries no signature, so for Google it is a
+		// foreign turn: NeoPi demotes its reasoning to text instead of replaying it.
+		const foreign = model.api === "google-generative-ai";
+		return { role: "assistant", content: [{ type: "thinking", thinking: "Need lookup.", thinkingSignature: "" }, { type: "toolCall", id: "call_capture_1", name: "lookup", arguments: { term: "a" } }], api: model.api, provider: foreign ? "neoproxy" : model.provider, model: foreign ? "neoproxy/" + model.id : model.id, usage, stopReason: "toolUse", timestamp: 0 };
 	}),
 	...(extra.tools ? { tools: [lookup] } : {}),
 });

@@ -48,7 +48,10 @@ type neoPiProfile struct {
 // non-Anthropic model: its effort ladder and the compat facts that change the
 // wire relative to Anthropic's own endpoint.
 type neoPiThirdParty struct {
-	efforts        []string
+	efforts []string
+	// effortMap is the model's thinking.effortMap (NeoPi's
+	// mapEffortToAnthropicAdaptiveEffort reads it).
+	effortMap      map[string]string
 	requiresEffort bool
 	outputEffort   bool
 	toolResultID   bool
@@ -56,6 +59,10 @@ type neoPiThirdParty struct {
 	// promptCacheUserID: NeoPi sends Kimi Code's prompt-cache key as
 	// metadata.user_id when the caller sets none.
 	promptCacheUserID bool
+	// directOptions: the provider hands NeoPi's request options straight to the
+	// Anthropic transport (Kimi), skipping streamSimple's adaptive effort mapping
+	// and its thinking-budget raise of max_tokens.
+	directOptions bool
 	// headers are provider identity headers (Kimi's fingerprint) applied over
 	// the default set.
 	headers http.Header

@@ -27,6 +27,10 @@ type GatewayExecutor struct {
 	gateway string
 	// counter estimates tokens locally; NeoPi never asks the gateway to count.
 	counter *OpenAICompatExecutor
+	// completions and google speak NeoPi's openai-completions and
+	// google-generative-ai routes; both are the shared NeoPi engines.
+	completions *NeoPiCompletionsExecutor
+	google      *NeoPiGoogleExecutor
 }
 
 // NewGatewayExecutor binds a gateway executor to an openai-compatibility
@@ -36,7 +40,11 @@ func NewGatewayExecutor(provider, gateway string, cfg *config.Config) *GatewayEx
 	messages.provider = provider
 	messages.thirdParty = gatewayThirdPartyProvider(gateway)
 	messages.thirdParty.bearer = gatewayAPIKey
-	return &GatewayExecutor{ClaudeExecutor: messages, cfg: cfg, gateway: gateway, counter: NewOpenAICompatExecutor(provider, cfg)}
+	return &GatewayExecutor{
+		ClaudeExecutor: messages, cfg: cfg, gateway: gateway, counter: NewOpenAICompatExecutor(provider, cfg),
+		completions: NewNeoPiCompletionsExecutor(provider, cfg, gatewayCompletionsProfile(gateway)),
+		google:      NewNeoPiGoogleExecutor(provider, cfg, gatewayGoogleHooks(gateway)),
+	}
 }
 
 // gatewayThirdPartyProvider is what the Anthropic Messages route needs from a
@@ -88,20 +96,18 @@ func (e *GatewayExecutor) CountTokens(ctx context.Context, auth *cliproxyauth.Au
 }
 
 // RequestToFormat reports the dialect the selected catalog row is sent in.
-func (e *GatewayExecutor) RequestToFormat(req cliproxyexecutor.Request, _ cliproxyexecutor.Options) sdktranslator.Format {
-	if row := e.row(req.Model); row != nil {
+func (e *GatewayExecutor) RequestToFormat(req cliproxyexecutor.Request, opts cliproxyexecutor.Options) sdktranslator.Format {
+	if row, err := e.routeRow(req); err == nil {
 		switch row.API {
-		case "openai-completions", "google-generative-ai":
-			return sdktranslator.FormatOpenAI
+		case "openai-completions":
+			return e.completions.RequestToFormat(req, opts)
+		case "google-generative-ai":
+			return e.google.RequestToFormat(req, opts)
 		case "openai-responses":
 			return sdktranslator.FormatCodex
 		}
 	}
 	return sdktranslator.FormatClaude
-}
-
-func (e *GatewayExecutor) row(model string) *registry.NeoPiModel {
-	return registry.GatewayNeoPiModel(e.gateway, thinking.ParseSuffix(model).ModelName)
 }
 
 // gatewayCatalogRow is NeoPi's record of the requested model: the row
@@ -200,15 +206,64 @@ type gatewayEngine interface {
 
 // engineFor selects the executor for a row's API.
 func (e *GatewayExecutor) engineFor(api string) (gatewayEngine, error) {
+	switch api {
+	case "openai-completions":
+		return e.completions, nil
+	case "google-generative-ai":
+		return e.google, nil
+	}
 	return nil, statusErr{code: http.StatusBadRequest, msg: fmt.Sprintf("%s: NeoPi's %s API is not a wire this proxy speaks", e.Identifier(), api)}
 }
 
 // routeRow is NeoPi's record of the request's model, erroring when NeoPi's
 // catalogs do not serve it.
 func (e *GatewayExecutor) routeRow(req cliproxyexecutor.Request) (*registry.NeoPiModel, error) {
-	row := e.row(req.Model)
+	row := gatewayCatalogRow(e.gateway)(req, thinking.ParseSuffix(req.Model).ModelName)
 	if row == nil {
 		return nil, statusErr{code: http.StatusBadRequest, msg: fmt.Sprintf("%s: model %s is not in NeoPi's %s catalog", e.Identifier(), req.Model, e.gateway)}
 	}
 	return row, nil
+}
+
+// gatewayCompletionsProfile binds NeoPi's Chat Completions engine to a
+// gateway: the gateway's own catalog rows, its bearer key and its identity
+// headers on top of the engine's.
+func gatewayCompletionsProfile(gateway string) NeoPiCompletionsProfile {
+	return NeoPiCompletionsProfile{
+		Provider: gateway,
+		Row:      func(provider, model string) *registry.NeoPiModel { return registry.GatewayNeoPiModel(provider, model) },
+		APIKey:   gatewayAPIKey,
+		Headers: func(_ context.Context, _ *cliproxyauth.Auth, _ http.Header, _ string, _ *registry.NeoPiModel, headers http.Header, sessionID string) {
+			applyGatewayIdentity(headers, gateway, sessionID)
+		},
+	}
+}
+
+// gatewayGoogleHooks binds NeoPi's Google engine to a gateway. The endpoint
+// is the row's own (OpenCode Go serves generateContent under its /v1 tree and
+// Zen under its own Google host path), never the account's base URL.
+func gatewayGoogleHooks(gateway string) NeoPiGoogleHooks {
+	return NeoPiGoogleHooks{
+		Row: gatewayCatalogRow(gateway),
+		Key: gatewayAPIKey,
+		BaseURL: func(_ *cliproxyauth.Auth, row *registry.NeoPiModel) string {
+			return strings.TrimRight(row.BaseURL, "/")
+		},
+		Headers: func(_ context.Context, _ *cliproxyauth.Auth, _ http.Header, sessionID string) http.Header {
+			headers := make(http.Header)
+			applyGatewayIdentity(headers, gateway, sessionID)
+			return headers
+		},
+	}
+}
+
+// applyGatewayIdentity is NeoPi's applyInferenceHeaders for a gateway backend:
+// the Vercel app attribution, and OpenCode's conversation header.
+func applyGatewayIdentity(headers http.Header, gateway, sessionID string) {
+	for name, values := range gatewayIdentityHeaders(gateway)() {
+		headers[name] = values
+	}
+	if name := gatewaySessionHeader(gateway); name != "" && sessionID != "" {
+		headers.Set(name, sessionID)
+	}
 }

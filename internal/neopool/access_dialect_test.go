@@ -46,9 +46,9 @@ func TestModelRoutesFollowTheAdvertisedAPI(t *testing.T) {
 		}
 	}
 	want := map[string]modelRoute{
-		"qwen3.8-flash":    {dialect: "messages", baseURL: server.URL + "/inference/go/anthropic/v1"},
-		"grok-4.7":         {dialect: "responses"},
-		"gemini-4-argon":   {dialect: "generate-content", baseURL: server.URL + "/inference/go/google/v1beta"},
+		"qwen3.8-flash":  {dialect: "messages", baseURL: server.URL + "/inference/go/anthropic/v1"},
+		"grok-4.7":       {dialect: "responses"},
+		"gemini-4-argon": {dialect: "generate-content", baseURL: server.URL + "/inference/go/google/v1beta"},
 	}
 	if len(routes) != len(want) {
 		t.Fatalf("routes = %+v, want %+v", routes, want)

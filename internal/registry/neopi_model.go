@@ -67,8 +67,6 @@ type NeoPiThinking struct {
 	// EffortRouting maps an effort (or "off") to the wire id that serves it.
 	EffortRouting map[string]string `json:"effortRouting,omitempty"`
 	DefaultLevel  string            `json:"defaultLevel,omitempty"`
-	// SuppressWhenOff models handle "off" provider-side through explicit wire suppression.
-	SuppressWhenOff bool `json:"suppressWhenOff,omitempty"`
 	// EffortBudgets maps an effort to its thinking-token budget (budget mode).
 	EffortBudgets map[string]int `json:"effortBudgets,omitempty"`
 }

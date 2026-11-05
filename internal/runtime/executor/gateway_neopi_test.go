@@ -6,11 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/anthropicnpi"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/googlewire"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
@@ -84,12 +86,15 @@ func TestGatewayNeoPiAnthropicParity(t *testing.T) {
 			}
 			base := strings.TrimRight(row.BaseURL, "/")
 			identity := neoPiWireIdentity{SessionID: capture.SessionID, APIKey: true}
-			body, headers, err := projectNeoPiAnthropic(downstream.Bytes(), row.ID, base, "", identity, neoPiThirdPartyProfile(row))
+			third := gatewayThirdPartyProvider(provider)
+			profile := neoPiThirdPartyProfile(row)
+			profile.thirdParty.headers = third.headers()
+			body, headers, err := projectNeoPiAnthropic(downstream.Bytes(), row.ID, base, "", identity, profile)
 			if err != nil {
 				t.Fatal(err)
 			}
 			neoPiApplyHeaders(headers, auth, nil, &anthropicnpi.Credential{APIKey: capture.APIKey}, base, context.Background())
-			applyThirdPartyIdentity(headers, gatewayThirdPartyProvider(provider), capture.APIKey, capture.SessionID)
+			applyThirdPartyIdentity(headers, third, capture.APIKey, capture.SessionID)
 			if url := base + "/v1/messages"; url != fixture.RequestedURL {
 				t.Errorf("url = %s, want %s", url, fixture.RequestedURL)
 			}
@@ -139,4 +144,120 @@ func readGzipFixture(t *testing.T, path string) []byte {
 		t.Fatal(err)
 	}
 	return data
+}
+
+// gatewayHeaderParity diffs the headers a Go request carries against the
+// captured ones. connection is transport-owned: Bun stamps keep-alive and Go's
+// transport manages it (and forbids it on HTTP/2).
+func gatewayHeaderParity(t *testing.T, headers http.Header, captured map[string]string) {
+	t.Helper()
+	want := map[string]string{}
+	for name, value := range captured {
+		if name != "host" && name != "content-length" && name != "connection" {
+			want[name] = value
+		}
+	}
+	got := map[string]string{}
+	for name, values := range headers {
+		got[strings.ToLower(name)] = strings.Join(values, ", ")
+	}
+	for name, value := range want {
+		if got[name] != value {
+			t.Errorf("header %s = %q, want %q", name, got[name], value)
+		}
+	}
+	for name := range got {
+		if _, ok := want[name]; !ok && name != "connection" {
+			t.Errorf("extra header %s = %q", name, got[name])
+		}
+	}
+}
+
+// Every captured openai-completions request of the OpenCode gateways is
+// reproduced through the shared NeoPi Chat Completions engine bound to its
+// gateway profile: URL, headers and body.
+func TestGatewayNeoPiCompletionsParity(t *testing.T) {
+	capture := readGatewayCapture(t)
+	auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": capture.APIKey}}
+	tested := 0
+	for _, fixture := range capture.Fixtures {
+		if fixture.API != "openai-completions" {
+			continue
+		}
+		tested++
+		t.Run(fixture.Name, func(t *testing.T) {
+			provider, row := gatewayRow(t, fixture.Row)
+			engine := NewNeoPiCompletionsExecutor(provider, nil, gatewayCompletionsProfile(provider))
+			var downstream bytes.Buffer
+			if err := json.Compact(&downstream, fixture.Downstream); err != nil {
+				t.Fatal(err)
+			}
+			body, err := neoPiCompletionsRequest(downstream.Bytes(), row, neoPiCompletionsCall{SessionID: capture.SessionID})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if url := engine.url(row); url != fixture.RequestedURL {
+				t.Errorf("url = %s, want %s", url, fixture.RequestedURL)
+			}
+			if string(body) != fixture.RawBody {
+				t.Errorf("body:\n got %s\nwant %s", body, fixture.RawBody)
+			}
+			headers := neoPiCompletionsHeaders(context.Background(), auth, nil, capture.APIKey, row)
+			engine.profile.Headers(context.Background(), auth, nil, capture.APIKey, row, headers, capture.SessionID)
+			gatewayHeaderParity(t, headers, fixture.Headers)
+		})
+	}
+	if tested == 0 {
+		t.Fatal("capture has no openai-completions fixtures")
+	}
+}
+
+// Every captured google-generative-ai request is reproduced through the
+// shared NeoPi Google engine bound to its gateway hooks.
+func TestGatewayNeoPiGoogleParity(t *testing.T) {
+	capture := readGatewayCapture(t)
+	auth := &cliproxyauth.Auth{Attributes: map[string]string{"api_key": capture.APIKey}}
+	tested := 0
+	for _, fixture := range capture.Fixtures {
+		if fixture.API != "google-generative-ai" {
+			continue
+		}
+		tested++
+		t.Run(fixture.Name, func(t *testing.T) {
+			provider, row := gatewayRow(t, fixture.Row)
+			hooks := gatewayGoogleHooks(provider)
+			var downstream bytes.Buffer
+			if err := json.Compact(&downstream, fixture.Downstream); err != nil {
+				t.Fatal(err)
+			}
+			wire := neoPiGoogleWireModel(row)
+			neoPiContext, options, err := googlewire.FromOpenAIChat(downstream.Bytes(), wire)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resolved, err := googlewire.MapOptions(wire, options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body, err := googlewire.BuildBody(wire, neoPiContext, resolved, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			url := hooks.BaseURL(auth, row) + "/models/" + row.ID + ":streamGenerateContent?alt=sse"
+			if url != fixture.RequestedURL {
+				t.Errorf("url = %s, want %s", url, fixture.RequestedURL)
+			}
+			if string(body) != fixture.RawBody {
+				t.Errorf("body:\n got %s\nwant %s", body, fixture.RawBody)
+			}
+			headers := neoPiGoogleHeaders(context.Background(), auth, nil, hooks.Key(auth))
+			for name, values := range hooks.Headers(context.Background(), auth, nil, capture.SessionID) {
+				headers[name] = values
+			}
+			gatewayHeaderParity(t, headers, fixture.Headers)
+		})
+	}
+	if tested == 0 {
+		t.Fatal("capture has no google-generative-ai fixtures")
+	}
 }
