@@ -568,21 +568,30 @@ func (r *antigravityRun) open(ctx context.Context, url string, maxAttempts int, 
 		return r.checkStatus(ctx, response)
 	}
 	watchdog, cancel := context.WithCancel(ctx)
-	var timedOut atomic.Bool
-	timer := time.AfterFunc(r.prepared.firstEvent, func() { timedOut.Store(true); cancel() })
+	var headerState atomic.Uint32 // 0 pending, 1 response settled, 2 timed out
+	timer := time.AfterFunc(r.prepared.firstEvent, func() {
+		if headerState.CompareAndSwap(0, 2) {
+			cancel()
+		}
+	})
 	response, err := neopiretry.Do(watchdog, func(int) (*http.Response, error) { return r.send(ctx, watchdog, url) },
 		neopiretry.Options{MaxAttempts: maxAttempts, MaxDelay: antigravityRateLimitBudget,
 			DefaultDelay: func(attempt int) time.Duration { return antigravityBaseDelay << attempt }})
-	if !timer.Stop() {
-		timedOut.Store(true)
-	}
+	headerState.CompareAndSwap(0, 1)
+	timer.Stop()
 	if err != nil {
 		cancel()
-		if timedOut.Load() && ctx.Err() == nil {
+		if headerState.Load() == 2 && ctx.Err() == nil {
 			return nil, statusErr{code: http.StatusGatewayTimeout,
 				msg: "Cloud Code Assist stream timed out while waiting for the first event"}
 		}
 		return nil, err
+	}
+	if headerState.Load() == 2 && ctx.Err() == nil {
+		_ = response.Body.Close()
+		cancel()
+		return nil, statusErr{code: http.StatusGatewayTimeout,
+			msg: "Cloud Code Assist stream timed out while waiting for the first event"}
 	}
 	// The request context inherits caller cancellation. Closing the body also
 	// releases the child context.
@@ -662,15 +671,18 @@ func (r *antigravityRun) headers() http.Header {
 // streamResponse reads one response and streams its events.
 func (r *antigravityRun) streamResponse(ctx context.Context, response *http.Response) (*antigravityOutcome, error) {
 	defer func() { _ = response.Body.Close() }()
-	var firstTimedOut atomic.Bool
+	// The first event and the timeout race to claim the body. Stopping a
+	// timer alone is insufficient: its callback may already be scheduled.
+	var firstState atomic.Uint32 // 0 pending, 1 first event/read finished, 2 timed out
 	timer := time.AfterFunc(r.prepared.firstEvent, func() {
-		firstTimedOut.Store(true)
-		_ = response.Body.Close()
+		if firstState.CompareAndSwap(0, 2) {
+			_ = response.Body.Close()
+		}
 	})
 	defer timer.Stop()
 	decoded, err := util.DecodeResponseBody(response.Body, response.Header.Get("Content-Encoding"))
 	if err != nil {
-		if firstTimedOut.Load() && ctx.Err() == nil {
+		if firstState.Load() == 2 && ctx.Err() == nil {
 			return nil, statusErr{code: http.StatusGatewayTimeout, msg: "Cloud Code Assist stream timed out while waiting for the first event"}
 		}
 		return nil, err
@@ -686,8 +698,9 @@ func (r *antigravityRun) streamResponse(ctx context.Context, response *http.Resp
 		event, errRead := reader.Next()
 		if first {
 			first = false
+			firstState.CompareAndSwap(0, 1)
 			timer.Stop()
-			if firstTimedOut.Load() && ctx.Err() == nil {
+			if firstState.Load() == 2 && ctx.Err() == nil {
 				return outcome, statusErr{code: http.StatusGatewayTimeout, msg: "Cloud Code Assist stream timed out while waiting for the first event"}
 			}
 		}
