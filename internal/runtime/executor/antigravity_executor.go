@@ -537,6 +537,11 @@ func (r *antigravityRun) attemptEndpoint(ctx context.Context, endpoint string, l
 		if err != nil {
 			return outcome, err
 		}
+		// NeoPi retries an empty stream at response.url, which may be the
+		// redirect target rather than the original endpoint.
+		if emptyAttempt == 0 && response.Request != nil && response.Request.URL != nil {
+			url = response.Request.URL.String()
+		}
 		streamed, errStream := r.streamResponse(ctx, response)
 		outcome = streamed
 		if errStream != nil {

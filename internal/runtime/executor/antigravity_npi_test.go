@@ -496,3 +496,34 @@ func TestAntigravityStatusErrorPreservesBody(t *testing.T) {
 		t.Fatalf("accepted malformed JSON validation URL %q", got)
 	}
 }
+
+func TestAntigravityEmptyRetryUsesRedirectTarget(t *testing.T) {
+	t.Setenv("PI_AI_ANTIGRAVITY_VERSION", "2.26.0")
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if r.URL.Path != "/redirected" {
+			http.Redirect(w, r, "/redirected", http.StatusTemporaryRedirect)
+			return
+		}
+		if len(paths) == 2 {
+			fmt.Fprint(w, "data: {\"response\":{\"candidates\":[{\"finishReason\":\"STOP\"}]}}\n\n")
+			return
+		}
+		fmt.Fprint(w, "data: {\"response\":{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"answer\"}]},\"finishReason\":\"STOP\"}]}}\n\n")
+	}))
+	defer server.Close()
+	run := &antigravityRun{
+		executor: NewAntigravityExecutor(&config.Config{}),
+		prepared: &antigravityPrepared{model: &registry.NeoPiModel{}, credential: antigravityCredential{accessToken: "token"},
+			body: []byte("{}"), endpoints: []string{server.URL}, firstEvent: time.Second},
+		client: server.Client(),
+		emit:   func([]byte) error { return nil },
+	}
+	if err := run.run(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(paths, ",") != "/v1internal:streamGenerateContent,/redirected,/redirected" {
+		t.Fatalf("request paths = %v", paths)
+	}
+}
