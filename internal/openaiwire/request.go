@@ -12,6 +12,10 @@ import (
 // NeoPiUserAgent is USER_AGENT of the NeoPi build these ports follow.
 const NeoPiUserAgent = "npi/" + neopiversion.Version
 
+// BunUserAgent is the User-Agent Bun's fetch sends when NeoPi's request names
+// none: every Responses host but xAI (which sets USER_AGENT itself) sees it.
+const BunUserAgent = "Bun/1.3.14"
+
 // firstEventTimeoutSeconds is NeoPi's default first-event watchdog (300s),
 // announced to the server as X-Stainless-Timeout.
 const firstEventTimeoutSeconds = "300"
@@ -41,6 +45,8 @@ func ShapeResponses(model *registry.NeoPiModel, ctx Context, opts Options, acces
 	}
 	if model.Provider == "xai" || model.Provider == "xai-oauth" {
 		header.Set("User-Agent", NeoPiUserAgent)
+	} else {
+		header.Set("User-Agent", BunUserAgent)
 	}
 	header.Set("Authorization", "Bearer "+accessToken)
 	header.Set("X-Stainless-Timeout", firstEventTimeoutSeconds)

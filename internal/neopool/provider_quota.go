@@ -143,6 +143,8 @@ func quotaProvider(a *coreauth.Auth) string {
 		return "kimi"
 	case "devin":
 		return "devin"
+	case "meta":
+		return "meta"
 	}
 	return ""
 }
@@ -257,6 +259,10 @@ func openCodeGoUsageWindows(usage *openCodeGoUsage) []Window {
 func quotaAccessToken(a *coreauth.Auth) string {
 	if a == nil {
 		return ""
+	}
+	if a.Provider == "meta" {
+		// A Muse sign-in is read with its account token, not the minted key.
+		return metaDeviceToken(a)
 	}
 	token, _ := a.Metadata["access_token"].(string)
 	if token == "" && zaiauth.IsCodingPlanBaseURL(a.Attributes["base_url"]) {
@@ -575,6 +581,8 @@ func (q *quotaProber) fetch(ctx context.Context, a *coreauth.Auth, now time.Time
 			return nil, err
 		}
 		return devinUsageWindows(usage), nil
+	case "meta":
+		return fetchMetaUsage(ctx, client, a, now)
 	}
 	return nil, fmt.Errorf("provider has no usage endpoint")
 }

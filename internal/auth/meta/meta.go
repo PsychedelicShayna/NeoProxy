@@ -1,5 +1,6 @@
 // Package meta provides authentication and token management for Meta Muse (api.meta.ai).
-// It implements the RFC 8628 OAuth2 Device Authorization Grant flow for Meta accounts.
+// It ports NeoPi's `muse-code` sign-in: the RFC 8628 device authorization grant
+// on a Meta account, then the Model API key the subscription mints.
 package meta
 
 import (
@@ -31,15 +32,27 @@ const (
 	DeviceAuthorizationEndpoint = AuthHost + "/oidc/device/authorization/"
 	// TokenEndpoint is the token issuance and polling endpoint.
 	TokenEndpoint = AuthHost + "/oidc/device/token/"
+	// MuseKeyURL is where the device token is exchanged for the Model API key.
+	MuseKeyURL = "https://api.meta.ai/muse-code/key"
 	// ClientID is Meta Muse CLI's official OAuth client ID.
 	ClientID = "1031625952748946"
 	// DeviceCodeGrantType is the RFC 8628 grant type parameter.
 	DeviceCodeGrantType = "urn:ietf:params:oauth:grant-type:device_code"
+	// APIVersion is the x-api-version header every muse-code request carries.
+	APIVersion = "1.0.0"
+	// UserAgent is the User-Agent Bun's fetch sends for NeoPi's requests.
+	UserAgent = "Bun/1.3.14"
 	// DefaultPollInterval is the default polling interval when unspecified.
 	DefaultPollInterval = 5 * time.Second
-	// MaxPollDuration is the upper bound for waiting on user authorization.
+	// MinPollInterval is MINIMUM_DEVICE_FLOW_INTERVAL_MS.
+	MinPollInterval = time.Second
+	// SlowDownIncrement is SLOW_DOWN_INTERVAL_INCREMENT_MS.
+	SlowDownIncrement = 5 * time.Second
+	// MaxPollDuration is the upper bound shown for waiting on user authorization.
 	MaxPollDuration = 15 * time.Minute
-	// httpClientTimeout bounds credential-acquisition HTTP calls.
+	// KeyRequestTimeout is REQUEST_TIMEOUT_MS of the key exchange.
+	KeyRequestTimeout = 20 * time.Second
+	// httpClientTimeout bounds credential-acquisition HTTP calls (DEFAULT_REQUEST_TIMEOUT_MS).
 	httpClientTimeout = 30 * time.Second
 )
 
@@ -58,32 +71,111 @@ type DeviceCodeResponse struct {
 type TokenData struct {
 	AccessToken      string `json:"access_token"`
 	TokenType        string `json:"token_type"`
-	ExpiresIn        int    `json:"expires_in,omitempty"`
-	ExpiresAt        int64  `json:"expires_at,omitempty"`
 	Error            string `json:"error,omitempty"`
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
-// MintedKeyResponse represents the API key response minted from https://api.meta.ai/muse-code/key.
-type MintedKeyResponse struct {
-	APIKey           string `json:"api_key"`
-	BaseURL          string `json:"base_url"`
-	UserEmail        string `json:"user_email"`
-	UserFullName     string `json:"user_full_name"`
-	SubsTierName     string `json:"subs_tier_name"`
-	SubsTierID       string `json:"subs_tier_id"`
-	IsSubsActive     bool   `json:"is_subs_active"`
-	HasPaymentMethod bool   `json:"has_payment_method"`
-	RequirePayment   bool   `json:"require_payment"`
-	CanSubscribe     bool   `json:"can_subscribe"`
+// UsageWindow is one subscription usage window of a key response.
+type UsageWindow struct {
+	UsedPercent        *float64        `json:"used_percent"`
+	ResetsAt           json.RawMessage `json:"resets_at"`
+	WindowDurationMins *float64        `json:"window_duration_mins"`
 }
+
+// SubscriptionUsage is a key response's `subs_usage`.
+type SubscriptionUsage struct {
+	Window *UsageWindow `json:"window"`
+	Weekly *UsageWindow `json:"weekly"`
+}
+
+// MintedKeyResponse represents the response of https://api.meta.ai/muse-code/key
+// (museCodeKeyResponseSchema).
+type MintedKeyResponse struct {
+	APIKey                  string
+	RequirePaymentActionURL string
+	RequirePayment          bool
+	ActionURL               string
+	UserEmail               string
+	UserID                  string
+	// IsSubsActive is is_subs_active; SubsActiveKnown records its presence.
+	IsSubsActive    bool
+	SubsActiveKnown bool
+	SubsTierID      string
+	SubsTierName    string
+	SubsUsage       *SubscriptionUsage
+}
+
+// UnmarshalJSON reads the schema's fields, keeping `is_subs_active` tri-state.
+func (m *MintedKeyResponse) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		APIKey                  string             `json:"api_key"`
+		RequirePaymentActionURL string             `json:"require_payment_action_url"`
+		RequirePayment          bool               `json:"require_payment"`
+		ActionURL               *string            `json:"action_url"`
+		UserEmail               string             `json:"user_email"`
+		UserID                  string             `json:"user_id"`
+		IsSubsActive            *bool              `json:"is_subs_active"`
+		SubsTierID              *string            `json:"subs_tier_id"`
+		SubsTierName            *string            `json:"subs_tier_name"`
+		SubsUsage               *SubscriptionUsage `json:"subs_usage"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	*m = MintedKeyResponse{
+		APIKey: raw.APIKey, RequirePaymentActionURL: raw.RequirePaymentActionURL, RequirePayment: raw.RequirePayment,
+		UserEmail: raw.UserEmail, UserID: raw.UserID, SubsUsage: raw.SubsUsage,
+	}
+	if raw.ActionURL != nil {
+		m.ActionURL = *raw.ActionURL
+	}
+	if raw.IsSubsActive != nil {
+		m.IsSubsActive, m.SubsActiveKnown = *raw.IsSubsActive, true
+	}
+	if raw.SubsTierID != nil {
+		m.SubsTierID = *raw.SubsTierID
+	}
+	if raw.SubsTierName != nil {
+		m.SubsTierName = *raw.SubsTierName
+	}
+	return nil
+}
+
+// NormalizedEmail is the account email NeoPi stores: trimmed and lowercased.
+func (m *MintedKeyResponse) NormalizedEmail() string {
+	return strings.ToLower(strings.TrimSpace(m.UserEmail))
+}
+
+// AccountID is NeoPi's stable account identity: the user id, else the email.
+func (m *MintedKeyResponse) AccountID() string {
+	if id := strings.TrimSpace(m.UserID); id != "" {
+		return id
+	}
+	return m.NormalizedEmail()
+}
+
+// Tier is the subscription tier label: its name, else its id.
+func (m *MintedKeyResponse) Tier() string {
+	if name := strings.TrimSpace(m.SubsTierName); name != "" {
+		return name
+	}
+	return strings.TrimSpace(m.SubsTierID)
+}
+
+// KeyError is an OAuthError of the muse-code key exchange; Status is the HTTP
+// status when the failure was one.
+type KeyError struct {
+	Status  int
+	Message string
+}
+
+func (e *KeyError) Error() string { return e.Message }
 
 // MetaAuthBundle packages the token data, minted key, and user metadata.
 type MetaAuthBundle struct {
 	TokenData *TokenData
 	MintedKey *MintedKeyResponse
 	Email     string
-	Name      string
 }
 
 // MetaTokenStorage represents persisted Meta OAuth tokens in auth files.
@@ -93,6 +185,7 @@ type MetaTokenStorage struct {
 	AccessToken  string `json:"access_token"`
 	DCAToken     string `json:"dca_token,omitempty"`
 	APIKey       string `json:"api_key,omitempty"`
+	AccountID    string `json:"account_id,omitempty"`
 	TokenType    string `json:"token_type,omitempty"`
 	ExpiresIn    int    `json:"expires_in,omitempty"`
 	Expired      string `json:"expired,omitempty"`
@@ -101,7 +194,6 @@ type MetaTokenStorage struct {
 	LastRefresh  string `json:"last_refresh,omitempty"`
 	BaseURL      string `json:"base_url,omitempty"`
 	Email        string `json:"email,omitempty"`
-	Name         string `json:"name,omitempty"`
 
 	Metadata map[string]any `json:"-"`
 }
@@ -146,6 +238,9 @@ func (ts *MetaTokenStorage) SaveTokenToFile(authFilePath string) error {
 	if ts.APIKey != "" {
 		data["api_key"] = ts.APIKey
 	}
+	if ts.AccountID != "" {
+		data["account_id"] = ts.AccountID
+	}
 	if ts.TokenType != "" {
 		data["token_type"] = ts.TokenType
 	}
@@ -169,9 +264,6 @@ func (ts *MetaTokenStorage) SaveTokenToFile(authFilePath string) error {
 	}
 	if ts.Email != "" {
 		data["email"] = ts.Email
-	}
-	if ts.Name != "" {
-		data["name"] = ts.Name
 	}
 	// Managed saves supply the current metadata, including deliberate deletions.
 	// Only login callers without a metadata snapshot inherit settings from disk.
@@ -255,6 +347,14 @@ func (a *MetaAuth) StartDeviceFlow(ctx context.Context) (*DeviceCodeResponse, er
 	return a.StartDeviceFlowWithEndpoint(ctx, DeviceAuthorizationEndpoint)
 }
 
+// setNeoPiHeaders are the headers NeoPi's muse-code rule declares on every
+// request, plus the fetch implementation's own User-Agent.
+func setNeoPiHeaders(req *http.Request) {
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("x-api-version", APIVersion)
+	req.Header.Set("User-Agent", UserAgent)
+}
+
 // StartDeviceFlowWithEndpoint initiates the device authorization flow against a specific endpoint.
 func (a *MetaAuth) StartDeviceFlowWithEndpoint(ctx context.Context, endpoint string) (*DeviceCodeResponse, error) {
 	if ctx == nil {
@@ -264,49 +364,112 @@ func (a *MetaAuth) StartDeviceFlowWithEndpoint(ctx context.Context, endpoint str
 	if endpoint == "" {
 		endpoint = DeviceAuthorizationEndpoint
 	}
-
-	form := url.Values{
-		"client_id": {ClientID},
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(orderedForm([2]string{"client_id", ClientID})))
 	if err != nil {
-		return nil, fmt.Errorf("meta device flow: create request: %w", err)
+		return nil, fmt.Errorf("muse-code device authorization request: %w", err)
 	}
+	setNeoPiHeaders(req)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "muse-code/1.0.2")
-
 	resp, err := a.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("meta device flow: request failed: %w", err)
+		return nil, fmt.Errorf("muse-code request to %s failed: %w", endpoint, err)
 	}
 	defer func() {
 		if errClose := resp.Body.Close(); errClose != nil {
 			log.Errorf("meta device flow: close response body error: %v", errClose)
 		}
 	}()
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("meta device flow: read response: %w", err)
 	}
-
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("meta device flow failed (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		return nil, fmt.Errorf("muse-code device authorization failed: %d %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
-
 	var dcr DeviceCodeResponse
 	if err := json.Unmarshal(body, &dcr); err != nil {
-		return nil, fmt.Errorf("meta device flow: parse response: %w", err)
+		return nil, fmt.Errorf("muse-code device authorization response missing required fields")
 	}
-	if strings.TrimSpace(dcr.DeviceCode) == "" || strings.TrimSpace(dcr.UserCode) == "" {
-		return nil, fmt.Errorf("meta device flow: response missing required device_code or user_code")
+	if dcr.UserCode == "" || dcr.DeviceCode == "" || dcr.VerificationURI == "" {
+		return nil, fmt.Errorf("muse-code device authorization response missing required fields")
 	}
 	dcr.TokenEndpoint = TokenEndpoint
 	return &dcr, nil
 }
 
-// WaitForAuthorization polls the token endpoint until the user approves the device code.
+// pollDeviceToken is one device-token request: complete (with the token
+// body), pending, slow_down, or failed with NeoPi's message.
+func (a *MetaAuth) pollDeviceToken(ctx context.Context, tokenEndpoint, deviceCode string) (token *TokenData, slowDown bool, err error) {
+	form := orderedForm([2]string{"grant_type", DeviceCodeGrantType}, [2]string{"client_id", ClientID}, [2]string{"device_code", deviceCode})
+	req, errReq := http.NewRequestWithContext(ctx, http.MethodPost, tokenEndpoint, strings.NewReader(form))
+	if errReq != nil {
+		return nil, false, fmt.Errorf("muse-code request to %s failed: %w", tokenEndpoint, errReq)
+	}
+	setNeoPiHeaders(req)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, errDo := a.httpClient.Do(req)
+	if errDo != nil {
+		if ctx.Err() != nil {
+			return nil, false, ctx.Err()
+		}
+		return nil, false, fmt.Errorf("muse-code request to %s failed: %w", tokenEndpoint, errDo)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		return nil, false, fmt.Errorf("muse-code request to %s failed: %w", tokenEndpoint, errRead)
+	}
+	var decoded TokenData
+	_ = json.Unmarshal(body, &decoded)
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 && decoded.Error == "" {
+		if decoded.AccessToken == "" {
+			return nil, false, fmt.Errorf("muse-code token response missing access token: %s", truncate(strings.TrimSpace(string(body)), 500))
+		}
+		return &decoded, false, nil
+	}
+	switch decoded.Error {
+	case "authorization_pending":
+		return nil, false, nil
+	case "slow_down":
+		return nil, true, nil
+	case "expired_token":
+		return nil, false, fmt.Errorf("muse-code device code expired; restart the login")
+	case "access_denied":
+		return nil, false, fmt.Errorf("muse-code device authorization was denied")
+	}
+	detail := decoded.ErrorDescription
+	if detail == "" {
+		detail = decoded.Error
+	}
+	return nil, false, fmt.Errorf("%s", strings.TrimSpace(fmt.Sprintf("muse-code device token request failed: %d %s", resp.StatusCode, detail)))
+}
+
+// orderedForm encodes pairs in the order given, as URLSearchParams does;
+// url.Values.Encode sorts keys, which changes the bytes NeoPi sends.
+func orderedForm(pairs ...[2]string) string {
+	var out strings.Builder
+	for i, pair := range pairs {
+		if i > 0 {
+			out.WriteByte('&')
+		}
+		out.WriteString(url.QueryEscape(pair[0]))
+		out.WriteByte('=')
+		out.WriteString(url.QueryEscape(pair[1]))
+	}
+	return out.String()
+}
+
+func truncate(value string, limit int) string {
+	if len(value) > limit {
+		return value[:limit]
+	}
+	return value
+}
+
+// WaitForAuthorization polls the token endpoint until the user approves the
+// device code (the first poll is immediate, as pollOAuthDeviceCodeFlow's),
+// then mints the subscription's Model API key as the muse-code-key
+// after-exchange hook does.
 func (a *MetaAuth) WaitForAuthorization(ctx context.Context, dcr *DeviceCodeResponse) (*MetaAuthBundle, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -314,146 +477,139 @@ func (a *MetaAuth) WaitForAuthorization(ctx context.Context, dcr *DeviceCodeResp
 	if dcr == nil || dcr.DeviceCode == "" {
 		return nil, fmt.Errorf("meta auth: missing device code response")
 	}
-
 	tokenEndpoint := dcr.TokenEndpoint
 	if tokenEndpoint == "" {
 		tokenEndpoint = TokenEndpoint
 	}
-
-	interval := time.Duration(dcr.Interval) * time.Second
-	if interval <= 0 {
-		interval = DefaultPollInterval
+	interval := DefaultPollInterval
+	if dcr.Interval > 0 {
+		interval = time.Duration(dcr.Interval) * time.Second
 	}
-
-	maxDuration := MaxPollDuration
+	if interval < MinPollInterval {
+		interval = MinPollInterval
+	}
+	var deadline time.Time
 	if dcr.ExpiresIn > 0 {
-		expiresDuration := time.Duration(dcr.ExpiresIn) * time.Second
-		if expiresDuration < maxDuration {
-			maxDuration = expiresDuration
-		}
+		deadline = time.Now().Add(time.Duration(dcr.ExpiresIn) * time.Second)
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, maxDuration)
-	defer cancel()
-
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
+	expired := func() bool { return !deadline.IsZero() && !time.Now().Before(deadline) }
+	slowDowns := 0
+	for !expired() {
+		pollCtx, cancel := ctx, context.CancelFunc(func() {})
+		if !deadline.IsZero() {
+			pollCtx, cancel = context.WithDeadline(ctx, deadline)
+		}
+		token, slowDown, err := a.pollDeviceToken(pollCtx, tokenEndpoint, dcr.DeviceCode)
+		cancel()
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("meta auth: authorization timed out or canceled: %w", ctx.Err())
+		}
+		if err != nil && expired() {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if token != nil {
+			return a.finishLogin(ctx, token)
+		}
+		if expired() {
+			break
+		}
+		if slowDown {
+			slowDowns++
+			interval += SlowDownIncrement
+		}
+		wait := interval
+		if !deadline.IsZero() {
+			if remaining := time.Until(deadline); remaining < wait {
+				wait = remaining
+			}
+		}
 		select {
 		case <-ctx.Done():
 			return nil, fmt.Errorf("meta auth: authorization timed out or canceled: %w", ctx.Err())
-		case <-ticker.C:
-			form := url.Values{
-				"grant_type":  {DeviceCodeGrantType},
-				"device_code": {dcr.DeviceCode},
-				"client_id":   {ClientID},
-			}
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenEndpoint, strings.NewReader(form.Encode()))
-			if err != nil {
-				return nil, fmt.Errorf("meta auth: create token request: %w", err)
-			}
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			req.Header.Set("Accept", "application/json")
-			req.Header.Set("User-Agent", "muse-code/1.0.2")
-
-			resp, err := a.httpClient.Do(req)
-			if err != nil {
-				log.Warnf("meta auth: poll request error: %v (retrying)", err)
-				continue
-			}
-
-			body, errRead := io.ReadAll(resp.Body)
-			_ = resp.Body.Close()
-			if errRead != nil {
-				log.Warnf("meta auth: read token response error: %v (retrying)", errRead)
-				continue
-			}
-
-			if resp.StatusCode == http.StatusOK {
-				var tokenData TokenData
-				if err := json.Unmarshal(body, &tokenData); err != nil {
-					return nil, fmt.Errorf("meta auth: parse token response: %w", err)
-				}
-				if tokenData.AccessToken == "" {
-					return nil, fmt.Errorf("meta auth: response missing access_token")
-				}
-				if tokenData.ExpiresIn > 0 {
-					tokenData.ExpiresAt = time.Now().Add(time.Duration(tokenData.ExpiresIn) * time.Second).Unix()
-				}
-				bundle := &MetaAuthBundle{
-					TokenData: &tokenData,
-				}
-				minted, errMint := a.MintAPIKey(ctx, tokenData.AccessToken)
-				if errMint != nil {
-					log.Warnf("meta auth: could not mint api_key from dca_token: %v", errMint)
-				} else if minted != nil {
-					bundle.MintedKey = minted
-					if minted.UserEmail != "" {
-						bundle.Email = minted.UserEmail
-					}
-					if minted.UserFullName != "" {
-						bundle.Name = minted.UserFullName
-					}
-				}
-				return bundle, nil
-			}
-
-			var errResp TokenData
-			_ = json.Unmarshal(body, &errResp)
-			switch errResp.Error {
-			case "authorization_pending":
-				continue
-			case "slow_down":
-				interval += 5 * time.Second
-				ticker.Reset(interval)
-				continue
-			case "access_denied":
-				return nil, fmt.Errorf("meta auth: access was denied by user")
-			case "expired_token":
-				return nil, fmt.Errorf("meta auth: device code has expired")
-			default:
-				if errResp.Error != "" {
-					return nil, fmt.Errorf("meta auth: error from authorization server: %s: %s", errResp.Error, errResp.ErrorDescription)
-				}
-				log.Warnf("meta auth: unexpected response %d: %s", resp.StatusCode, string(body))
-			}
+		case <-time.After(wait):
 		}
 	}
+	if slowDowns > 0 {
+		return nil, fmt.Errorf("device flow timed out after one or more slow_down responses; this is often caused by clock drift in WSL or VM environments, so sync or restart the VM clock and try again")
+	}
+	return nil, fmt.Errorf("device flow timed out")
 }
 
-// MintAPIKey exchanges a Device Client Access token (dca:...) for an LLM API key via https://api.meta.ai/muse-code/key.
+// finishLogin is attachMuseCodeApiKey over a fresh device token: the key is
+// minted with onboarding, and an inactive or unpaid subscription fails the
+// login.
+func (a *MetaAuth) finishLogin(ctx context.Context, token *TokenData) (*MetaAuthBundle, error) {
+	payload, err := a.RequestKey(ctx, token.AccessToken, true)
+	if err != nil {
+		return nil, err
+	}
+	if payload.SubsActiveKnown && !payload.IsSubsActive {
+		return nil, &KeyError{Status: http.StatusForbidden, Message: "invalid_grant: Muse Code subscription is inactive"}
+	}
+	if strings.TrimSpace(payload.APIKey) == "" {
+		actionURL := strings.TrimSpace(payload.ActionURL)
+		if actionURL == "" {
+			actionURL = strings.TrimSpace(payload.RequirePaymentActionURL)
+		}
+		if payload.RequirePayment || actionURL != "" {
+			if actionURL != "" {
+				return nil, &KeyError{Message: "Muse Code subscription is required: " + actionURL}
+			}
+			return nil, &KeyError{Message: "Muse Code subscription is required"}
+		}
+		return nil, &KeyError{Message: "Muse Code key response is missing api_key"}
+	}
+	if strings.TrimSpace(payload.AccountID()) == "" {
+		return nil, &KeyError{Message: "Muse Code key response is missing a stable account identity"}
+	}
+	return &MetaAuthBundle{TokenData: token, MintedKey: payload, Email: payload.NormalizedEmail()}, nil
+}
+
+// MintAPIKey exchanges the device (dca:) token for the subscription's Model
+// API key, as a sign-in does. A response that carries no key is an error.
 func (a *MetaAuth) MintAPIKey(ctx context.Context, dcaToken string) (*MintedKeyResponse, error) {
+	bundle, err := a.finishLogin(ctx, &TokenData{AccessToken: strings.TrimSpace(dcaToken)})
+	if err != nil {
+		return nil, err
+	}
+	return bundle.MintedKey, nil
+}
+
+// RequestKey is requestMuseCodeKey: POST /muse-code/key with the device token.
+// onboard asks Meta to onboard the account, as an interactive login does;
+// usage reads pass false.
+func (a *MetaAuth) RequestKey(ctx context.Context, accessToken string, onboard bool) (*MintedKeyResponse, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	dcaToken = strings.TrimSpace(dcaToken)
-	if dcaToken == "" {
+	accessToken = strings.TrimSpace(accessToken)
+	if accessToken == "" {
 		return nil, fmt.Errorf("meta auth: missing dca token")
 	}
-
-	reqBody, _ := json.Marshal(map[string]string{
-		"dca_token": dcaToken,
-	})
-
+	reqBody := []byte(`{}`)
+	if onboard {
+		reqBody = []byte(`{"onboard":true}`)
+	}
 	mintURL := a.mintURL
 	if mintURL == "" {
-		if envMint := strings.TrimSpace(os.Getenv("META_MINT_URL")); envMint != "" {
-			mintURL = envMint
-		} else {
-			mintURL = "https://api.meta.ai/muse-code/key"
-		}
+		mintURL = MuseKeyURL
 	}
+	ctx, cancel := context.WithTimeout(ctx, KeyRequestTimeout)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, mintURL, bytes.NewReader(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("meta auth: create mint request: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+dcaToken)
-	req.Header.Set("User-Agent", "muse-code/1.0.2")
+	setNeoPiHeaders(req)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := a.httpClient.Do(req)
+	client := *a.httpClient
+	// fetch(..., { redirect: "error" }): a redirect is a failure, never followed.
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("meta auth: mint request failed: %w", err)
 	}
@@ -462,79 +618,52 @@ func (a *MetaAuth) MintAPIKey(ctx context.Context, dcaToken string) (*MintedKeyR
 			log.Errorf("meta auth: close mint response body error: %v", errClose)
 		}
 	}()
-
 	body, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
 		return nil, fmt.Errorf("meta auth: read mint response: %w", errRead)
 	}
-
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("meta auth: mint key failed (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		message := fmt.Sprintf("Muse Code key exchange failed: %d", resp.StatusCode)
+		if excerpt := strings.TrimSpace(truncate(string(body), 500)); excerpt != "" {
+			message += " " + excerpt
+		}
+		return nil, &KeyError{Status: resp.StatusCode, Message: message}
 	}
-
 	var minted MintedKeyResponse
 	if err := json.Unmarshal(body, &minted); err != nil {
-		return nil, fmt.Errorf("meta auth: parse mint response: %w", err)
-	}
-	if strings.TrimSpace(minted.APIKey) == "" {
-		return nil, fmt.Errorf("meta auth: mint response missing api_key")
+		return nil, &KeyError{Status: resp.StatusCode, Message: "Muse Code key exchange returned invalid JSON"}
 	}
 	return &minted, nil
 }
 
 // CreateTokenStorage creates a serializable token storage record from the auth bundle.
+// The credential never expires: Meta's device response carries no expiry and
+// rejects refresh grants, and the minted key is the credential requests use.
 func (a *MetaAuth) CreateTokenStorage(bundle *MetaAuthBundle) *MetaTokenStorage {
 	if bundle == nil || bundle.TokenData == nil {
 		return nil
 	}
-	dcaExpired := ""
-	if bundle.TokenData.ExpiresAt > 0 {
-		dcaExpired = time.Unix(bundle.TokenData.ExpiresAt, 0).UTC().Format(time.RFC3339)
+	storage := &MetaTokenStorage{
+		Type:        "meta",
+		AuthKind:    "oauth",
+		AccessToken: bundle.TokenData.AccessToken,
+		DCAToken:    bundle.TokenData.AccessToken,
+		TokenType:   bundle.TokenData.TokenType,
+		LastRefresh: time.Now().UTC().Format(time.RFC3339),
+		BaseURL:     DefaultAPIBaseURL,
+		Email:       bundle.Email,
 	}
-	apiKey := ""
-	baseURL := DefaultAPIBaseURL
-	email := bundle.Email
-	name := bundle.Name
-	if bundle.MintedKey != nil {
-		apiKey = bundle.MintedKey.APIKey
-		if mintedURL := strings.TrimSpace(bundle.MintedKey.BaseURL); mintedURL != "" {
-			baseURL = mintedURL
+	if key := bundle.MintedKey; key != nil {
+		storage.APIKey = key.APIKey
+		if key.APIKey != "" {
+			storage.AccessToken = key.APIKey
 		}
-		if bundle.MintedKey.UserEmail != "" {
-			email = bundle.MintedKey.UserEmail
-		}
-		if bundle.MintedKey.UserFullName != "" {
-			name = bundle.MintedKey.UserFullName
+		storage.AccountID = key.AccountID()
+		if email := key.NormalizedEmail(); email != "" {
+			storage.Email = email
 		}
 	}
-
-	accessToken := bundle.TokenData.AccessToken
-	expired := ""
-	if apiKey != "" {
-		accessToken = apiKey
-		// When an API key is minted, the usable credential is the API key, which does not expire on the DCA timer.
-		// Expired is left empty so selector does not block this credential.
-	} else {
-		// When only DCA token is available, expired is set to DCA expiry so manager tracks its deadline.
-		expired = dcaExpired
-	}
-
-	return &MetaTokenStorage{
-		Type:         "meta",
-		AuthKind:     "oauth",
-		AccessToken:  accessToken,
-		DCAToken:     bundle.TokenData.AccessToken,
-		APIKey:       apiKey,
-		TokenType:    bundle.TokenData.TokenType,
-		ExpiresIn:    bundle.TokenData.ExpiresIn,
-		Expired:      expired,
-		DCAExpired:   dcaExpired,
-		DCAExpiresAt: bundle.TokenData.ExpiresAt,
-		LastRefresh:  time.Now().UTC().Format(time.RFC3339),
-		BaseURL:      baseURL,
-		Email:        email,
-		Name:         name,
-	}
+	return storage
 }
 
 // CredentialFileName keeps a readable account name and hashes the original identity
@@ -561,4 +690,10 @@ func CredentialFileName(email, sub string) string {
 		return fmt.Sprintf("meta-%s.json", hex.EncodeToString(hash[:8]))
 	}
 	return "meta-oauth.json"
+}
+
+// NewMetaAuthWithClient is a MetaAuth that sends through client, for callers
+// that already hold the credential's proxy-aware HTTP client.
+func NewMetaAuthWithClient(client *http.Client) *MetaAuth {
+	return &MetaAuth{httpClient: client}
 }

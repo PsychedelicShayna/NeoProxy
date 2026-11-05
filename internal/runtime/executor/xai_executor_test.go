@@ -7263,7 +7263,7 @@ func TestApplyPatchResponsesExecutorLocalFailures(t *testing.T) {
 				case "xai":
 					exec = NewXAIExecutor(&config.Config{})
 				case "meta":
-					exec = NewMetaExecutor(&config.Config{})
+					exec = NewNeoPiResponsesExecutor("meta", &config.Config{})
 					model = "muse-spark-1.3"
 				}
 				auth := &cliproxyauth.Auth{ID: "task6-owned", Provider: provider, Attributes: map[string]string{"api_key": "test", "base_url": server.URL}}

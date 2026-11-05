@@ -13,6 +13,7 @@ import (
 	"time"
 
 	cursorauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/cursor"
+	metaauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/meta"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
@@ -76,6 +77,9 @@ var oauthRoutes = map[string]route{
 	"grok-build": {target: "grok-build"},
 	"kimi-code":  {target: "kimi"},
 	"devin":      {target: "devin"},
+	// NeoPi's Muse Code sign-in (the Meta account device flow plus the Model
+	// API key its subscription mints); never expires and has no refresh.
+	"muse-code": {target: "meta"},
 	// NeoPi's Nous Portal extension stores its device sign-in as an oauth
 	// credential (access, refresh, expires); imported refresh-locked as usual.
 	"nous-portal": {target: "nous-portal"},
@@ -329,6 +333,22 @@ func BuildAuthFile(c Credential, profile string, importedAt, now time.Time) (Aut
 		meta["base_url"] = cursorauth.APIBaseURL
 		meta["auth_kind"] = "oauth"
 		setNonEmpty(meta, "user_id", cursorauth.UserID(access))
+	case "meta":
+		// NeoPi's muse-code credential is one JSON bearer holding the Meta
+		// account token and the Model API key its subscription minted.
+		var wrapped struct {
+			OAuthAccessToken string `json:"oauthAccessToken"`
+			APIKey           string `json:"apiKey"`
+		}
+		if err := json.Unmarshal([]byte(access), &wrapped); err != nil || strings.TrimSpace(wrapped.OAuthAccessToken) == "" || strings.TrimSpace(wrapped.APIKey) == "" {
+			return AuthFile{}, fmt.Errorf("%w: NeoPi's Muse Code credential is not a minted-key bearer; sign in again", ErrNotImportable)
+		}
+		meta["access_token"] = strings.TrimSpace(wrapped.APIKey)
+		meta["api_key"] = strings.TrimSpace(wrapped.APIKey)
+		meta["dca_token"] = strings.TrimSpace(wrapped.OAuthAccessToken)
+		meta["base_url"] = metaauth.DefaultAPIBaseURL
+		meta["auth_kind"] = "oauth"
+		setNonEmpty(meta, "account_id", str(c.data, "accountId"))
 	default:
 		return AuthFile{}, fmt.Errorf("%w: no auth-file format for %s", ErrNotImportable, r.target)
 	}
@@ -401,17 +421,22 @@ func planOf(c Credential, r route) string {
 }
 
 func expiresAt(c Credential) time.Time {
+	var at time.Time
 	switch v := c.data["expires"].(type) {
 	case float64:
 		if v > 0 {
-			return time.UnixMilli(int64(v))
+			at = time.UnixMilli(int64(v))
 		}
 	case json.Number:
 		if n, err := v.Int64(); err == nil && n > 0 {
-			return time.UnixMilli(n)
+			at = time.UnixMilli(n)
 		}
 	}
-	return time.Time{}
+	// NeoPi's NEVER_EXPIRES (muse-code, zai): no instant a calendar can print.
+	if at.Year() > 9999 {
+		return time.Time{}
+	}
+	return at
 }
 
 func str(m map[string]any, key string) string {

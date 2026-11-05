@@ -1,126 +1,76 @@
 package executor
 
 import (
+	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	metaauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/meta"
-	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor/helps"
-	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
-	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"golang.org/x/sync/singleflight"
 )
 
-var (
-	_ cliproxyauth.ProviderExecutor    = (*MetaExecutor)(nil)
-	_ cliproxyauth.RequestAuthPreparer = (*MetaExecutor)(nil)
-)
-
 var metaRefreshGroup singleflight.Group
 
-const metaUserAgent = "muse-build/1.3.0 (interactive; macos-aarch64; build ac7280f2aca67769d1455a8847bb502b617d50f6)"
+const (
+	metaNotFoundCooldown           = 5 * time.Minute
+	metaSubscriptionUsageEventType = "response.subscription_usage"
+)
 
-// MetaExecutor implements the cliproxyauth.ProviderExecutor for Meta Muse models (api.meta.ai).
-type MetaExecutor struct {
-	cfg *config.Config
-}
-
-// NewMetaExecutor constructs a new Meta executor.
-func NewMetaExecutor(cfg *config.Config) *MetaExecutor {
-	return &MetaExecutor{cfg: cfg}
-}
-
-// Identifier returns the provider identifier "meta".
-func (e *MetaExecutor) Identifier() string {
-	return "meta"
-}
-
-// PrepareRequest injects Meta credentials into the outgoing HTTP request.
-func (e *MetaExecutor) PrepareRequest(req *http.Request, auth *cliproxyauth.Auth) error {
-	if req == nil {
-		return nil
+// Refresh mints the subscription's Model API key when a sign-in has none.
+// NeoPi's muse-code credential never expires and rejects refresh grants; its
+// after-exchange hook "reuses an already-minted subscription key instead of
+// re-minting", because the key endpoint is aggressively rate limited and Meta
+// returns the same key for the account. A credential that already carries a
+// key is therefore returned unchanged.
+func (e *NeoPiResponsesExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
+	if e.Identifier() != "meta" {
+		return auth, nil
 	}
-	_, token := metaCreds(auth)
-	if strings.TrimSpace(token) != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	} else {
-		req.Header.Del("Authorization")
-	}
-	req.Header.Set("User-Agent", metaUserAgent)
-	req.Header.Set("X-Client-Id", "tbh:tui")
-
-	var attrs map[string]string
-	if auth != nil {
-		attrs = auth.Attributes
-	}
-	util.ApplyCustomHeadersFromAttrs(req, attrs)
-	return nil
-}
-
-// HttpRequest injects Meta credentials into the request and executes it.
-func (e *MetaExecutor) HttpRequest(ctx context.Context, auth *cliproxyauth.Auth, req *http.Request) (*http.Response, error) {
-	if req == nil {
-		return nil, fmt.Errorf("meta executor: request is nil")
-	}
-	if ctx == nil {
-		ctx = req.Context()
-	}
-	enriched, err := e.ensureAuth(ctx, auth)
-	if err != nil {
-		return nil, err
-	}
-	httpReq := req.WithContext(ctx)
-	if err := e.PrepareRequest(httpReq, enriched); err != nil {
-		return nil, err
-	}
-	httpClient := helps.NewProxyAwareHTTPClient(ctx, e.cfg, enriched, 0)
-	return httpClient.Do(httpReq)
-}
-
-// Refresh mints an API key from a DCA token if needed.
-func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
-	log.Debugf("meta executor: refresh called")
 	if refreshed, handled, err := helps.RefreshAuthViaHome(ctx, e.cfg, auth); handled {
 		return refreshed, err
 	}
 	if auth == nil {
 		return nil, statusErr{code: http.StatusInternalServerError, msg: "meta executor: auth is nil"}
 	}
-
 	dcaToken := extractDCAToken(auth)
-	if dcaToken == "" {
-		if _, token := metaCreds(auth); token != "" {
-			return auth, nil
-		}
-		return nil, statusErr{
-			code: http.StatusUnauthorized,
-			msg:  "meta executor: missing API key or DCA token",
-		}
+	if _, token := metaCreds(auth); token != "" {
+		return auth, nil
 	}
-
+	if dcaToken == "" {
+		return nil, statusErr{code: http.StatusUnauthorized, msg: "meta executor: missing API key or DCA token"}
+	}
 	mintRes, err, _ := metaRefreshGroup.Do(dcaToken, func() (any, error) {
-		authSvc := metaauth.NewMetaAuthWithProxyURL(e.cfg, auth.ProxyURL)
-		return authSvc.MintAPIKey(ctx, dcaToken)
+		return metaauth.NewMetaAuthWithProxyURL(e.cfg, auth.ProxyURL).MintAPIKey(ctx, dcaToken)
 	})
 	if err != nil {
-		return nil, fmt.Errorf("meta executor: mint API key failed: %w", err)
+		return nil, metaMintError(err)
 	}
-
 	minted, ok := mintRes.(*metaauth.MintedKeyResponse)
 	if !ok || minted == nil || minted.APIKey == "" {
-		return nil, fmt.Errorf("meta executor: mint API key returned empty key")
+		return nil, statusErr{code: http.StatusBadGateway, msg: "meta executor: mint API key returned empty key"}
 	}
+	applyMintedKey(auth, minted, dcaToken)
+	return auth, nil
+}
 
-	baseURL, _ := metaCreds(auth)
-	if mintedURL := strings.TrimSpace(minted.BaseURL); mintedURL != "" {
-		baseURL = mintedURL
+// metaMintError keeps the key exchange's HTTP status on the error so a
+// subscription that is inactive or unpaid is not retried as a transport fault.
+func metaMintError(err error) error {
+	if keyErr, ok := err.(*metaauth.KeyError); ok && keyErr.Status > 0 {
+		return statusErr{code: keyErr.Status, msg: keyErr.Message}
 	}
+	return err
+}
+
+// applyMintedKey installs a minted key on the candidate auth, in its
+// attributes, metadata and (when it has one) token storage.
+func applyMintedKey(auth *cliproxyauth.Auth, minted *metaauth.MintedKeyResponse, dcaToken string) {
+	baseURL, _ := metaCreds(auth)
 	if auth.Metadata == nil {
 		auth.Metadata = make(map[string]any)
 	}
@@ -129,14 +79,14 @@ func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 	auth.Metadata["access_token"] = minted.APIKey
 	auth.Metadata["dca_token"] = dcaToken
 	delete(auth.Metadata, "expired")
-	if minted.UserEmail != "" {
-		auth.Metadata["email"] = minted.UserEmail
+	if email := minted.NormalizedEmail(); email != "" {
+		auth.Metadata["email"] = email
 	}
-	if minted.UserFullName != "" {
-		auth.Metadata["name"] = minted.UserFullName
+	if id := minted.AccountID(); id != "" {
+		auth.Metadata["account_id"] = id
 	}
-	if minted.SubsTierName != "" {
-		auth.Metadata["subs_tier_name"] = minted.SubsTierName
+	if tier := minted.SubsTierName; tier != "" {
+		auth.Metadata["subs_tier_name"] = tier
 	} else {
 		delete(auth.Metadata, "subs_tier_name")
 	}
@@ -145,19 +95,15 @@ func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 	} else {
 		delete(auth.Metadata, "subs_tier_id")
 	}
-	auth.Metadata["is_subs_active"] = minted.IsSubsActive
-	auth.Metadata["has_payment_method"] = minted.HasPaymentMethod
 	auth.Metadata["type"] = "meta"
 	nowStr := time.Now().Format(time.RFC3339)
 	auth.Metadata["last_refresh"] = nowStr
-
 	if auth.Attributes == nil {
 		auth.Attributes = make(map[string]string)
 	}
 	auth.Attributes["base_url"] = baseURL
 	auth.Attributes["api_key"] = minted.APIKey
 	auth.Attributes["access_token"] = minted.APIKey
-
 	// Auth.Clone does not clone Storage. Keep the candidate isolated from live
 	// login storage; file-loaded records already persist through Metadata.
 	if existing, ok := auth.Storage.(*metaauth.MetaTokenStorage); ok && existing != nil {
@@ -169,97 +115,34 @@ func (e *MetaExecutor) Refresh(ctx context.Context, auth *cliproxyauth.Auth) (*c
 		storage.BaseURL = baseURL
 		storage.LastRefresh = nowStr
 		storage.Metadata = auth.Metadata
-		if minted.UserEmail != "" {
-			storage.Email = minted.UserEmail
+		if email := minted.NormalizedEmail(); email != "" {
+			storage.Email = email
 		}
-		if minted.UserFullName != "" {
-			storage.Name = minted.UserFullName
+		if id := minted.AccountID(); id != "" {
+			storage.AccountID = id
 		}
 		auth.Storage = &storage
 	}
 	// Only the manager may accept and persist the candidate.
 	auth.LastRefreshedAt = time.Now()
-
-	return auth, nil
 }
 
-// ShouldPrepareRequestAuth reports true when a Meta auth has a DCA token but no usable API key.
-func (e *MetaExecutor) ShouldPrepareRequestAuth(auth *cliproxyauth.Auth) bool {
-	if auth == nil || cliproxyauth.IsConfigAPIKeyAuth(auth) {
+// ShouldPrepareRequestAuth reports true when a Meta auth has a device token but no usable API key.
+func (e *NeoPiResponsesExecutor) ShouldPrepareRequestAuth(auth *cliproxyauth.Auth) bool {
+	if e.Identifier() != "meta" || auth == nil || cliproxyauth.IsConfigAPIKeyAuth(auth) {
 		return false
 	}
 	_, token := metaCreds(auth)
 	return token == "" && extractDCAToken(auth) != ""
 }
 
-// PrepareRequestAuth exchanges the DCA token for an API key before request execution,
-// allowing the conductor to atomically install and persist the credential in the manager.
-func (e *MetaExecutor) PrepareRequestAuth(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
+// PrepareRequestAuth mints the missing key before request execution, allowing
+// the conductor to atomically install and persist the credential in the manager.
+func (e *NeoPiResponsesExecutor) PrepareRequestAuth(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
 	if auth == nil || !e.ShouldPrepareRequestAuth(auth) {
 		return auth, nil
 	}
 	return e.Refresh(ctx, auth)
-}
-
-func (e *MetaExecutor) ensureAuth(ctx context.Context, auth *cliproxyauth.Auth) (*cliproxyauth.Auth, error) {
-	if auth == nil {
-		return nil, statusErr{
-			code: http.StatusUnauthorized,
-			msg:  "meta executor: missing auth",
-		}
-	}
-
-	_, token := metaCreds(auth)
-	if token == "" {
-		if dcaToken := extractDCAToken(auth); dcaToken != "" {
-			refreshed, err := e.Refresh(ctx, auth)
-			if err != nil {
-				return nil, err
-			}
-			auth = refreshed
-			_, token = metaCreds(auth)
-		}
-	}
-
-	if token == "" {
-		if cliproxyauth.IsConfigAPIKeyAuth(auth) {
-			return nil, statusErr{
-				code: http.StatusUnauthorized,
-				msg:  "meta executor: meta-api-key requires a valid API key (DCA tokens require OAuth storage)",
-			}
-		}
-		return nil, statusErr{
-			code: http.StatusUnauthorized,
-			msg:  "meta executor: missing API key or access token",
-		}
-	}
-
-	return e.enrichAuth(auth), nil
-}
-
-func (e *MetaExecutor) enrichAuth(auth *cliproxyauth.Auth) *cliproxyauth.Auth {
-	baseURL, token := metaCreds(auth)
-	var cloned *cliproxyauth.Auth
-	if auth != nil {
-		cloned = auth.Clone()
-	} else {
-		cloned = &cliproxyauth.Auth{
-			Provider: "meta",
-		}
-	}
-	if cloned.Attributes == nil {
-		cloned.Attributes = make(map[string]string)
-	}
-	if strings.TrimSpace(cloned.Attributes["base_url"]) == "" {
-		cloned.Attributes["base_url"] = baseURL
-	}
-	if strings.TrimSpace(cloned.Attributes["api_key"]) == "" {
-		cloned.Attributes["api_key"] = token
-	}
-	if _, hasHeader := cloned.Attributes["header:User-Agent"]; !hasHeader {
-		cloned.Attributes["header:User-Agent"] = metaUserAgent
-	}
-	return cloned
 }
 
 func extractDCAToken(a *cliproxyauth.Auth) string {
@@ -384,5 +267,45 @@ func isMetaSubscriptionQuota(statusCode int, body []byte) bool {
 	return false
 }
 
-// SupportsApplyPatch reports the actual executor contract, independent of its provider name.
-func (e *MetaExecutor) SupportsApplyPatch() bool { return e != nil }
+func isMetaSubscriptionUsageEvent(eventType string, eventData []byte) bool {
+	if eventType == metaSubscriptionUsageEventType {
+		return true
+	}
+	if eventType == "" && len(eventData) > 0 && gjson.GetBytes(eventData, "subscription").IsObject() {
+		return true
+	}
+	return false
+}
+
+func wrapMetaUpstreamError(statusCode int, body []byte) error {
+	se := statusErr{code: statusCode, msg: string(body)}
+	if statusCode == http.StatusTooManyRequests {
+		if retryAfter := parseMetaRetryAfter(statusCode, body, time.Now()); retryAfter != nil {
+			se.retryAfter = retryAfter
+		}
+		if isMetaSubscriptionQuota(statusCode, body) {
+			return metaRateLimitError{statusErr: se, credentialScoped: true}
+		}
+	}
+	if statusCode == http.StatusNotFound {
+		if retryAfter := parseMetaRetryAfter(statusCode, body, time.Now()); retryAfter != nil {
+			se.retryAfter = retryAfter
+		} else {
+			retry := metaNotFoundCooldown
+			se.retryAfter = &retry
+		}
+	}
+	return se
+}
+
+func metaStreamEventError(eventData []byte) error {
+	eventType := gjson.GetBytes(bytes.TrimSpace(eventData), "type").String()
+	if eventType != "error" && eventType != "response.failed" {
+		return nil
+	}
+	statusCode := http.StatusBadGateway
+	if code := int(gjson.GetBytes(eventData, "error.code").Int()); code >= 400 && code <= 599 {
+		statusCode = code
+	}
+	return wrapMetaUpstreamError(statusCode, eventData)
+}
