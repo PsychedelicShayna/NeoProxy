@@ -362,6 +362,13 @@ func openRouterNewRow(row *NeoPiModel, entry gjson.Result, bundled []NeoPiModel)
 	if out.Thinking != nil && siblingRow.Thinking != nil {
 		out.Thinking.EffortMap = siblingRow.Thinking.EffortMap
 		out.Thinking.PrefixBinding = siblingRow.Thinking.PrefixBinding
+		// Mandatory reasoning is a lineage rule (Kimi K3 always thinks): an id
+		// that extends its sibling's id ("kimi-k3" -> "kimi-k3.1-pro") keeps
+		// the sibling's requirement even when the listing reports mandatory
+		// false. A neighbour of another line (gpt-6.1-sol / -terra) does not.
+		if extendsLineage(row.ID, sibling.ID) {
+			out.Thinking.RequiresEffort = out.Thinking.RequiresEffort || siblingRow.Thinking.RequiresEffort
+		}
 	}
 	// A thinking-variant id names the reasoning-locked sibling (NeoPi's
 	// impliesMandatoryReasoning), so its effort cannot be turned off.
@@ -418,6 +425,19 @@ func impliesMandatoryReasoning(id string) bool {
 		if segment == "thinking" {
 			return true
 		}
+	}
+	return false
+}
+
+// extendsLineage reports whether id continues base's id past a version or
+// variant separator ("moonshotai/kimi-k3" -> "moonshotai/kimi-k3.1-pro").
+func extendsLineage(id, base string) bool {
+	if len(id) <= len(base) || !strings.EqualFold(id[:len(base)], base) {
+		return false
+	}
+	switch id[len(base)] {
+	case '.', '-', ':', '_':
+		return true
 	}
 	return false
 }

@@ -51,6 +51,15 @@ func (e KimiExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
 	return &e
 }
 
+// ForAPIKey keeps the OpenRouter Responses routing for the same reason as
+// Z.ai: every OpenRouter account (pasted or signed-in) is an API key.
+func (e OpenRouterExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
+	e.cfg = e.cfg.ForAPIKey()
+	e.ClaudeExecutor = e.ClaudeExecutor.ForAPIKey().(*ClaudeExecutor)
+	e.counter = e.counter.ForAPIKey().(*OpenAICompatExecutor)
+	return &e
+}
+
 func (e CodexWebsocketsExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
 	if e.CodexExecutor != nil {
 		e.CodexExecutor = e.CodexExecutor.ForAPIKey().(*CodexExecutor)

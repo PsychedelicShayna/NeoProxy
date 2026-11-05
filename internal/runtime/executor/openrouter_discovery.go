@@ -3,9 +3,11 @@ package executor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
@@ -28,9 +30,11 @@ func FetchOpenRouterModels(ctx context.Context, cfg *config.Config, a *cliproxya
 		}
 		key = openRouterAPIKey(a)
 	}
+	// A configured base URL may carry credentials, and discovery failures are
+	// logged, so errors never quote it.
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/models", nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("openrouter: GET /models: invalid base URL")
 	}
 	request.Header.Set("Accept", "application/json")
 	if key != "" {
@@ -39,7 +43,11 @@ func FetchOpenRouterModels(ctx context.Context, cfg *config.Config, a *cliproxya
 	client := helps.NewProxyAwareHTTPClient(ctx, cfg, a, 0)
 	response, err := client.Do(request)
 	if err != nil {
-		return nil, err
+		var transport *url.Error
+		if errors.As(err, &transport) {
+			err = transport.Err
+		}
+		return nil, fmt.Errorf("openrouter: GET /models failed: %w", err)
 	}
 	defer func() {
 		_ = response.Body.Close()

@@ -33,16 +33,16 @@ func loadOpenRouterDiscoveryCapture(t *testing.T) openRouterDiscoveryCapture {
 
 // openRouterKnownDivergences lists the fields this port cannot reproduce
 // without NeoPi's compiled class-rule tree and models.dev catalog metrics:
-// per-family effort ladders and mandatory-reasoning flags for rows whose live
-// discovery omits `supported_efforts`, the reasoning-capability upgrade Kimi
-// rows get from the axes, and the catalog-metric context windows codex rows
-// carry. Every entry is metadata the request builder does not read; the wire
-// body and headers for those ids still match the captures.
+// per-family effort ladders for rows whose live discovery omits
+// `supported_efforts`, the reasoning-capability upgrade Kimi rows get from
+// the axes, and the catalog-metric context windows codex rows carry. These
+// are not inert: a thinking ladder steers effort clamping and a context
+// window steers clients. An entry that starts matching fails the test so it
+// is dropped here.
 var openRouterKnownDivergences = map[string]map[string]bool{
 	"deepseek/deepseek-v3.2":             {"thinking": true},
 	"moonshotai/kimi-k2":                 {"compat": true},
 	"moonshotai/kimi-k2-0905":            {"compat": true},
-	"moonshotai/kimi-k3.1-pro":           {"thinking": true},
 	"openai/gpt-5.1-codex":               {"contextWindow": true},
 	"openai/gpt-5.1-codex-max":           {"contextWindow": true},
 	"openai/gpt-5.1-codex-mini":          {"contextWindow": true},
@@ -76,10 +76,14 @@ func TestOpenRouterDiscoveredMatchesNeoPi(t *testing.T) {
 			continue
 		}
 		check := func(field string, have, expected any) {
+			equal := reflect.DeepEqual(have, expected)
 			if openRouterKnownDivergences[want.ID][field] {
+				if equal {
+					t.Errorf("%s %s now matches NeoPi; drop it from openRouterKnownDivergences", want.ID, field)
+				}
 				return
 			}
-			if !reflect.DeepEqual(have, expected) {
+			if !equal {
 				mismatches++
 				if mismatches <= 40 {
 					t.Errorf("%s %s: got %v, NeoPi %v", want.ID, field, have, expected)

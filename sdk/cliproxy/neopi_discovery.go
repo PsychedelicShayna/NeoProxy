@@ -56,8 +56,9 @@ var (
 		bundled: registry.DevinBundledModels, fetch: executor.FetchDevinModels, entries: map[string]*neoPiDiscoveryEntry{}}
 	// openRouterDiscovery lists GET /models for an OpenRouter key or sign-in,
 	// which lives in an openai-compatibility entry. NeoPi's model manager keeps
-	// a discovery row for 2h and bounds the probe at 10s.
-	openRouterDiscovery = &neoPiDiscovery{provider: "openrouter", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 10 * time.Second,
+	// a discovery row for 2h; its 10s probe bound is not ported because the
+	// repository allows no deadline once the connection is up (AGENTS.md).
+	openRouterDiscovery = &neoPiDiscovery{provider: "openrouter", ttl: 2 * time.Hour, retry: 5 * time.Minute,
 		bundled: func() []*ModelInfo { return registry.OpenRouterBundledModels("openrouter") }, fetch: executor.FetchOpenRouterModels,
 		entries: map[string]*neoPiDiscoveryEntry{}, match: isOpenRouterAuth}
 
@@ -150,7 +151,13 @@ func (s *Service) queueNeoPiDiscovery(d *neoPiDiscovery, a *coreauth.Auth) {
 
 	snapshot := a.Clone()
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), d.timeout)
+		// A zero timeout means no deadline (AGENTS.md: none after connecting).
+		ctx, cancel := context.Background(), context.CancelFunc(nil)
+		if d.timeout > 0 {
+			ctx, cancel = context.WithTimeout(ctx, d.timeout)
+		} else {
+			ctx, cancel = context.WithCancel(ctx)
+		}
 		defer cancel()
 		models, err := d.fetch(ctx, cfg, snapshot)
 		d.mu.Lock()

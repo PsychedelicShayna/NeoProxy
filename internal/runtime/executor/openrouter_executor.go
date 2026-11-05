@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/neopiretry"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/openaiwire"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor/helps"
@@ -179,7 +180,7 @@ func (e *OpenRouterExecutor) shapeOpenRouter(ctx context.Context, auth *cliproxy
 	ctx = helps.WithPayloadFinalizer(ctx, helps.NewPayloadFinalizer(e.cfg, e.Identifier(), baseModel, to.String(), "", originalTranslated, req, opts))
 	conversation, options := openaiwire.FromResponses(body, model)
 	options.SessionID = openRouterSessionID(req, opts)
-	options.DisableStrictTools = openRouterStrictDisabled.Load(openRouterStrictScope(model))
+	options.DisableStrictTools = openRouterStrictDisabled.Load(openRouterStrictScope(auth, options.SessionID, model))
 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
 	key := openRouterAPIKey(auth)
 	turn := &openRouterNeoPiTurn{
@@ -210,17 +211,55 @@ func (t *openRouterNeoPiTurn) shape(options openaiwire.Options) *openaiwire.Requ
 	return shaped
 }
 
-// openRouterStrictDisabled remembers the models whose provider refused strict
-// tools (disableStrictToolsForScope): later requests skip the failed attempt.
-var openRouterStrictDisabled strictScopes
+// openRouterStrictDisabled remembers, per account and client session, the
+// models whose provider refused strict tools (disableStrictToolsForScope):
+// later turns of that session skip the failed attempt. NeoPi keeps this in
+// the agent session's provider state, so a request without a session id
+// remembers nothing, and no other session or account inherits it.
+var openRouterStrictDisabled = &strictScopes{scopes: map[string]struct{}{}}
 
-type strictScopes struct{ scopes sync.Map }
+// strictScopesLimit bounds the remembered scopes: sessions never announce
+// their end here, so the set is dropped whole once it grows past the limit.
+const strictScopesLimit = 4096
 
-func (s *strictScopes) Load(scope string) bool { _, ok := s.scopes.Load(scope); return ok }
-func (s *strictScopes) Store(scope string)     { s.scopes.Store(scope, struct{}{}) }
+type strictScopes struct {
+	mu     sync.Mutex
+	scopes map[string]struct{}
+}
 
-func openRouterStrictScope(model *registry.NeoPiModel) string {
-	return model.Provider + ":" + model.BaseURL + ":" + model.ID
+func (s *strictScopes) Load(scope string) bool {
+	if scope == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.scopes[scope]
+	return ok
+}
+
+func (s *strictScopes) Store(scope string) {
+	if scope == "" {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.scopes) >= strictScopesLimit {
+		clear(s.scopes)
+	}
+	s.scopes[scope] = struct{}{}
+}
+
+// openRouterStrictScope keys the strict-tools fallback by account, session
+// and model; empty without a session.
+func openRouterStrictScope(auth *cliproxyauth.Auth, sessionID string, model *registry.NeoPiModel) string {
+	if sessionID == "" {
+		return ""
+	}
+	authID := ""
+	if auth != nil {
+		authID = auth.ID
+	}
+	return authID + "\x00" + sessionID + "\x00" + model.Provider + ":" + model.BaseURL + ":" + model.ID
 }
 
 // applyOpenRouterCustomHeaders applies the account's configured headers without
@@ -256,8 +295,10 @@ func (e *OpenRouterExecutor) runOpenRouter(ctx context.Context, auth *cliproxyau
 			turn.request = turn.shape(options)
 			return turn.request
 		},
-		OnStrictDisabled: func() { openRouterStrictDisabled.Store(openRouterStrictScope(turn.model)) },
-		Finalize:         func(body []byte) []byte { return helps.FinalizePayload(ctx, body) },
+		OnStrictDisabled: func() {
+			openRouterStrictDisabled.Store(openRouterStrictScope(turn.auth, turn.options.SessionID, turn.model))
+		},
+		Finalize: func(body []byte) []byte { return helps.FinalizePayload(ctx, body) },
 		Do: func(request *http.Request) (*http.Response, error) {
 			response, err := do(request)
 			if err == nil {
@@ -295,7 +336,16 @@ func openRouterStatusErr(code int, headers http.Header, body []byte) statusErr {
 	if raw := strings.TrimSpace(gjson.GetBytes(body, "error.metadata.raw").String()); raw != "" {
 		message += "\n" + raw
 	}
-	return statusErr{code: code, msg: message, retryAfter: openAICompatRetryAfter(code, headers, body, time.Now())}
+	retryAfter := openAICompatRetryAfter(code, headers, body, time.Now())
+	if code == http.StatusTooManyRequests {
+		// NeoPi's extractRetryHint: retry-after-ms, fractional Retry-After,
+		// dates and the reset headers all name the cooldown.
+		if hint, ok := neopiretry.ExtractRetryHint(headers, string(body), time.Now()); ok {
+			delay := time.Duration(hint * float64(time.Millisecond))
+			retryAfter = &delay
+		}
+	}
+	return statusErr{code: code, msg: message, retryAfter: retryAfter}
 }
 
 // openRouterNeoPiStream translates upstream events for the client.
@@ -461,9 +511,17 @@ func (e *OpenRouterExecutor) streamOpenRouter(ctx context.Context, auth *cliprox
 			return ctx.Err()
 		}
 	}
+	// An empty "completed" may hide a native failure (NeoPi's empty-stop
+	// recovery); its frames wait until GET /generation clears it.
+	var heldCompleted []byte
+	var held [][]byte
 	emit := func(event []byte) error {
-		chunks, _, errTranslate := stream.translate(event)
+		chunks, done, errTranslate := stream.translate(event)
 		if errTranslate != nil && len(chunks) == 0 {
+			return errTranslate
+		}
+		if done != nil && openRouterEmptyCompleted(done) {
+			heldCompleted, held = done, append(held, chunks...)
 			return errTranslate
 		}
 		committed = true
@@ -496,6 +554,16 @@ func (e *OpenRouterExecutor) streamOpenRouter(ctx context.Context, auth *cliprox
 				errRun = statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}
 			}
 		}
+		if errRun == nil && heldCompleted != nil {
+			errRun = e.readOpenRouterGenerationError(ctx, auth, turn, heldCompleted)
+			if errRun == nil {
+				for _, chunk := range held {
+					committed = true
+					start(nil)
+					_ = send(cliproxyexecutor.StreamChunk{Payload: chunk})
+				}
+			}
+		}
 		if errRun == nil {
 			stream.publish(nil)
 			start(nil)
@@ -516,22 +584,29 @@ func (e *OpenRouterExecutor) streamOpenRouter(ctx context.Context, auth *cliprox
 	return &cliproxyexecutor.StreamResult{Headers: http.Header{}, Chunks: out}, nil
 }
 
+// openRouterEmptyCompleted reports whether a terminal event is a
+// "response.completed" with an id and no output: the empty stop NeoPi
+// checks against the generation metadata.
+func openRouterEmptyCompleted(completed []byte) bool {
+	response := gjson.GetBytes(completed, "response")
+	output := response.Get("output")
+	return gjson.GetBytes(completed, "type").String() == "response.completed" && response.Get("id").String() != "" &&
+		!(output.IsArray() && len(output.Array()) > 0)
+}
+
 // readOpenRouterGenerationError is NeoPi's OpenRouter empty-stop recovery: a
 // completed response with no output can hide a native upstream failure, which
-// only GET /generation?id= reports.
+// only GET /generation?id= reports. NeoPi bounds the lookup at 2s; the
+// repository allows no deadline once a connection is up (AGENTS.md), so the
+// request's own context governs it.
 func (e *OpenRouterExecutor) readOpenRouterGenerationError(ctx context.Context, auth *cliproxyauth.Auth, turn *openRouterNeoPiTurn, completed []byte) error {
+	if !openRouterEmptyCompleted(completed) {
+		return nil
+	}
 	response := gjson.GetBytes(completed, "response")
-	if gjson.GetBytes(completed, "type").String() != "response.completed" {
-		return nil
-	}
 	id := response.Get("id").String()
-	if id == "" || response.Get("output").IsArray() && len(response.Get("output").Array()) > 0 {
-		return nil
-	}
 	base := strings.TrimSuffix(turn.request.URL, "/responses")
-	timeoutCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	defer cancel()
-	request, errRequest := http.NewRequestWithContext(timeoutCtx, http.MethodGet, base+"/generation?id="+url.QueryEscape(id), nil)
+	request, errRequest := http.NewRequestWithContext(ctx, http.MethodGet, base+"/generation?id="+url.QueryEscape(id), nil)
 	if errRequest != nil {
 		return nil
 	}

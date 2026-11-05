@@ -112,3 +112,64 @@ func TestV8ScopedExecutorsPreserveWebsocketStores(t *testing.T) {
 		t.Fatal("scoping changed the registered executors")
 	}
 }
+
+// An OpenRouter key selected by the manager is scoped with ForAPIKey; the
+// scoped executor must still send NeoPi's Responses request, not the
+// promoted Anthropic half's /v1/messages.
+func TestOpenRouterAPIKeySelectionKeepsResponsesRouting(t *testing.T) {
+	for _, stream := range []bool{false, true} {
+		t.Run(fmt.Sprintf("stream=%t", stream), func(t *testing.T) {
+			paths := make(chan string, 1)
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				select {
+				case paths <- r.URL.Path:
+				default:
+				}
+				if r.URL.Path != "/responses" {
+					http.NotFound(w, r)
+					return
+				}
+				writeOpenRouterResponses(w, "routed")
+			}))
+			defer server.Close()
+			cfg := &config.Config{}
+			auth := &cliproxyauth.Auth{ID: t.Name(), Provider: "openrouter", Status: cliproxyauth.StatusActive,
+				Attributes: map[string]string{"auth_kind": cliproxyauth.AuthKindAPIKey, "api_key": "sk-or-v1-test", "base_url": server.URL}}
+			manager := cliproxyauth.NewManager(nil, nil, nil)
+			manager.SetConfig(cfg)
+			manager.RegisterExecutor(NewOpenRouterExecutor("openrouter", cfg))
+			if _, err := manager.Register(context.Background(), auth); err != nil {
+				t.Fatal(err)
+			}
+			registry.GetGlobalRegistry().RegisterClient(auth.ID, "openrouter", []*registry.ModelInfo{{ID: openRouterTestModel}})
+			t.Cleanup(func() { registry.GetGlobalRegistry().UnregisterClient(auth.ID) })
+			req, opts := openRouterTestRequest()
+			opts.Stream = stream
+			var errTurn error
+			if stream {
+				result, err := manager.ExecuteStream(context.Background(), []string{"openrouter"}, req, opts)
+				errTurn = err
+				if err == nil {
+					for chunk := range result.Chunks {
+						if chunk.Err != nil {
+							errTurn = chunk.Err
+						}
+					}
+				}
+			} else {
+				_, errTurn = manager.Execute(context.Background(), []string{"openrouter"}, req, opts)
+			}
+			select {
+			case path := <-paths:
+				if path != "/responses" {
+					t.Fatalf("upstream path = %q, want /responses", path)
+				}
+			default:
+				t.Fatalf("request did not reach upstream: %v", errTurn)
+			}
+			if errTurn != nil {
+				t.Fatal(errTurn)
+			}
+		})
+	}
+}

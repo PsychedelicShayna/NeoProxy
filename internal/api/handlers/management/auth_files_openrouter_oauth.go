@@ -101,7 +101,13 @@ func (h *Handler) completeOpenRouterOAuth(ctx context.Context, authDir, state, v
 	var key string
 	if openrouterauth.IsOpenRouterKey(pasted) {
 		if errValidate := authSvc.ValidateKey(ctx, pasted); errValidate != nil {
-			log.WithError(errValidate).Warn("OpenRouter sign-in: pasted key rejected")
+			// The error quotes the upstream body; log only its status.
+			var rejected *openrouterauth.ValidationError
+			if errors.As(errValidate, &rejected) {
+				log.WithField("status", rejected.Status).Warn("OpenRouter sign-in: pasted key rejected")
+			} else {
+				log.Warn("OpenRouter sign-in: pasted key could not be checked")
+			}
 			fail("OpenRouter rejected this key. Check that the whole key was pasted and that it is still active.")
 			return
 		}
@@ -112,7 +118,7 @@ func (h *Handler) completeOpenRouterOAuth(ctx context.Context, authDir, state, v
 		var errExchange error
 		key, errExchange = authSvc.ExchangeCode(ctx, code, verifier)
 		if errExchange != nil {
-			log.WithError(errExchange).Warn("OpenRouter sign-in: code exchange failed")
+			log.Warn("OpenRouter sign-in: code exchange failed")
 			fail("Failed to exchange authorization code for a key")
 			return
 		}

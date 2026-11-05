@@ -59,6 +59,12 @@ func newOpenAICompatibilityRegistrationCacheForConfig(cfg *config.Config) *openA
 		if compat.Disabled {
 			continue
 		}
+		if registry.IsOpenRouterBaseURL(compat.BaseURL) {
+			// An OpenRouter entry serves its account's NeoPi discovery
+			// (compatModelsForAuth), never the configured list, so the
+			// per-auth path resolves it.
+			continue
+		}
 		compatName := strings.TrimSpace(compat.Name)
 		key := strings.ToLower(compatName)
 		providerName := strings.ToLower(compatName)
