@@ -63,6 +63,9 @@ type neoPiThirdParty struct {
 	// Anthropic transport (Kimi), skipping streamSimple's adaptive effort mapping
 	// and its thinking-budget raise of max_tokens.
 	directOptions bool
+	// tagOnly: every effort maps to the adaptive sentinel (MiniMax), so the
+	// request carries no output effort and no effort beta.
+	tagOnly bool
 	// headers are provider identity headers (Kimi's fingerprint) applied over
 	// the default set.
 	headers http.Header

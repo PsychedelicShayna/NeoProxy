@@ -186,12 +186,13 @@ func (e *GatewayExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.
 	return e.ClaudeExecutor.ExecuteStream(ctx, auth, req, opts)
 }
 
-// withSession gives a request that carries no conversation identity the
-// account's install id, as NeoPi does outside a conversation: OpenCode answers
-// 400 MissingSessionID to a request without x-opencode-session. The id is
-// stable per account, so the gateway's cache affinity holds across requests.
+// withSession gives a request that carries no conversation identity of its
+// own the account's install id: OpenCode answers 400 MissingSessionID to a
+// request without x-opencode-session. NeoPi mints a fresh UUID per sessionless
+// call; the proxy keeps one stable id per account so the gateway's cache
+// affinity holds across requests (a deliberate divergence).
 func (e *GatewayExecutor) withSession(auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) cliproxyexecutor.Options {
-	if gatewaySessionHeader(e.gateway) == "" || helps.ProviderSessionUUID(e.Identifier(), req.Metadata, opts.Metadata) != "" {
+	if gatewaySessionHeader(e.gateway) == "" || helps.ProviderSessionUUID(e.Identifier(), req.Metadata, opts.Metadata) != "" || neoPiSession(opts, req.Payload) != "" {
 		return opts
 	}
 	metadata := maps.Clone(opts.Metadata)

@@ -47,8 +47,10 @@ func FetchGatewayModels(ctx context.Context, cfg *config.Config, auth *cliproxya
 	}
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Authorization", "Bearer "+key)
-	request.Header.Set("User-Agent", openaiwire.NeoPiUserAgent)
+	// Only OpenCode's discovery carries NeoPi's identity; Vercel's keeps the
+	// runtime default.
 	if session := gatewaySessionHeader(gateway); session != "" {
+		request.Header.Set("User-Agent", openaiwire.NeoPiUserAgent)
 		request.Header.Set(session, gatewayInstallID(gateway, auth))
 	}
 	response, err := helps.NewProxyAwareHTTPClient(ctx, cfg, auth, 0).Do(request)

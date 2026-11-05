@@ -371,6 +371,11 @@ func projectNeoPiAnthropic(input []byte, model, base, version string, identity n
 			if effort == "minimal" {
 				effort = "low"
 			}
+			// MiniMax's models drive adaptive thinking by the type tag alone: the
+			// sentinel is internal and never reaches output_config.
+			if effort == "adaptive" {
+				effort = ""
+			}
 		}
 		off, enabled = !requested, requested
 	}

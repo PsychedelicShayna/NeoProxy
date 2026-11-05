@@ -278,7 +278,12 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 					if providerKey == "" {
 						providerKey = "openai-compatibility"
 					}
-					ms := s.neoPiResponsesModelsFor(a, cached.models)
+					models := cached.models
+					if gateway := registry.GatewayProviderFor(a.Attributes["base_url"]); gateway != "" {
+						// A gateway serves NeoPi's catalog, never the cached configured list.
+						models = s.gatewayModels(gateway, compatName, a)
+					}
+					ms := s.neoPiResponsesModelsFor(a, models)
 					if len(ms) > 0 {
 						ms = s.appendPluginModels(providerKey, ms, nil)
 						published = s.registerResolvedModelsForAuthFenced(a, fence, providerKey, applyModelPrefixes(ms, a.Prefix, cfg.ForceModelPrefix))
@@ -854,18 +859,24 @@ func buildConfiguredModelInfo(model modelEntry, ownedBy, modelType string, creat
 func (s *Service) gatewayOrCompatModels(compat *config.OpenAICompatibility, a *coreauth.Auth) []*ModelInfo {
 	if compat != nil {
 		if gateway := registry.GatewayProviderFor(compat.BaseURL); gateway != "" {
-			for _, discovery := range gatewayDiscoveries {
-				if discovery.provider == gateway {
-					models := s.registerNeoPiDiscovered(discovery, a)
-					for _, model := range models {
-						model.OwnedBy = compat.Name
-					}
-					return models
-				}
-			}
+			return s.gatewayModels(gateway, compat.Name, a)
 		}
 	}
 	return buildOpenAICompatibilityConfigModels(compat)
+}
+
+// gatewayModels is a gateway account's NeoPi catalog, owned by its entry.
+func (s *Service) gatewayModels(gateway, ownedBy string, a *coreauth.Auth) []*ModelInfo {
+	for _, discovery := range gatewayDiscoveries {
+		if discovery.provider == gateway {
+			models := s.registerNeoPiDiscovered(discovery, a)
+			for _, model := range models {
+				model.OwnedBy = ownedBy
+			}
+			return models
+		}
+	}
+	return nil
 }
 
 func buildOpenAICompatibilityConfigModels(compat *config.OpenAICompatibility) []*ModelInfo {

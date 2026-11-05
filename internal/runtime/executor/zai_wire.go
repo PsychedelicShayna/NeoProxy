@@ -36,6 +36,12 @@ func neoPiThirdPartyProfile(model *registry.NeoPiModel) neoPiProfile {
 		profile.Thinking.SupportsDisplay = thinking.SupportsDisplay
 		party.efforts = append([]string(nil), thinking.Efforts...)
 		party.effortMap = thinking.EffortMap
+		if thinking.Mode == "anthropic-adaptive" && len(thinking.EffortMap) > 0 {
+			party.tagOnly = true
+			for _, mapped := range thinking.EffortMap {
+				party.tagOnly = party.tagOnly && mapped == "adaptive"
+			}
+		}
 		party.requiresEffort = thinking.RequiresEffort
 	}
 	// NeoPi keys this on the provider: Kimi shares its affinity identity
@@ -68,7 +74,7 @@ func neoPiThirdPartyHeaders(body []byte, session string, thinking bool, profile 
 	var betas []string
 	// NeoPi attaches the beta whenever the request carries an output effort:
 	// requested thinking, or the pinned lowest effort of an adaptive-only model.
-	if profile.Reasoning && profile.thirdParty.outputEffort && (thinking || gjson.GetBytes(body, "output_config.effort").Exists()) {
+	if profile.Reasoning && profile.thirdParty.outputEffort && !profile.thirdParty.tagOnly && (thinking || gjson.GetBytes(body, "output_config.effort").Exists()) {
 		betas = append(betas, "effort-2025-11-24")
 	}
 	if profile.Thinking.SupportsDisplay == nil || !*profile.Thinking.SupportsDisplay {

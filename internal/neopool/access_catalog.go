@@ -69,19 +69,8 @@ type ProviderInfo struct {
 	// dialect is the upstream API of every model (chat-completions when empty);
 	// Responses-only gateways set "responses".
 	dialect string
-	// dialectRules route models whose model-list entry does not advertise its
-	// API, by id prefix; the first match wins and unmatched ids stay on dialect.
-	dialectRules []dialectRule
-	// sessionHeader is the request header that must carry a session id.
-	sessionHeader string
 	// headers are static request headers for the provider's entry.
 	headers map[string]string
-}
-
-// dialectRule routes model ids starting with prefix to dialect.
-type dialectRule struct {
-	prefix  string
-	dialect string
 }
 
 const providerChroma = 0.13

@@ -268,6 +268,13 @@ func quotaAccessToken(a *coreauth.Auth) string {
 	if token == "" && zaiauth.IsCodingPlanBaseURL(a.Attributes["base_url"]) {
 		token = a.Attributes["api_key"]
 	}
+	if token == "" && registry.GatewayProviderFor(a.Attributes["base_url"]) == registry.GatewayOpenCodeGo {
+		// An OpenCode Go key is the account's api_key.
+		token = a.Attributes["api_key"]
+		if token == "" {
+			token, _ = a.Metadata["api_key"].(string)
+		}
+	}
 	if token == "" && a.Provider == "devin" {
 		// Devin sign-ins store the session token as their api_key.
 		token = a.Attributes["api_key"]

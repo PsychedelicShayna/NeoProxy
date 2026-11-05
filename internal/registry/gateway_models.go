@@ -457,7 +457,7 @@ func openCodeDiscoveredModel(provider string, entry gjson.Result) *NeoPiModel {
 	}
 	return &NeoPiModel{ID: id, Name: gatewayName(entry.Get("name"), id), API: api, Provider: provider,
 		BaseURL: openCodeBaseURLForAPI(provider, api), Input: []string{"text"},
-		CompletionsCompat: template.CompletionsCompat, AnthropicCompat: template.AnthropicCompat, Compat: template.Compat}
+		CompletionsCompat: template.CompletionsCompat, AnthropicCompat: template.AnthropicCompat, Compat: template.Compat, GoogleCompat: template.GoogleCompat}
 }
 
 // gatewayMuseSparkRow is museSparkLineageSpec for an id the gateway lists but

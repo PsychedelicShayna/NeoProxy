@@ -436,7 +436,7 @@ func (h *HTTP) AddAPIKey(ctx context.Context, p neo.Principal, req APIKeyRequest
 	spec := coreauth.AccountKey{Provider: info.engine, APIKey: key}
 	if info.engine == "" {
 		spec = coreauth.AccountKey{Provider: "openai-compatibility", APIKey: key, BaseURL: base, CompatName: h.compatName(info.ID, base, req.Label), Models: models,
-			Dialect: info.dialect, SessionHeader: info.sessionHeader, ModelRoutes: accountModelRoutes(routes),
+			Dialect: info.dialect, ModelRoutes: accountModelRoutes(routes),
 			RequestScopedErrors: info.upstreamErrors, Headers: info.headers}
 	}
 	record, err := h.management.CreateAccountAPIKey(coreauth.WithAccountLoginOwner(ctx, p.UserID), spec)

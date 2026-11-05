@@ -57,7 +57,7 @@ var (
 		out := make([]*neoPiDiscovery, 0, len(registry.GatewayProviders()))
 		for _, provider := range registry.GatewayProviders() {
 			provider := provider
-			out = append(out, &neoPiDiscovery{provider: provider, match: gatewayOwns(provider), ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: 10 * time.Second,
+			out = append(out, &neoPiDiscovery{provider: provider, match: gatewayOwns(provider), ttl: 2 * time.Hour, retry: 5 * time.Minute,
 				bundled: func() []*ModelInfo { return registry.GatewayBundledModels(provider, provider) },
 				fetch:   gatewayModelFetcher(provider), entries: map[string]*neoPiDiscoveryEntry{}})
 		}
@@ -178,7 +178,11 @@ func (s *Service) queueNeoPiDiscovery(d *neoPiDiscovery, a *coreauth.Auth) {
 
 	snapshot := a.Clone()
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), d.timeout)
+		ctx, cancel := context.WithCancel(context.Background())
+		if d.timeout > 0 {
+			cancel()
+			ctx, cancel = context.WithTimeout(context.Background(), d.timeout)
+		}
 		defer cancel()
 		models, err := d.fetch(ctx, cfg, snapshot)
 		d.mu.Lock()
