@@ -173,6 +173,13 @@ func validateCatalogKey(ctx context.Context, info ProviderInfo, base, preferred,
 	if info.ID == "zai" {
 		return zaiauth.CodingPlanBaseURL, nil, nil, validateZaiKey(ctx, key)
 	}
+	// Nous Portal and Marineris are checked the way NeoPi's own extensions do.
+	switch info.ID {
+	case "nous-portal":
+		return validateNousKey(ctx, base, key)
+	case "marineris":
+		return validateMarinerisKey(ctx, base, key)
+	}
 	candidates := []string{base}
 	if regions := catalogRegions(info.ID); len(regions) > 0 {
 		preferred = strings.TrimRight(strings.TrimSpace(preferred), "/")

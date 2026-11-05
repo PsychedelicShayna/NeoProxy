@@ -29,11 +29,6 @@ func (e OpenAICompatExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
 	return &e
 }
 
-func (e MetaExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
-	e.cfg = e.cfg.ForAPIKey()
-	return &e
-}
-
 func (e XAIExecutor) ForAPIKey() cliproxyauth.ProviderExecutor {
 	e.cfg = e.cfg.ForAPIKey()
 	return &e

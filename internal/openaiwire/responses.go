@@ -71,6 +71,7 @@ func FromResponses(body []byte, model *registry.NeoPiModel) (Context, Options) {
 			)})},
 		)}
 	}
+	ctx.Input = omitUnsupportedImages(ctx.Input, model)
 	for _, tool := range root.Get("tools").Array() {
 		ctx.Tools = append(ctx.Tools, json.RawMessage(tool.Raw))
 	}

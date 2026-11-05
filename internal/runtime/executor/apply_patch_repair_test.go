@@ -54,7 +54,7 @@ func task6RepairSSE(events [][]byte) string {
 func task6RepairExecutor(provider string) cliproxyauth.ProviderExecutor {
 	switch provider {
 	case "meta":
-		return NewMetaExecutor(&config.Config{})
+		return NewNeoPiResponsesExecutor("meta", &config.Config{})
 	default:
 		return NewXAIExecutor(&config.Config{})
 	}

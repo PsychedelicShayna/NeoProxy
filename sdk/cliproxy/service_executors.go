@@ -8,6 +8,7 @@ import (
 	zaiauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/zai"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/constant"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginhost"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
@@ -294,12 +295,50 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 			}
 		}
 	}
+	providerKey := strings.ToLower(strings.TrimSpace(a.Provider))
+	catalogProvider := providerKey
+	if compatKey, compatName, ok := openAICompatInfoFromAuth(a); ok {
+		providerKey = compatKey
+		catalogProvider = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(compatName)), "openai-compatible-")
+		if catalogProvider == "" {
+			catalogProvider = strings.TrimPrefix(compatKey, "openai-compatible-")
+		}
+	}
+	switch catalogProvider {
+	case "cerebras", "deepseek", "fireworks", "groq", "huggingface", "mistral",
+		"moonshot", "nanogpt", "nvidia", "together", "alibaba-token-plan":
+		if !forceReplace {
+			if existing, ok := s.coreManager.Executor(providerKey); ok {
+				if completions, ok := existing.(*executor.NeoPiCompletionsExecutor); ok && completions.UsesConfig(cfg) {
+					return
+				}
+			}
+		}
+		s.coreManager.RegisterExecutor(executor.NewNeoPiCompletionsExecutor(providerKey, cfg, executor.NeoPiCompletionsProfile{Provider: catalogProvider}))
+		return
+	}
 	if compatProviderKey, _, isCompat := openAICompatInfoFromAuth(a); isCompat {
 		if compatProviderKey == "" {
 			compatProviderKey = strings.ToLower(strings.TrimSpace(a.Provider))
 		}
 		if compatProviderKey == "" {
 			compatProviderKey = "openai-compatibility"
+		}
+		if neoPi := neoPiCompatProvider(a); neoPi != "" {
+			// NeoPi serves Nous Portal and Marineris keys itself.
+			existing, hasExisting := s.coreManager.Executor(compatProviderKey)
+			if neoPi == "marineris" {
+				if current, ok := existing.(*executor.MarinerisExecutor); hasExisting && ok && current.UsesConfig(cfg) && !forceReplace {
+					return
+				}
+				s.coreManager.RegisterExecutor(executor.NewMarinerisExecutor(compatProviderKey, cfg))
+			} else {
+				if current, ok := existing.(*executor.NousExecutor); hasExisting && ok && current.UsesConfig(cfg) && !forceReplace {
+					return
+				}
+				s.coreManager.RegisterExecutor(executor.NewNousExecutor(compatProviderKey, cfg))
+			}
+			return
 		}
 		if zaiauth.IsCodingPlanBaseURL(a.Attributes["base_url"]) {
 			// NeoPi serves Z.ai keys itself: Anthropic Messages for most of its
@@ -312,6 +351,19 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 				}
 			}
 			s.coreManager.RegisterExecutor(executor.NewZaiExecutor(compatProviderKey, cfg))
+			return
+		}
+		if registry.ResponsesProviderForBaseURL(a.Attributes["base_url"]) != "" {
+			// NeoPi serves Sakana and Abliteration keys (and keys at Meta's Model
+			// API address) itself, over its generic openai-responses transport.
+			if !forceReplace {
+				if existing, ok := s.coreManager.Executor(compatProviderKey); ok {
+					if responses, isResponses := existing.(*executor.NeoPiResponsesExecutor); isResponses && responses.UsesConfig(cfg) {
+						return
+					}
+				}
+			}
+			s.coreManager.RegisterExecutor(executor.NewNeoPiResponsesExecutor(compatProviderKey, cfg))
 			return
 		}
 		s.registerOpenAICompatProviderExecutor(compatProviderKey, a, cfg, forceReplace, false)
@@ -357,11 +409,11 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 	case "devin":
 		s.coreManager.RegisterExecutor(executor.NewDevinExecutor(cfg))
 	case "meta":
-		s.coreManager.RegisterExecutor(executor.NewMetaExecutor(cfg))
+		s.coreManager.RegisterExecutor(executor.NewNeoPiResponsesExecutor("meta", cfg))
 	case "cursor":
 		s.coreManager.RegisterExecutor(executor.NewCursorExecutor(cfg))
 	case "nous-portal":
-		s.coreManager.RegisterExecutor(executor.NewNousExecutor(cfg))
+		s.coreManager.RegisterExecutor(executor.NewNousExecutor("nous-portal", cfg))
 	default:
 		providerKey := strings.ToLower(strings.TrimSpace(a.Provider))
 		if providerKey == "" {

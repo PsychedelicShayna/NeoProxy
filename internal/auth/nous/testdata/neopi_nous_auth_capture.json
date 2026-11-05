@@ -1,0 +1,3066 @@
+{
+  "source": "NeoPi OWN nous-portal extension: oauth.login/refreshToken/getApiKey and fetchDynamicModels",
+  "provider": {
+    "id": "nous-portal",
+    "baseUrl": "https://inference-api.nousresearch.com/v1",
+    "api": "openai-completions",
+    "oauthName": "Nous Research Portal",
+    "getApiKey": "tok"
+  },
+  "scenarios": [
+    {
+      "name": "device-flow",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+              "expires_in": 600,
+              "interval": 5
+            }
+          }
+        ],
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "status": 400,
+            "body": {
+              "error": "authorization_pending"
+            }
+          },
+          {
+            "status": 400,
+            "body": {
+              "error": "slow_down"
+            }
+          },
+          {
+            "status": 400,
+            "body": {
+              "error": "authorization_pending"
+            }
+          },
+          {
+            "body": {
+              "access_token": "access-fake-1",
+              "refresh_token": "refresh-fake-1",
+              "expires_in": 3600
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        },
+        {
+          "onAuth": {
+            "url": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+            "instructions": "Enter code ABCD-EFGH at portal.nousresearch.com"
+          }
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        }
+      ],
+      "result": {
+        "refresh": "refresh-fake-1",
+        "access": "access-fake-1",
+        "expires": 1700003497000
+      },
+      "delays": [
+        5000,
+        6000,
+        6000
+      ],
+      "clockAdvanceMs": 17000,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        }
+      ]
+    },
+    {
+      "name": "device-flow-no-refresh-and-default-ttl",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+              "expires_in": 600,
+              "interval": 5
+            }
+          }
+        ],
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "body": {
+              "access_token": "access-only"
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        },
+        {
+          "onAuth": {
+            "url": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+            "instructions": "Enter code ABCD-EFGH at portal.nousresearch.com"
+          }
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        }
+      ],
+      "error": "Nous Portal token response omitted refresh_token",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        }
+      ]
+    },
+    {
+      "name": "device-flow-short-ttl-skew",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+              "expires_in": 600,
+              "interval": 5
+            }
+          }
+        ],
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "body": {
+              "access_token": "access-fake-1",
+              "refresh_token": "refresh-fake-1",
+              "expires_in": 600
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        },
+        {
+          "onAuth": {
+            "url": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+            "instructions": "Enter code ABCD-EFGH at portal.nousresearch.com"
+          }
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        }
+      ],
+      "result": {
+        "refresh": "refresh-fake-1",
+        "access": "access-fake-1",
+        "expires": 1700000540000
+      },
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        }
+      ]
+    },
+    {
+      "name": "device-flow-access-only-device-code-fallbacks",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "d2",
+              "user_code": "U2",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "interval": 40,
+              "expires_in": 12
+            }
+          }
+        ],
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "status": 400,
+            "body": {
+              "error": "authorization_pending"
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        },
+        {
+          "onAuth": {
+            "url": "https://portal.nousresearch.com/device",
+            "instructions": "Enter code U2 at portal.nousresearch.com"
+          }
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        }
+      ],
+      "error": "Nous Portal device authorization expired",
+      "delays": [
+        30000
+      ],
+      "clockAdvanceMs": 30000,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "101",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=d2"
+        }
+      ]
+    },
+    {
+      "name": "device-flow-denied",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+              "expires_in": 600,
+              "interval": 5
+            }
+          }
+        ],
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "status": 400,
+            "body": {
+              "error": "access_denied",
+              "error_description": "The user denied the request"
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        },
+        {
+          "onAuth": {
+            "url": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+            "instructions": "Enter code ABCD-EFGH at portal.nousresearch.com"
+          }
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        }
+      ],
+      "error": "Device authorization failed (400): access_denied: The user denied the request",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        }
+      ]
+    },
+    {
+      "name": "device-flow-poll-message-fallback",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+              "expires_in": 600,
+              "interval": 5
+            }
+          }
+        ],
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "status": 500,
+            "body": {
+              "message": "portal exploded"
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        },
+        {
+          "onAuth": {
+            "url": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+            "instructions": "Enter code ABCD-EFGH at portal.nousresearch.com"
+          }
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        }
+      ],
+      "error": "Device authorization failed (500): portal exploded",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        }
+      ]
+    },
+    {
+      "name": "device-flow-poll-non-json",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+              "expires_in": 600,
+              "interval": 5
+            }
+          }
+        ],
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "status": 502,
+            "raw": "<html>bad gateway</html>"
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        },
+        {
+          "onAuth": {
+            "url": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+            "instructions": "Enter code ABCD-EFGH at portal.nousresearch.com"
+          }
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        }
+      ],
+      "error": "Device authorization failed (502)",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        }
+      ]
+    },
+    {
+      "name": "device-code-http-error",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "status": 403,
+            "body": {
+              "error": "forbidden",
+              "error_description": "blocked"
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        }
+      ],
+      "error": "Device-code request failed (403): forbidden: blocked",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        }
+      ]
+    },
+    {
+      "name": "device-code-foreign-verification-host",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "https://evil.example/device",
+              "expires_in": 600,
+              "interval": 5
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        }
+      ],
+      "error": "Nous Portal returned an unexpected verification URL",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        }
+      ]
+    },
+    {
+      "name": "device-code-http-verification-scheme",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "http://portal.nousresearch.com/device",
+              "expires_in": 600,
+              "interval": 5
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        }
+      ],
+      "error": "Nous Portal returned an unexpected verification URL",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        }
+      ]
+    },
+    {
+      "name": "device-code-incomplete",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "verification_uri": "https://portal.nousresearch.com/device"
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        }
+      ],
+      "error": "Nous Portal returned an incomplete device code",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        }
+      ]
+    },
+    {
+      "name": "device-code-expires-while-pending",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/device/code": [
+          {
+            "body": {
+              "device_code": "dev-code-0001",
+              "user_code": "ABCD-EFGH",
+              "verification_uri": "https://portal.nousresearch.com/device",
+              "verification_uri_complete": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+              "expires_in": 12,
+              "interval": 5
+            }
+          }
+        ],
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "status": 400,
+            "body": {
+              "error": "authorization_pending"
+            }
+          }
+        ]
+      },
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        },
+        {
+          "onAuth": {
+            "url": "https://portal.nousresearch.com/device?user_code=ABCD-EFGH",
+            "instructions": "Enter code ABCD-EFGH at portal.nousresearch.com"
+          }
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        },
+        {
+          "onProgress": "Waiting for Nous Portal authorization…"
+        }
+      ],
+      "error": "Nous Portal device authorization expired",
+      "delays": [
+        5000,
+        5000,
+        5000
+      ],
+      "clockAdvanceMs": 15000,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/device/code",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "client_id=hermes-cli&scope=inference%3Ainvoke"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        },
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "112",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=hermes-cli&device_code=dev-code-0001"
+        }
+      ]
+    },
+    {
+      "name": "pasted-key",
+      "replies": {},
+      "events": [
+        {
+          "onPrompt": {
+            "message": "Paste a Nous Portal inference API key (leave empty to use the subscription OAuth device flow)",
+            "placeholder": "sk-…",
+            "allowEmpty": true
+          }
+        }
+      ],
+      "result": "sk-nous-pasted",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": []
+    },
+    {
+      "name": "refresh",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "body": {
+              "access_token": "access-2",
+              "refresh_token": "refresh-2",
+              "expires_in": 7200
+            }
+          }
+        ]
+      },
+      "events": [],
+      "result": {
+        "refresh": "refresh-2",
+        "access": "access-2",
+        "expires": 1700007080000
+      },
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14",
+            "x-nous-refresh-token": "refresh-1"
+          },
+          "body": "grant_type=refresh_token&client_id=hermes-cli"
+        }
+      ]
+    },
+    {
+      "name": "refresh-keeps-previous-refresh-token",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "body": {
+              "access_token": "access-3",
+              "expires_in": 100
+            }
+          }
+        ]
+      },
+      "events": [],
+      "result": {
+        "refresh": "refresh-1",
+        "access": "access-3",
+        "expires": 1700000090000
+      },
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14",
+            "x-nous-refresh-token": "refresh-1"
+          },
+          "body": "grant_type=refresh_token&client_id=hermes-cli"
+        }
+      ]
+    },
+    {
+      "name": "refresh-rejected",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "status": 401,
+            "body": {
+              "error": "invalid_grant",
+              "error_description": "refresh token revoked"
+            }
+          }
+        ]
+      },
+      "events": [],
+      "error": "Token refresh failed (401): invalid_grant: refresh token revoked",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14",
+            "x-nous-refresh-token": "refresh-1"
+          },
+          "body": "grant_type=refresh_token&client_id=hermes-cli"
+        }
+      ]
+    },
+    {
+      "name": "refresh-without-access-token",
+      "replies": {
+        "POST https://portal.nousresearch.com/api/oauth/token": [
+          {
+            "body": {
+              "refresh_token": "r"
+            }
+          }
+        ]
+      },
+      "events": [],
+      "error": "Nous Portal token response omitted access_token",
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://portal.nousresearch.com/api/oauth/token",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "connection": "keep-alive",
+            "content-length": "45",
+            "content-type": "application/x-www-form-urlencoded",
+            "host": "portal.nousresearch.com",
+            "user-agent": "Bun/1.3.14",
+            "x-nous-refresh-token": "refresh-1"
+          },
+          "body": "grant_type=refresh_token&client_id=hermes-cli"
+        }
+      ]
+    },
+    {
+      "name": "discovery-live",
+      "replies": {
+        "GET https://inference-api.nousresearch.com/v1/models": [
+          {
+            "body": {
+              "data": [
+                {
+                  "id": "qwen/qwen3.8-27b",
+                  "name": "Qwen: Qwen3.8 27B",
+                  "context_length": 262144,
+                  "architecture": {
+                    "modality": "text+image->text",
+                    "output_modalities": [
+                      "text"
+                    ]
+                  },
+                  "pricing": {
+                    "prompt": "0.00000036",
+                    "completion": "0.00000256",
+                    "input_cache_read": "0.00000003"
+                  },
+                  "reasoning": {
+                    "supported_efforts": [
+                      "low",
+                      "medium",
+                      "high"
+                    ],
+                    "default_effort": "medium"
+                  },
+                  "supported_parameters": [
+                    "reasoning",
+                    "tools",
+                    "temperature"
+                  ],
+                  "top_provider": {
+                    "max_completion_tokens": 65536
+                  }
+                },
+                {
+                  "id": "deepseek/deepseek-v4-flash-0731",
+                  "name": "DeepSeek V4 Flash",
+                  "context_length": "1048576",
+                  "architecture": {
+                    "modality": "text->text",
+                    "output_modalities": [
+                      "text"
+                    ]
+                  },
+                  "pricing": {
+                    "prompt": "0.0000001",
+                    "completion": "0.0000004"
+                  },
+                  "supported_parameters": [
+                    "reasoning"
+                  ]
+                },
+                {
+                  "id": "openai/gpt-5.6-luna:batch",
+                  "name": "batch alias"
+                },
+                {
+                  "id": "google/gemini-3-pro-image",
+                  "name": "image only",
+                  "architecture": {
+                    "output_modalities": [
+                      "image"
+                    ]
+                  }
+                },
+                {
+                  "id": "~anthropic/claude-opus-latest",
+                  "architecture": {
+                    "modality": "text+image->text"
+                  },
+                  "supported_parameters": [
+                    "tools"
+                  ]
+                },
+                {
+                  "id": "x-ai/grok-4.6:free",
+                  "name": "Grok free",
+                  "supported_parameters": [
+                    "reasoning",
+                    "tools"
+                  ]
+                },
+                {
+                  "id": "meta/no-tools-model",
+                  "supported_parameters": [
+                    "temperature"
+                  ]
+                },
+                {
+                  "id": "deepseek/deepseek-v9-unseen",
+                  "name": "DeepSeek unseen",
+                  "supported_parameters": [
+                    "reasoning",
+                    "tools"
+                  ]
+                },
+                {
+                  "id": "moonshotai/kimi-k9",
+                  "name": "Kimi unseen",
+                  "supported_parameters": [
+                    "reasoning"
+                  ]
+                },
+                {
+                  "id": "anthropic/claude-unseen",
+                  "name": "Claude unseen",
+                  "architecture": {
+                    "modality": "text+image->text"
+                  },
+                  "supported_parameters": [
+                    "reasoning",
+                    "tools"
+                  ]
+                },
+                {
+                  "id": "plain/no-reasoning",
+                  "name": "Plain",
+                  "supported_parameters": [
+                    "tools"
+                  ]
+                },
+                {
+                  "id": "vendor/unknown-model",
+                  "name": "Unknown",
+                  "reasoning": {
+                    "supported_efforts": [
+                      "max",
+                      "minimal"
+                    ],
+                    "default_effort": "max"
+                  },
+                  "supported_parameters": [
+                    "tools"
+                  ],
+                  "top_provider": {
+                    "max_completion_tokens": "4096"
+                  }
+                },
+                {
+                  "name": "no id"
+                },
+                "not-an-object"
+              ]
+            }
+          }
+        ]
+      },
+      "events": [],
+      "result": [
+        {
+          "id": "qwen/qwen3.8-27b",
+          "name": "Qwen: Qwen3.8 27B",
+          "api": "openai-completions",
+          "reasoning": true,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "defaultLevel": "medium"
+          },
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0.36,
+            "output": 2.56,
+            "cacheRead": 0.03,
+            "cacheWrite": 0
+          },
+          "contextWindow": 262144,
+          "maxTokens": 65536,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "openrouter"
+          }
+        },
+        {
+          "id": "deepseek/deepseek-v4-flash-0731",
+          "name": "DeepSeek V4 Flash",
+          "api": "openai-completions",
+          "reasoning": true,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "high",
+              "max"
+            ]
+          },
+          "input": [
+            "text"
+          ],
+          "supportsTools": false,
+          "cost": {
+            "input": 0.09999999999999999,
+            "output": 0.39999999999999997,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 1048576,
+          "maxTokens": 393216,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "openrouter"
+          }
+        },
+        {
+          "id": "~anthropic/claude-opus-latest",
+          "name": "~anthropic/claude-opus-latest",
+          "api": "openai-completions",
+          "reasoning": true,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ]
+          },
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 128000,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "openrouter"
+          }
+        },
+        {
+          "id": "x-ai/grok-4.6:free",
+          "name": "Grok free",
+          "api": "openai-completions",
+          "reasoning": true,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "medium",
+              "high",
+              "xhigh"
+            ]
+          },
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 500000,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "openrouter"
+          }
+        },
+        {
+          "id": "meta/no-tools-model",
+          "name": "meta/no-tools-model",
+          "api": "openai-completions",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "supportsTools": false,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens"
+          }
+        },
+        {
+          "id": "deepseek/deepseek-v9-unseen",
+          "name": "DeepSeek unseen",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "openrouter"
+          }
+        },
+        {
+          "id": "moonshotai/kimi-k9",
+          "name": "Kimi unseen",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "supportsTools": false,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "openrouter"
+          }
+        },
+        {
+          "id": "anthropic/claude-unseen",
+          "name": "Claude unseen",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "openrouter"
+          }
+        },
+        {
+          "id": "plain/no-reasoning",
+          "name": "Plain",
+          "api": "openai-completions",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens"
+          }
+        },
+        {
+          "id": "vendor/unknown-model",
+          "name": "Unknown",
+          "api": "openai-completions",
+          "reasoning": false,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "minimal",
+              "max"
+            ],
+            "defaultLevel": "max"
+          },
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 131072,
+          "maxTokens": 4096,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens"
+          }
+        }
+      ],
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://inference-api.nousresearch.com/v1/models",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer sk-nous-key",
+            "connection": "keep-alive",
+            "host": "inference-api.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ],
+      "rows": [
+        {
+          "id": "qwen/qwen3.8-27b",
+          "name": "Qwen: Qwen3.8 27B",
+          "context_length": 262144,
+          "architecture": {
+            "modality": "text+image->text",
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "pricing": {
+            "prompt": "0.00000036",
+            "completion": "0.00000256",
+            "input_cache_read": "0.00000003"
+          },
+          "reasoning": {
+            "supported_efforts": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "default_effort": "medium"
+          },
+          "supported_parameters": [
+            "reasoning",
+            "tools",
+            "temperature"
+          ],
+          "top_provider": {
+            "max_completion_tokens": 65536
+          }
+        },
+        {
+          "id": "deepseek/deepseek-v4-flash-0731",
+          "name": "DeepSeek V4 Flash",
+          "context_length": "1048576",
+          "architecture": {
+            "modality": "text->text",
+            "output_modalities": [
+              "text"
+            ]
+          },
+          "pricing": {
+            "prompt": "0.0000001",
+            "completion": "0.0000004"
+          },
+          "supported_parameters": [
+            "reasoning"
+          ]
+        },
+        {
+          "id": "openai/gpt-5.6-luna:batch",
+          "name": "batch alias"
+        },
+        {
+          "id": "google/gemini-3-pro-image",
+          "name": "image only",
+          "architecture": {
+            "output_modalities": [
+              "image"
+            ]
+          }
+        },
+        {
+          "id": "~anthropic/claude-opus-latest",
+          "architecture": {
+            "modality": "text+image->text"
+          },
+          "supported_parameters": [
+            "tools"
+          ]
+        },
+        {
+          "id": "x-ai/grok-4.6:free",
+          "name": "Grok free",
+          "supported_parameters": [
+            "reasoning",
+            "tools"
+          ]
+        },
+        {
+          "id": "meta/no-tools-model",
+          "supported_parameters": [
+            "temperature"
+          ]
+        },
+        {
+          "id": "deepseek/deepseek-v9-unseen",
+          "name": "DeepSeek unseen",
+          "supported_parameters": [
+            "reasoning",
+            "tools"
+          ]
+        },
+        {
+          "id": "moonshotai/kimi-k9",
+          "name": "Kimi unseen",
+          "supported_parameters": [
+            "reasoning"
+          ]
+        },
+        {
+          "id": "anthropic/claude-unseen",
+          "name": "Claude unseen",
+          "architecture": {
+            "modality": "text+image->text"
+          },
+          "supported_parameters": [
+            "reasoning",
+            "tools"
+          ]
+        },
+        {
+          "id": "plain/no-reasoning",
+          "name": "Plain",
+          "supported_parameters": [
+            "tools"
+          ]
+        },
+        {
+          "id": "vendor/unknown-model",
+          "name": "Unknown",
+          "reasoning": {
+            "supported_efforts": [
+              "max",
+              "minimal"
+            ],
+            "default_effort": "max"
+          },
+          "supported_parameters": [
+            "tools"
+          ],
+          "top_provider": {
+            "max_completion_tokens": "4096"
+          }
+        },
+        {
+          "name": "no id"
+        },
+        "not-an-object"
+      ],
+      "resolved": [
+        {
+          "id": "qwen/qwen3.8-27b",
+          "name": "Qwen3.8 27B",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 262144,
+          "maxTokens": 65536,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "defaultLevel": "medium"
+          },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": false,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": false,
+            "disableReasoningOnToolChoice": false,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openrouter",
+            "reasoningDisableMode": "openrouter-enabled-false",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": false,
+            "requiresReasoningContentForAllAssistantTurns": false,
+            "allowsSyntheticReasoningContentForToolCalls": true,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "thinking",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": false,
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        },
+        {
+          "id": "deepseek/deepseek-v4-flash-0731",
+          "name": "DeepSeek V4 Flash",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 1048576,
+          "maxTokens": 393216,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "high",
+              "max"
+            ]
+          },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": true,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": false,
+            "disableReasoningOnToolChoice": true,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openrouter",
+            "reasoningDisableMode": "openrouter-enabled-false",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": true,
+            "requiresReasoningContentForAllAssistantTurns": true,
+            "allowsSyntheticReasoningContentForToolCalls": false,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "dsml",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": true,
+            "thinkingLoopGuard": "deepseek",
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        },
+        {
+          "id": "~anthropic/claude-opus-latest",
+          "name": "~anthropic/claude-opus-latest",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 128000,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ]
+          },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": false,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": true,
+            "disableReasoningOnToolChoice": false,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openrouter",
+            "reasoningDisableMode": "openrouter-enabled-false",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": false,
+            "requiresReasoningContentForAllAssistantTurns": false,
+            "allowsSyntheticReasoningContentForToolCalls": true,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "thinking",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": false,
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        },
+        {
+          "id": "x-ai/grok-4.6:free",
+          "name": "Grok free",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 500000,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "medium",
+              "high",
+              "xhigh"
+            ]
+          },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": false,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": false,
+            "disableReasoningOnToolChoice": false,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openrouter",
+            "reasoningDisableMode": "openrouter-enabled-false",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": false,
+            "requiresReasoningContentForAllAssistantTurns": false,
+            "allowsSyntheticReasoningContentForToolCalls": true,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "thinking",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": false,
+            "thinkingLoopGuard": "xai",
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        },
+        {
+          "id": "meta/no-tools-model",
+          "name": "meta/no-tools-model",
+          "api": "openai-completions",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": false,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": false,
+            "disableReasoningOnToolChoice": false,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openai",
+            "reasoningDisableMode": "lowest-effort",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": false,
+            "requiresReasoningContentForAllAssistantTurns": false,
+            "allowsSyntheticReasoningContentForToolCalls": true,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "thinking",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": false,
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        },
+        {
+          "id": "deepseek/deepseek-v9-unseen",
+          "name": "DeepSeek unseen",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "minimal",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": true,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": false,
+            "disableReasoningOnToolChoice": true,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openrouter",
+            "reasoningDisableMode": "openrouter-enabled-false",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": true,
+            "requiresReasoningContentForAllAssistantTurns": true,
+            "allowsSyntheticReasoningContentForToolCalls": false,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "dsml",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": true,
+            "thinkingLoopGuard": "deepseek",
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        },
+        {
+          "id": "moonshotai/kimi-k9",
+          "name": "Kimi unseen",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "minimal",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": false,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": true,
+            "disableReasoningOnForcedToolChoice": true,
+            "disableReasoningOnToolChoice": false,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openrouter",
+            "reasoningDisableMode": "openrouter-enabled-false",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": true,
+            "requiresReasoningContentForAllAssistantTurns": false,
+            "allowsSyntheticReasoningContentForToolCalls": true,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": true,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "toolSchemaFlavor": "moonshot-mfjs",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "thinking",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": false,
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false,
+            "streamRevision": "possible"
+          }
+        },
+        {
+          "id": "anthropic/claude-unseen",
+          "name": "Claude unseen",
+          "api": "openai-completions",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "minimal",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": false,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": true,
+            "disableReasoningOnToolChoice": false,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openrouter",
+            "reasoningDisableMode": "openrouter-enabled-false",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": false,
+            "requiresReasoningContentForAllAssistantTurns": false,
+            "allowsSyntheticReasoningContentForToolCalls": true,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "thinking",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": false,
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        },
+        {
+          "id": "plain/no-reasoning",
+          "name": "Plain",
+          "api": "openai-completions",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": false,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": false,
+            "disableReasoningOnToolChoice": false,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openai",
+            "reasoningDisableMode": "lowest-effort",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": false,
+            "requiresReasoningContentForAllAssistantTurns": false,
+            "allowsSyntheticReasoningContentForToolCalls": true,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "thinking",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": false,
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        },
+        {
+          "id": "vendor/unknown-model",
+          "name": "Unknown",
+          "api": "openai-completions",
+          "reasoning": false,
+          "input": [
+            "text"
+          ],
+          "contextWindow": 131072,
+          "maxTokens": 4096,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsMultipleSystemMessages": false,
+            "supportsReasoningEffort": true,
+            "supportsReasoningParams": true,
+            "supportsSamplingParams": true,
+            "supportsPenaltyAndStopParams": true,
+            "reasoningEffortMap": {},
+            "supportsUsageInStreaming": true,
+            "alwaysSendMaxTokens": false,
+            "disableReasoningOnForcedToolChoice": false,
+            "disableReasoningOnToolChoice": false,
+            "disableReasoningWithTools": false,
+            "supportsToolChoice": true,
+            "supportsForcedToolChoice": true,
+            "supportsNamedToolChoice": true,
+            "maxTokensField": "max_tokens",
+            "requiresToolResultName": false,
+            "requiresAssistantAfterToolResult": false,
+            "requiresThinkingAsText": false,
+            "requiresMistralToolIds": false,
+            "thinkingFormat": "openai",
+            "reasoningDisableMode": "lowest-effort",
+            "omitReasoningEffort": false,
+            "includeEncryptedReasoning": true,
+            "filterReasoningHistory": false,
+            "reasoningContentField": "reasoning_content",
+            "requiresReasoningContentForToolCalls": false,
+            "requiresReasoningContentForAllAssistantTurns": false,
+            "allowsSyntheticReasoningContentForToolCalls": true,
+            "replayReasoningContent": false,
+            "qwenPreserveThinking": false,
+            "qwenTemplateReasoningEffort": false,
+            "requiresAssistantContentForToolCalls": false,
+            "supportsPromptCacheBreakpoints": false,
+            "isOpenRouterHost": false,
+            "wireModelIdMode": "raw",
+            "isVercelGatewayHost": false,
+            "supportsStrictMode": false,
+            "toolStrictMode": "mixed",
+            "stripDeepseekSpecialTokens": false,
+            "streamMarkupHealingPattern": "thinking",
+            "reasoningDeltasMayBeCumulative": false,
+            "emptyLengthFinishIsContextError": false,
+            "usesOpenAIToolCallIdLimit": false,
+            "dropThinkingWhenReasoningEffort": false,
+            "nativeKimiK3Reasoning": false,
+            "zaiReasoningEffortDialect": false,
+            "clampOutputToModelMax": false,
+            "stripImageInput": false,
+            "rejectRootObjectUnion": false,
+            "retryWithoutStrictOnGrammarError": false,
+            "supportsPromptCacheKey": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "discovery-http-error-falls-back-to-snapshot",
+      "replies": {
+        "GET https://inference-api.nousresearch.com/v1/models": [
+          {
+            "status": 401,
+            "body": {
+              "error": "unauthorized"
+            }
+          }
+        ]
+      },
+      "events": [],
+      "result": {
+        "count": 276,
+        "ids": [
+          "qwen/qwen3.8-27b",
+          "google/gemini-3.7-flash",
+          "bytedance-seed/seed-2-1-turbo",
+          "qwen/qwen3.8-2.4t-a95b",
+          "bytedance-seed/seed-2.0-code",
+          "deepseek/deepseek-v4-pro-0813",
+          "x-ai/grok-4.6",
+          "nvidia/nemotron-3.5-lightning",
+          "sakana/sakana-namazu",
+          "upstage/solar-pro4",
+          "meta/muse-glimmer-30b",
+          "meta/muse-spark-1.2",
+          "qwen/qwen3.8-max",
+          "~deepseek/deepseek-v4-flash-latest",
+          "deepseek/deepseek-v4-flash-0731",
+          "thinkingmachines/inkling-small",
+          "qwen/qwen3.7-flash",
+          "anthropic/claude-opus-5-fast",
+          "inclusionai/ling-3.0-flash",
+          "poolside/laguna-s-2.1",
+          "poolside/laguna-s-2.1:free",
+          "google/gemini-3.6-flash",
+          "google/gemini-3.5-flash-lite",
+          "meituan/longcat-2.0",
+          "thinkingmachines/inkling",
+          "kwaipilot/kat-coder-air-v2.5",
+          "kwaipilot/kat-coder-pro-v2.5",
+          "openai/gpt-5.6-luna-pro",
+          "openai/gpt-5.6-luna",
+          "openai/gpt-5.6-terra-pro",
+          "openai/gpt-5.6-terra",
+          "openai/gpt-5.6-sol-pro",
+          "x-ai/grok-4.5",
+          "~x-ai/grok-latest",
+          "aion-labs/aion-3.0-mini",
+          "aion-labs/aion-3.0",
+          "tencent/hy3",
+          "poolside/laguna-xs-2.1",
+          "poolside/laguna-xs-2.1:free",
+          "nex-agi/nex-n2-mini",
+          "sakana/fugu-ultra",
+          "google/gemini-3-pro-image",
+          "z-ai/glm-5.2",
+          "moonshotai/kimi-k2.7-code",
+          "~anthropic/claude-fable-latest",
+          "nex-agi/nex-n2-pro",
+          "nvidia/nemotron-3-ultra-550b-a55b",
+          "qwen/qwen3.7-plus",
+          "minimax/minimax-m3",
+          "stepfun/step-3.7-flash",
+          "anthropic/claude-opus-4.8-fast",
+          "qwen/qwen3.7-max",
+          "x-ai/grok-build-0.1",
+          "google/gemini-3.5-flash",
+          "anthropic/claude-opus-4.7-fast",
+          "inclusionai/ring-2.6-1t",
+          "google/gemini-3.1-flash-lite",
+          "openai/gpt-chat-latest",
+          "x-ai/grok-4.3",
+          "ibm-granite/granite-4.1-8b",
+          "mistralai/mistral-medium-3-5",
+          "~anthropic/claude-haiku-latest",
+          "~openai/gpt-mini-latest",
+          "~google/gemini-pro-latest",
+          "~moonshotai/kimi-latest",
+          "~google/gemini-flash-latest",
+          "~anthropic/claude-sonnet-latest",
+          "~openai/gpt-latest",
+          "qwen/qwen3.5-plus-20260420",
+          "qwen/qwen3.6-flash",
+          "qwen/qwen3.6-35b-a3b",
+          "qwen/qwen3.6-max-preview",
+          "qwen/qwen3.6-27b",
+          "openai/gpt-5.5-pro",
+          "openai/gpt-5.5",
+          "deepseek/deepseek-v4-pro",
+          "deepseek/deepseek-v4-flash",
+          "inclusionai/ling-2.6-1t",
+          "tencent/hy3-preview",
+          "xiaomi/mimo-v2.5-pro",
+          "xiaomi/mimo-v2.5",
+          "inclusionai/ling-2.6-flash",
+          "~anthropic/claude-opus-latest",
+          "moonshotai/kimi-k2.6",
+          "z-ai/glm-5.1",
+          "google/gemma-4-26b-a4b-it",
+          "google/gemma-4-31b-it",
+          "qwen/qwen3.6-plus",
+          "z-ai/glm-5v-turbo",
+          "arcee-ai/trinity-large-thinking",
+          "x-ai/grok-4.20",
+          "kwaipilot/kat-coder-pro-v2",
+          "rekaai/reka-edge",
+          "minimax/minimax-m2.7",
+          "openai/gpt-5.4-nano",
+          "openai/gpt-5.4-mini",
+          "mistralai/mistral-small-2603",
+          "z-ai/glm-5-turbo",
+          "nvidia/nemotron-3-super-120b-a12b",
+          "bytedance-seed/seed-2.0-lite",
+          "qwen/qwen3.5-9b",
+          "openai/gpt-5.4-pro",
+          "openai/gpt-5.4",
+          "inception/mercury-2",
+          "google/gemini-3.1-flash-lite-preview",
+          "bytedance-seed/seed-2.0-mini",
+          "qwen/qwen3.5-35b-a3b",
+          "qwen/qwen3.5-27b",
+          "qwen/qwen3.5-122b-a10b",
+          "qwen/qwen3.5-flash-02-23",
+          "google/gemini-3.1-pro-preview-customtools",
+          "openai/gpt-5.3-codex",
+          "aion-labs/aion-2.0",
+          "google/gemini-3.1-pro-preview",
+          "qwen/qwen3.5-plus-02-15",
+          "qwen/qwen3.5-397b-a17b",
+          "minimax/minimax-m2.5",
+          "z-ai/glm-5",
+          "qwen/qwen3-max-thinking",
+          "qwen/qwen3-coder-next",
+          "stepfun/step-3.5-flash",
+          "moonshotai/kimi-k2.5",
+          "upstage/solar-pro-3",
+          "openai/gpt-audio",
+          "openai/gpt-audio-mini",
+          "z-ai/glm-4.7-flash",
+          "openai/gpt-5.2-codex",
+          "bytedance-seed/seed-1.6-flash",
+          "bytedance-seed/seed-1.6",
+          "minimax/minimax-m2.1",
+          "z-ai/glm-4.7",
+          "google/gemini-3-flash-preview",
+          "nvidia/nemotron-3-nano-30b-a3b",
+          "openai/gpt-5.2-chat",
+          "openai/gpt-5.2-pro",
+          "openai/gpt-5.2",
+          "relace/relace-search",
+          "z-ai/glm-4.6v",
+          "openai/gpt-5.1-codex-max",
+          "amazon/nova-2-lite-v1",
+          "mistralai/ministral-14b-2512",
+          "mistralai/ministral-8b-2512",
+          "mistralai/ministral-3b-2512",
+          "mistralai/mistral-large-2512",
+          "deepseek/deepseek-v3.2",
+          "anthropic/claude-opus-4.5",
+          "openai/gpt-5.1",
+          "openai/gpt-5.1-codex",
+          "openai/gpt-5.1-codex-mini",
+          "moonshotai/kimi-k2-thinking",
+          "amazon/nova-premier-v1",
+          "mistralai/voxtral-small-24b-2507",
+          "openai/gpt-oss-safeguard-20b",
+          "minimax/minimax-m2",
+          "qwen/qwen3-vl-32b-instruct",
+          "qwen/qwen3-vl-8b-thinking",
+          "qwen/qwen3-vl-8b-instruct",
+          "qwen/qwen3-vl-30b-a3b-thinking",
+          "qwen/qwen3-vl-30b-a3b-instruct",
+          "openai/gpt-5-pro",
+          "z-ai/glm-4.6",
+          "anthropic/claude-sonnet-4.5",
+          "deepseek/deepseek-v3.2-exp",
+          "qwen/qwen3-vl-235b-a22b-thinking",
+          "qwen/qwen3-vl-235b-a22b-instruct",
+          "qwen/qwen3-max",
+          "qwen/qwen3-coder-plus",
+          "deepseek/deepseek-v3.1-terminus",
+          "qwen/qwen3-coder-flash",
+          "qwen/qwen3-next-80b-a3b-thinking",
+          "qwen/qwen3-next-80b-a3b-instruct",
+          "qwen/qwen-plus-2025-07-28",
+          "qwen/qwen-plus-2025-07-28:thinking",
+          "moonshotai/kimi-k2-0905",
+          "qwen/qwen3-30b-a3b-thinking-2507",
+          "nousresearch/hermes-4-70b",
+          "nousresearch/hermes-4-405b",
+          "deepseek/deepseek-chat-v3.1",
+          "mistralai/mistral-medium-3.1",
+          "z-ai/glm-4.5v",
+          "ai21/jamba-large-1.7",
+          "openai/gpt-5",
+          "openai/gpt-5-mini",
+          "openai/gpt-5-nano",
+          "openai/gpt-oss-120b",
+          "openai/gpt-oss-20b",
+          "anthropic/claude-opus-4.1",
+          "mistralai/codestral-2508",
+          "qwen/qwen3-coder-30b-a3b-instruct",
+          "qwen/qwen3-30b-a3b-instruct-2507",
+          "z-ai/glm-4.5",
+          "z-ai/glm-4.5-air",
+          "qwen/qwen3-235b-a22b-thinking-2507",
+          "qwen/qwen3-coder",
+          "google/gemini-2.5-flash-lite",
+          "qwen/qwen3-235b-a22b-2507",
+          "moonshotai/kimi-k2",
+          "mistralai/mistral-small-3.2-24b-instruct",
+          "minimax/minimax-m1",
+          "google/gemini-2.5-flash",
+          "google/gemini-2.5-pro",
+          "openai/o3-pro",
+          "google/gemini-2.5-pro-preview",
+          "deepseek/deepseek-r1-0528",
+          "anthropic/claude-opus-4",
+          "anthropic/claude-sonnet-4",
+          "mistralai/mistral-medium-3",
+          "google/gemini-2.5-pro-preview-05-06",
+          "arcee-ai/virtuoso-large",
+          "qwen/qwen3-30b-a3b",
+          "qwen/qwen3-8b",
+          "qwen/qwen3-14b",
+          "qwen/qwen3-32b",
+          "qwen/qwen3-235b-a22b",
+          "openai/o4-mini-high",
+          "openai/o3",
+          "openai/o4-mini",
+          "openai/gpt-4.1",
+          "openai/gpt-4.1-mini",
+          "openai/gpt-4.1-nano",
+          "meta-llama/llama-4-maverick",
+          "meta-llama/llama-4-scout",
+          "deepseek/deepseek-chat-v3-0324",
+          "google/gemma-3-12b-it",
+          "google/gemma-3-27b-it",
+          "mistralai/mistral-saba",
+          "openai/o3-mini-high",
+          "qwen/qwen-plus",
+          "openai/o3-mini",
+          "deepseek/deepseek-r1",
+          "deepseek/deepseek-chat",
+          "openai/o1",
+          "meta-llama/llama-3.3-70b-instruct",
+          "amazon/nova-lite-v1",
+          "amazon/nova-micro-v1",
+          "amazon/nova-pro-v1",
+          "openai/gpt-4o-2024-11-20",
+          "mistralai/mistral-large-2407",
+          "thedrummer/unslopnemo-12b",
+          "qwen/qwen-2.5-7b-instruct",
+          "qwen/qwen-2.5-72b-instruct",
+          "cohere/command-r-08-2024",
+          "cohere/command-r-plus-08-2024",
+          "sao10k/l3.1-euryale-70b",
+          "openai/gpt-4o-2024-08-06",
+          "meta-llama/llama-3.1-70b-instruct",
+          "meta-llama/llama-3.1-8b-instruct",
+          "mistralai/mistral-nemo",
+          "openai/gpt-4o-mini",
+          "openai/gpt-4o-mini-2024-07-18",
+          "openai/gpt-4o",
+          "openai/gpt-4o-2024-05-13",
+          "mistralai/mixtral-8x22b-instruct",
+          "openai/gpt-4-turbo",
+          "anthropic/claude-3-haiku",
+          "mistralai/mistral-large",
+          "openai/gpt-3.5-turbo-0613",
+          "openai/gpt-4-turbo-preview",
+          "openai/gpt-3.5-turbo-16k",
+          "openai/gpt-3.5-turbo",
+          "openai/gpt-4",
+          "tencent/hy3:free",
+          "stepfun/step-3.7-flash:free",
+          "upstage/solar-pro4:free",
+          "anthropic/claude-opus-5",
+          "anthropic/claude-sonnet-5",
+          "anthropic/claude-fable-5",
+          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-4.7",
+          "anthropic/claude-opus-4.6",
+          "anthropic/claude-sonnet-4.6",
+          "anthropic/claude-haiku-4.5",
+          "openai/gpt-5.6-sol",
+          "meta/muse-spark-1.1",
+          "meituan/longcat-2.0:free",
+          "moonshotai/kimi-k3"
+        ]
+      },
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://inference-api.nousresearch.com/v1/models",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer sk-nous-key",
+            "connection": "keep-alive",
+            "host": "inference-api.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "name": "discovery-invalid-catalog-falls-back-to-snapshot",
+      "replies": {
+        "GET https://inference-api.nousresearch.com/v1/models": [
+          {
+            "body": {
+              "data": "nope"
+            }
+          }
+        ]
+      },
+      "events": [],
+      "result": 276,
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "https://inference-api.nousresearch.com/v1/models",
+          "headers": {
+            "accept": "application/json",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": "Bearer sk-nous-key",
+            "connection": "keep-alive",
+            "host": "inference-api.nousresearch.com",
+            "user-agent": "Bun/1.3.14"
+          },
+          "body": ""
+        }
+      ]
+    },
+    {
+      "name": "discovery-without-key-is-snapshot",
+      "replies": {},
+      "events": [],
+      "result": {
+        "count": 276,
+        "first": {
+          "id": "qwen/qwen3.8-27b",
+          "name": "Qwen: Qwen3.8 27B",
+          "api": "openai-completions",
+          "reasoning": true,
+          "thinking": {
+            "mode": "effort",
+            "efforts": [
+              "low",
+              "medium",
+              "xhigh"
+            ],
+            "defaultLevel": "xhigh"
+          },
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0.36,
+            "output": 2.56,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 262144,
+          "maxTokens": 131072,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "openrouter"
+          }
+        },
+        "ids": [
+          "qwen/qwen3.8-27b",
+          "google/gemini-3.7-flash",
+          "bytedance-seed/seed-2-1-turbo",
+          "qwen/qwen3.8-2.4t-a95b",
+          "bytedance-seed/seed-2.0-code",
+          "deepseek/deepseek-v4-pro-0813",
+          "x-ai/grok-4.6",
+          "nvidia/nemotron-3.5-lightning",
+          "sakana/sakana-namazu",
+          "upstage/solar-pro4",
+          "meta/muse-glimmer-30b",
+          "meta/muse-spark-1.2",
+          "qwen/qwen3.8-max",
+          "~deepseek/deepseek-v4-flash-latest",
+          "deepseek/deepseek-v4-flash-0731",
+          "thinkingmachines/inkling-small",
+          "qwen/qwen3.7-flash",
+          "anthropic/claude-opus-5-fast",
+          "inclusionai/ling-3.0-flash",
+          "poolside/laguna-s-2.1",
+          "poolside/laguna-s-2.1:free",
+          "google/gemini-3.6-flash",
+          "google/gemini-3.5-flash-lite",
+          "meituan/longcat-2.0",
+          "thinkingmachines/inkling",
+          "kwaipilot/kat-coder-air-v2.5",
+          "kwaipilot/kat-coder-pro-v2.5",
+          "openai/gpt-5.6-luna-pro",
+          "openai/gpt-5.6-luna",
+          "openai/gpt-5.6-terra-pro",
+          "openai/gpt-5.6-terra",
+          "openai/gpt-5.6-sol-pro",
+          "x-ai/grok-4.5",
+          "~x-ai/grok-latest",
+          "aion-labs/aion-3.0-mini",
+          "aion-labs/aion-3.0",
+          "tencent/hy3",
+          "poolside/laguna-xs-2.1",
+          "poolside/laguna-xs-2.1:free",
+          "nex-agi/nex-n2-mini",
+          "sakana/fugu-ultra",
+          "google/gemini-3-pro-image",
+          "z-ai/glm-5.2",
+          "moonshotai/kimi-k2.7-code",
+          "~anthropic/claude-fable-latest",
+          "nex-agi/nex-n2-pro",
+          "nvidia/nemotron-3-ultra-550b-a55b",
+          "qwen/qwen3.7-plus",
+          "minimax/minimax-m3",
+          "stepfun/step-3.7-flash",
+          "anthropic/claude-opus-4.8-fast",
+          "qwen/qwen3.7-max",
+          "x-ai/grok-build-0.1",
+          "google/gemini-3.5-flash",
+          "anthropic/claude-opus-4.7-fast",
+          "inclusionai/ring-2.6-1t",
+          "google/gemini-3.1-flash-lite",
+          "openai/gpt-chat-latest",
+          "x-ai/grok-4.3",
+          "ibm-granite/granite-4.1-8b",
+          "mistralai/mistral-medium-3-5",
+          "~anthropic/claude-haiku-latest",
+          "~openai/gpt-mini-latest",
+          "~google/gemini-pro-latest",
+          "~moonshotai/kimi-latest",
+          "~google/gemini-flash-latest",
+          "~anthropic/claude-sonnet-latest",
+          "~openai/gpt-latest",
+          "qwen/qwen3.5-plus-20260420",
+          "qwen/qwen3.6-flash",
+          "qwen/qwen3.6-35b-a3b",
+          "qwen/qwen3.6-max-preview",
+          "qwen/qwen3.6-27b",
+          "openai/gpt-5.5-pro",
+          "openai/gpt-5.5",
+          "deepseek/deepseek-v4-pro",
+          "deepseek/deepseek-v4-flash",
+          "inclusionai/ling-2.6-1t",
+          "tencent/hy3-preview",
+          "xiaomi/mimo-v2.5-pro",
+          "xiaomi/mimo-v2.5",
+          "inclusionai/ling-2.6-flash",
+          "~anthropic/claude-opus-latest",
+          "moonshotai/kimi-k2.6",
+          "z-ai/glm-5.1",
+          "google/gemma-4-26b-a4b-it",
+          "google/gemma-4-31b-it",
+          "qwen/qwen3.6-plus",
+          "z-ai/glm-5v-turbo",
+          "arcee-ai/trinity-large-thinking",
+          "x-ai/grok-4.20",
+          "kwaipilot/kat-coder-pro-v2",
+          "rekaai/reka-edge",
+          "minimax/minimax-m2.7",
+          "openai/gpt-5.4-nano",
+          "openai/gpt-5.4-mini",
+          "mistralai/mistral-small-2603",
+          "z-ai/glm-5-turbo",
+          "nvidia/nemotron-3-super-120b-a12b",
+          "bytedance-seed/seed-2.0-lite",
+          "qwen/qwen3.5-9b",
+          "openai/gpt-5.4-pro",
+          "openai/gpt-5.4",
+          "inception/mercury-2",
+          "google/gemini-3.1-flash-lite-preview",
+          "bytedance-seed/seed-2.0-mini",
+          "qwen/qwen3.5-35b-a3b",
+          "qwen/qwen3.5-27b",
+          "qwen/qwen3.5-122b-a10b",
+          "qwen/qwen3.5-flash-02-23",
+          "google/gemini-3.1-pro-preview-customtools",
+          "openai/gpt-5.3-codex",
+          "aion-labs/aion-2.0",
+          "google/gemini-3.1-pro-preview",
+          "qwen/qwen3.5-plus-02-15",
+          "qwen/qwen3.5-397b-a17b",
+          "minimax/minimax-m2.5",
+          "z-ai/glm-5",
+          "qwen/qwen3-max-thinking",
+          "qwen/qwen3-coder-next",
+          "stepfun/step-3.5-flash",
+          "moonshotai/kimi-k2.5",
+          "upstage/solar-pro-3",
+          "openai/gpt-audio",
+          "openai/gpt-audio-mini",
+          "z-ai/glm-4.7-flash",
+          "openai/gpt-5.2-codex",
+          "bytedance-seed/seed-1.6-flash",
+          "bytedance-seed/seed-1.6",
+          "minimax/minimax-m2.1",
+          "z-ai/glm-4.7",
+          "google/gemini-3-flash-preview",
+          "nvidia/nemotron-3-nano-30b-a3b",
+          "openai/gpt-5.2-chat",
+          "openai/gpt-5.2-pro",
+          "openai/gpt-5.2",
+          "relace/relace-search",
+          "z-ai/glm-4.6v",
+          "openai/gpt-5.1-codex-max",
+          "amazon/nova-2-lite-v1",
+          "mistralai/ministral-14b-2512",
+          "mistralai/ministral-8b-2512",
+          "mistralai/ministral-3b-2512",
+          "mistralai/mistral-large-2512",
+          "deepseek/deepseek-v3.2",
+          "anthropic/claude-opus-4.5",
+          "openai/gpt-5.1",
+          "openai/gpt-5.1-codex",
+          "openai/gpt-5.1-codex-mini",
+          "moonshotai/kimi-k2-thinking",
+          "amazon/nova-premier-v1",
+          "mistralai/voxtral-small-24b-2507",
+          "openai/gpt-oss-safeguard-20b",
+          "minimax/minimax-m2",
+          "qwen/qwen3-vl-32b-instruct",
+          "qwen/qwen3-vl-8b-thinking",
+          "qwen/qwen3-vl-8b-instruct",
+          "qwen/qwen3-vl-30b-a3b-thinking",
+          "qwen/qwen3-vl-30b-a3b-instruct",
+          "openai/gpt-5-pro",
+          "z-ai/glm-4.6",
+          "anthropic/claude-sonnet-4.5",
+          "deepseek/deepseek-v3.2-exp",
+          "qwen/qwen3-vl-235b-a22b-thinking",
+          "qwen/qwen3-vl-235b-a22b-instruct",
+          "qwen/qwen3-max",
+          "qwen/qwen3-coder-plus",
+          "deepseek/deepseek-v3.1-terminus",
+          "qwen/qwen3-coder-flash",
+          "qwen/qwen3-next-80b-a3b-thinking",
+          "qwen/qwen3-next-80b-a3b-instruct",
+          "qwen/qwen-plus-2025-07-28",
+          "qwen/qwen-plus-2025-07-28:thinking",
+          "moonshotai/kimi-k2-0905",
+          "qwen/qwen3-30b-a3b-thinking-2507",
+          "nousresearch/hermes-4-70b",
+          "nousresearch/hermes-4-405b",
+          "deepseek/deepseek-chat-v3.1",
+          "mistralai/mistral-medium-3.1",
+          "z-ai/glm-4.5v",
+          "ai21/jamba-large-1.7",
+          "openai/gpt-5",
+          "openai/gpt-5-mini",
+          "openai/gpt-5-nano",
+          "openai/gpt-oss-120b",
+          "openai/gpt-oss-20b",
+          "anthropic/claude-opus-4.1",
+          "mistralai/codestral-2508",
+          "qwen/qwen3-coder-30b-a3b-instruct",
+          "qwen/qwen3-30b-a3b-instruct-2507",
+          "z-ai/glm-4.5",
+          "z-ai/glm-4.5-air",
+          "qwen/qwen3-235b-a22b-thinking-2507",
+          "qwen/qwen3-coder",
+          "google/gemini-2.5-flash-lite",
+          "qwen/qwen3-235b-a22b-2507",
+          "moonshotai/kimi-k2",
+          "mistralai/mistral-small-3.2-24b-instruct",
+          "minimax/minimax-m1",
+          "google/gemini-2.5-flash",
+          "google/gemini-2.5-pro",
+          "openai/o3-pro",
+          "google/gemini-2.5-pro-preview",
+          "deepseek/deepseek-r1-0528",
+          "anthropic/claude-opus-4",
+          "anthropic/claude-sonnet-4",
+          "mistralai/mistral-medium-3",
+          "google/gemini-2.5-pro-preview-05-06",
+          "arcee-ai/virtuoso-large",
+          "qwen/qwen3-30b-a3b",
+          "qwen/qwen3-8b",
+          "qwen/qwen3-14b",
+          "qwen/qwen3-32b",
+          "qwen/qwen3-235b-a22b",
+          "openai/o4-mini-high",
+          "openai/o3",
+          "openai/o4-mini",
+          "openai/gpt-4.1",
+          "openai/gpt-4.1-mini",
+          "openai/gpt-4.1-nano",
+          "meta-llama/llama-4-maverick",
+          "meta-llama/llama-4-scout",
+          "deepseek/deepseek-chat-v3-0324",
+          "google/gemma-3-12b-it",
+          "google/gemma-3-27b-it",
+          "mistralai/mistral-saba",
+          "openai/o3-mini-high",
+          "qwen/qwen-plus",
+          "openai/o3-mini",
+          "deepseek/deepseek-r1",
+          "deepseek/deepseek-chat",
+          "openai/o1",
+          "meta-llama/llama-3.3-70b-instruct",
+          "amazon/nova-lite-v1",
+          "amazon/nova-micro-v1",
+          "amazon/nova-pro-v1",
+          "openai/gpt-4o-2024-11-20",
+          "mistralai/mistral-large-2407",
+          "thedrummer/unslopnemo-12b",
+          "qwen/qwen-2.5-7b-instruct",
+          "qwen/qwen-2.5-72b-instruct",
+          "cohere/command-r-08-2024",
+          "cohere/command-r-plus-08-2024",
+          "sao10k/l3.1-euryale-70b",
+          "openai/gpt-4o-2024-08-06",
+          "meta-llama/llama-3.1-70b-instruct",
+          "meta-llama/llama-3.1-8b-instruct",
+          "mistralai/mistral-nemo",
+          "openai/gpt-4o-mini",
+          "openai/gpt-4o-mini-2024-07-18",
+          "openai/gpt-4o",
+          "openai/gpt-4o-2024-05-13",
+          "mistralai/mixtral-8x22b-instruct",
+          "openai/gpt-4-turbo",
+          "anthropic/claude-3-haiku",
+          "mistralai/mistral-large",
+          "openai/gpt-3.5-turbo-0613",
+          "openai/gpt-4-turbo-preview",
+          "openai/gpt-3.5-turbo-16k",
+          "openai/gpt-3.5-turbo",
+          "openai/gpt-4",
+          "tencent/hy3:free",
+          "stepfun/step-3.7-flash:free",
+          "upstage/solar-pro4:free",
+          "anthropic/claude-opus-5",
+          "anthropic/claude-sonnet-5",
+          "anthropic/claude-fable-5",
+          "anthropic/claude-opus-4.8",
+          "anthropic/claude-opus-4.7",
+          "anthropic/claude-opus-4.6",
+          "anthropic/claude-sonnet-4.6",
+          "anthropic/claude-haiku-4.5",
+          "openai/gpt-5.6-sol",
+          "meta/muse-spark-1.1",
+          "meituan/longcat-2.0:free",
+          "moonshotai/kimi-k3"
+        ]
+      },
+      "delays": [],
+      "clockAdvanceMs": 0,
+      "requests": []
+    }
+  ]
+}

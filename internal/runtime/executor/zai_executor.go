@@ -240,7 +240,7 @@ func (e *ZaiExecutor) executeCompletions(ctx context.Context, auth *cliproxyauth
 	defer response.Body.Close()
 	var usage helps.StreamUsageBuffer
 	var lines [][]byte
-	err = zaiScanCompletions(ctx, e.cfg, response.Body, func(line []byte) error {
+	err = neoPiScanCompletions(ctx, e.cfg, e.Identifier(), response.Body, func(line []byte) error {
 		usage.ObserveOpenAIStream(line)
 		reporter.ObserveResponseModel(line)
 		lines = append(lines, line)
@@ -251,7 +251,7 @@ func (e *ZaiExecutor) executeCompletions(ctx context.Context, auth *cliproxyauth
 		return result, err
 	}
 	format := cliproxyexecutor.ResponseFormatOrSource(opts)
-	data := zaiAggregateCompletion(lines)
+	data := neoPiAggregateCompletionStream(lines)
 	if format != sdktranslator.FormatOpenAI {
 		var state any
 		data = sdktranslator.TranslateNonStream(ctx, sdktranslator.FormatOpenAI, format, req.Model, helps.ApplyPatchOriginalRequest(req, opts), prepared.body, data, &state)
@@ -295,7 +295,7 @@ func (e *ZaiExecutor) streamCompletions(ctx context.Context, auth *cliproxyauth.
 				return ctx.Err()
 			}
 		}
-		consumeErr := zaiScanCompletions(ctx, e.cfg, response.Body, func(line []byte) error {
+		consumeErr := neoPiScanCompletions(ctx, e.cfg, e.Identifier(), response.Body, func(line []byte) error {
 			usage.ObserveOpenAIStream(line)
 			reporter.ObserveResponseModel(line)
 			for _, chunk := range sdktranslator.TranslateStream(ctx, sdktranslator.FormatOpenAI, format, req.Model, original, prepared.body, line, &state) {
@@ -327,11 +327,12 @@ func (e *ZaiExecutor) streamCompletions(ctx context.Context, auth *cliproxyauth.
 	return &cliproxyexecutor.StreamResult{Headers: response.Header.Clone(), Chunks: out}, nil
 }
 
-// zaiScanCompletions relays each `data:` line of a Chat Completions stream
-// through [DONE].
-func zaiScanCompletions(ctx context.Context, cfg *config.Config, body io.Reader, emit func([]byte) error) error {
+// neoPiScanCompletions relays each `data:` line of a Chat Completions stream
+// through [DONE], as NeoPi's client does for an openai-completions host.
+func neoPiScanCompletions(ctx context.Context, cfg *config.Config, provider string, body io.Reader, emit func([]byte) error) error {
 	scanner := bufio.NewScanner(body)
 	scanner.Buffer(make([]byte, 64<<10), 32<<20)
+	finished := false
 	for scanner.Scan() {
 		raw := scanner.Bytes()
 		helps.AppendAPIResponseChunk(ctx, cfg, raw)
@@ -347,7 +348,10 @@ func zaiScanCompletions(ctx context.Context, cfg *config.Config, body io.Reader,
 			continue
 		}
 		if message := gjson.GetBytes(payload, "error"); message.Exists() {
-			return statusErr{code: http.StatusBadGateway, msg: "zai: " + message.Raw}
+			return statusErr{code: http.StatusBadGateway, msg: provider + ": " + message.Raw}
+		}
+		if reason := gjson.GetBytes(payload, "choices.0.finish_reason"); reason.Type == gjson.String && reason.String() != "" {
+			finished = true
 		}
 		if err := emit(append([]byte("data: "), payload...)); err != nil {
 			return err
@@ -356,12 +360,15 @@ func zaiScanCompletions(ctx context.Context, cfg *config.Config, body io.Reader,
 	if err := scanner.Err(); err != nil {
 		return err
 	}
-	return errors.New("zai: stream ended before [DONE]")
+	if finished {
+		return emit([]byte("data: [DONE]"))
+	}
+	return errors.New(provider + ": stream ended before [DONE]")
 }
 
-// zaiAggregateCompletion folds Chat Completions stream lines into the
+// neoPiAggregateCompletionStream folds Chat Completions stream lines into the
 // non-streaming chat.completion object a non-streaming client expects.
-func zaiAggregateCompletion(lines [][]byte) []byte {
+func neoPiAggregateCompletionStream(lines [][]byte) []byte {
 	type call struct {
 		id, kind, name string
 		arguments      strings.Builder
