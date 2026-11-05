@@ -259,6 +259,11 @@ func TestIssue6258ExecutorCancellationHasNoTerminal(t *testing.T) {
 
 func TestIssue6258ExecutorCleanEOFControl(t *testing.T) {
 	for _, provider := range issue6258Providers {
+		if provider == "gemini" {
+			// NeoPi's google provider treats a stream that ends without a finish
+			// reason as truncated and fails it (TestGeminiNeoPiStreamWithoutFinishFails).
+			continue
+		}
 		for _, patch := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s/apply_patch=%t", provider, patch), func(t *testing.T) {
 				body, payload := issue6258ExecutorContent, `{"input":"hello","stream":true}`

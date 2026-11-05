@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/openaiwire"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor/helps"
+	internalsignature "github.com/router-for-me/CLIProxyAPI/v8/internal/signature"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/thinking"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
@@ -34,7 +36,9 @@ type NeoPiGoogleHooks struct {
 	Row     func(req cliproxyexecutor.Request, model string) *registry.NeoPiModel
 	Key     func(auth *cliproxyauth.Auth) string
 	BaseURL func(auth *cliproxyauth.Auth, row *registry.NeoPiModel) string
-	Headers func(ctx context.Context, auth *cliproxyauth.Auth, incoming http.Header) http.Header
+	// Headers returns extra identity headers (a gateway row's x-opencode-session);
+	// sessionID is NeoPi's options.sessionId for the request.
+	Headers func(ctx context.Context, auth *cliproxyauth.Auth, incoming http.Header, sessionID string) http.Header
 }
 
 // NeoPiGoogleExecutor serves the Gemini API the way NeoPi's `google` provider
@@ -158,6 +162,9 @@ func neoPiGoogleWireModel(row *registry.NeoPiModel) *googlewire.Model {
 	model := &googlewire.Model{
 		ID: row.ID, Provider: row.Provider, API: row.API, Input: row.Input,
 		Reasoning: row.Reasoning, MaxTokens: row.MaxTokens, NameMaxLength: 128,
+		NormalizeSignature: func(signature string) (string, bool) {
+			return internalsignature.CompatibleSignatureForProviderBlock(internalsignature.SignatureProviderGemini, signature, internalsignature.SignatureBlockKindGeminiFunctionCall)
+		},
 	}
 	if model.Provider == "" {
 		model.Provider = "google"
@@ -228,7 +235,11 @@ func (e *NeoPiGoogleExecutor) prepare(ctx context.Context, auth *cliproxyauth.Au
 	body = helps.NewPayloadFinalizer(e.cfg, e.Identifier(), row.ID, "gemini", "", originalTranslated, req, opts)(body)
 	headers := neoPiGoogleHeaders(ctx, auth, opts.Headers, key)
 	if e.hooks.Headers != nil {
-		for name, values := range e.hooks.Headers(ctx, auth, opts.Headers) {
+		session := neoPiSession(opts, translated)
+		if session == "" {
+			session = helps.ProviderSessionUUID(e.Identifier(), req.Metadata, opts.Metadata)
+		}
+		for name, values := range e.hooks.Headers(ctx, auth, opts.Headers, session) {
 			headers[name] = values
 		}
 	}
@@ -390,15 +401,20 @@ func (e *NeoPiGoogleExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 	defer reporter.TrackFailure(ctx, &err)
 	client := reporter.TrackHTTPClient(helps.NewProxyAwareHTTPClient(ctx, e.cfg, auth, 0))
 	var chunks [][]byte
+	var streamUsage helps.StreamUsageBuffer
 	for attempt := 0; ; attempt++ {
 		chunks = nil
-		meaningful := false
 		finish := ""
 		response, errOpen := e.open(ctx, auth, prepared, client)
 		if errOpen != nil {
 			return result, errOpen
 		}
 		_, errScan := scanGeminiStream(ctx, e.cfg, response.Body, func(chunk geminiChunk) error {
+			if len(chunk.payload) > 0 {
+				if detail, ok := helps.ParseGeminiStreamUsage(chunk.payload); ok {
+					streamUsage.Observe(detail, true)
+				}
+			}
 			if chunk.err != nil {
 				return chunk.err
 			}
@@ -411,14 +427,14 @@ func (e *NeoPiGoogleExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 			return nil
 		})
 		response.Body.Close()
-		meaningful = meaningful || geminiChunksMeaningful(chunks)
+		if errScan == nil {
+			errScan = geminiFinishError(finish)
+		}
 		if errScan != nil {
+			streamUsage.PublishFailure(ctx, reporter, errScan)
 			return result, errScan
 		}
-		if errFinish := geminiFinishError(finish); errFinish != nil {
-			return result, errFinish
-		}
-		if finish == "MAX_TOKENS" || meaningful {
+		if finish == "MAX_TOKENS" || geminiChunksMeaningful(chunks) {
 			break
 		}
 		if attempt >= maxEmptyStreamRetries {
@@ -430,11 +446,20 @@ func (e *NeoPiGoogleExecutor) Execute(ctx context.Context, auth *cliproxyauth.Au
 	}
 	data := geminiAggregateChunks(chunks)
 	reporter.ObserveResponseModel(data)
-	reporter.Publish(ctx, helps.ParseGeminiUsage(data))
 	format := cliproxyexecutor.ResponseFormatOrSource(opts)
-	out := sdktranslator.TranslateNonStream(ctx, sdktranslator.FormatGemini, format, req.Model, helps.ApplyPatchOriginalRequest(req, opts), prepared.body, data, new(any))
-	if len(out) == 0 {
-		return result, statusErr{code: http.StatusBadGateway, msg: "gemini: response translation failed"}
+	var param any
+	out := sdktranslator.TranslateNonStream(ctx, sdktranslator.FormatGemini, format, req.Model, helps.ApplyPatchOriginalRequest(req, opts), prepared.body, data, &param)
+	if helps.ApplyPatchTranslationError(param) != nil || len(out) == 0 {
+		return result, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}
+	}
+	if errPayload, okErr := helps.TranslatedClaudeErrorPayload(format, out); okErr {
+		err = statusErr{code: http.StatusBadGateway, msg: errPayload}
+		reporter.PublishFailureWithDetail(ctx, helps.ParseGeminiUsage(data), err)
+		return result, err
+	}
+	reporter.Publish(ctx, helps.ParseGeminiUsage(data))
+	if format == sdktranslator.FormatOpenAIResponse {
+		out = helps.EnsureResponsesUsageDetails(out)
 	}
 	log.WithFields(log.Fields{"provider": e.Identifier(), "model": prepared.model}).Info("provider request completed")
 	return cliproxyexecutor.Response{Payload: out}, nil
@@ -460,23 +485,29 @@ func (e *NeoPiGoogleExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 		defer reporter.EnsurePublished(ctx)
 		responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
 		to := sdktranslator.FormatGemini
-		var param any
-		helps.InitializeApplyPatchStream(ctx, to, responseFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), prepared.body, &param)
 		original := helps.ApplyPatchOriginalRequest(req, opts)
-		send := func(chunk []byte) bool {
-			select {
-			case out <- cliproxyexecutor.StreamChunk{Payload: bytes.Clone(chunk)}:
-				return true
-			case <-ctx.Done():
-				return false
-			}
-		}
+		gatewayErr := statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}
+		var streamUsage helps.StreamUsageBuffer
+		defer streamUsage.Publish(ctx, reporter)
+		var retained error
+		defer func() { _ = helps.StopTranslatedClaudeStream(ctx, &retained, reporter, &streamUsage, out) }()
+		var param any
+		helps.InitializeApplyPatchStream(ctx, to, responseFormat, req.Model, original, prepared.body, &param)
 		emit := func(payload []byte) error {
 			lines := sdktranslator.TranslateStream(ctx, to, responseFormat, req.Model, original, prepared.body, bytes.Clone(payload), &param)
+			helps.RecordApplyPatchStreamFailure(ctx, param, reporter, gatewayErr)
+			helps.CaptureTranslatedClaudeStreamError(responseFormat, lines, &retained, func(msg string) error {
+				return statusErr{code: http.StatusBadGateway, msg: msg}
+			})
 			for i := range lines {
-				if !send(lines[i]) {
+				select {
+				case out <- cliproxyexecutor.StreamChunk{Payload: bytes.Clone(lines[i])}:
+				case <-ctx.Done():
 					return ctx.Err()
 				}
+			}
+			if helps.ApplyPatchTranslationError(param) != nil {
+				return errApplyPatchStop
 			}
 			return nil
 		}
@@ -490,6 +521,11 @@ func (e *NeoPiGoogleExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 				break
 			}
 			meaningful, streamErr = scanGeminiStream(ctx, e.cfg, response.Body, func(chunk geminiChunk) error {
+				if len(chunk.payload) > 0 {
+					if detail, ok := helps.ParseGeminiStreamUsage(chunk.payload); ok {
+						streamUsage.Observe(detail, true)
+					}
+				}
 				if chunk.err != nil {
 					return chunk.err
 				}
@@ -499,17 +535,18 @@ func (e *NeoPiGoogleExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 				if chunk.finish != "" {
 					finish = chunk.finish
 				}
-				if chunk.meaningful {
-					meaningful = true
-				}
 				reporter.ObserveResponseModel(chunk.payload)
 				return emit(chunk.payload)
 			})
 			response.Body.Close()
-			if streamErr != nil {
-				break
+			if errors.Is(streamErr, errApplyPatchStop) {
+				helps.StopApplyPatchStream(ctx, param, reporter, out, gatewayErr)
+				return
 			}
-			if streamErr = geminiFinishError(finish); streamErr != nil {
+			if streamErr == nil {
+				streamErr = geminiFinishError(finish)
+			}
+			if streamErr != nil {
 				break
 			}
 			if finish == "MAX_TOKENS" || meaningful {
@@ -525,8 +562,13 @@ func (e *NeoPiGoogleExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 			}
 		}
 		if streamErr != nil {
+			if ctx.Err() == nil && helps.EndApplyPatchStream(ctx, param, reporter, out, gatewayErr) {
+				return
+			}
 			helps.RecordAPIResponseError(ctx, e.cfg, streamErr)
-			reporter.PublishFailure(ctx, streamErr)
+			if !streamUsage.PublishFailure(ctx, reporter, streamErr) {
+				reporter.PublishFailure(ctx, streamErr)
+			}
 			select {
 			case out <- cliproxyexecutor.StreamChunk{Err: streamErr}:
 			case <-ctx.Done():
@@ -536,16 +578,26 @@ func (e *NeoPiGoogleExecutor) ExecuteStream(ctx context.Context, auth *cliproxya
 		if ctx.Err() != nil {
 			return
 		}
-		if errDone := emit([]byte("[DONE]")); errDone != nil {
+		if emit([]byte("[DONE]")) != nil {
+			if errors.Is(ctx.Err(), context.Canceled) || ctx.Err() != nil {
+				return
+			}
+			helps.StopApplyPatchStream(ctx, param, reporter, out, gatewayErr)
 			return
 		}
-		if helps.StopApplyPatchStream(ctx, param, reporter, out, statusErr{code: http.StatusBadGateway, msg: helps.ApplyPatchUpstreamErrorMessage}) {
+		if helps.EndApplyPatchStream(ctx, param, reporter, out, gatewayErr) {
+			return
+		}
+		if helps.StopTranslatedClaudeStream(ctx, &retained, reporter, &streamUsage, out) {
 			return
 		}
 		log.WithFields(log.Fields{"provider": e.Identifier(), "model": prepared.model}).Info("provider request completed")
 	}()
 	return &cliproxyexecutor.StreamResult{Chunks: out}, nil
 }
+
+// errApplyPatchStop ends a stream whose apply_patch validation failed.
+var errApplyPatchStop = errors.New("apply_patch translation failed")
 
 // geminiFinishError is consumeGoogleStream's post-loop check: a stream must end
 // with a finish reason, and only STOP and MAX_TOKENS are benign (every other

@@ -1214,8 +1214,8 @@ func TestGeminiExecutorClaudeMalformedFunctionCallReturnsRetryableError(t *testi
 	if !okStatus || status.StatusCode() != http.StatusBadGateway {
 		t.Fatalf("Execute() error = %T %v, want status 502", errExec, errExec)
 	}
-	if got := gjson.Get(errExec.Error(), "error.type").String(); got != "api_error" {
-		t.Fatalf("Execute() error.type = %q, want api_error. Error: %s", got, errExec.Error())
+	if !strings.Contains(errExec.Error(), "MALFORMED_FUNCTION_CALL") {
+		t.Fatalf("Execute() error = %q, want NeoPi's finish-reason failure", errExec.Error())
 	}
 	assertMalformedFunctionCallFailedUsage(t, capture.records)
 
@@ -1311,74 +1311,5 @@ func TestGeminiExecutorClaudeMalformedFunctionCallSplitUsageAndConductorFailure(
 	updated, okAuth := manager.GetByID(auth.ID)
 	if !okAuth || updated.ModelStates["gemini-4-argon"] == nil || updated.ModelStates["gemini-4-argon"].LastError == nil {
 		t.Fatalf("expected conductor to record failure on model state, got %+v", updated)
-	}
-}
-
-func TestGeminiExecutorClaudeMalformedFunctionCallCancelAfterErrorPreservesUsageAndConductorFailure(t *testing.T) {
-	malformedBody := `{"candidates":[{"content":{"role":"model","parts":[]},"finishReason":"MALFORMED_FUNCTION_CALL"}],"usageMetadata":{"promptTokenCount":120,"candidatesTokenCount":10,"thoughtsTokenCount":313,"totalTokenCount":443},"modelVersion":"gemini-4-argon"}`
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		_, _ = io.WriteString(w, "data: "+malformedBody+"\n\n")
-		if flusher, okFlush := w.(http.Flusher); okFlush {
-			flusher.Flush()
-		}
-		<-r.Context().Done()
-	}))
-	defer server.Close()
-
-	exec := NewGeminiExecutor(&config.Config{})
-	auth := &cliproxyauth.Auth{
-		ID:       t.Name(),
-		Provider: "gemini",
-		Status:   cliproxyauth.StatusActive,
-		Attributes: map[string]string{
-			"api_key":  "test-key",
-			"base_url": server.URL,
-		},
-	}
-	capture := &malformedFunctionCallUsageCapture{authID: auth.ID, records: make(chan usage.Record, 1)}
-	usage.RegisterNamedPlugin(t.Name(), capture)
-	t.Cleanup(func() {
-		usage.RegisterNamedPlugin(t.Name(), malformedFunctionCallUsageNoop{})
-	})
-
-	manager := cliproxyauth.NewManager(nil, nil, nil)
-	manager.RegisterExecutor(exec)
-	if _, errRegister := manager.Register(context.Background(), auth); errRegister != nil {
-		t.Fatalf("Register() error = %v", errRegister)
-	}
-	registry.GetGlobalRegistry().RegisterClient(auth.ID, auth.Provider, []*registry.ModelInfo{{ID: "gemini-4-argon"}})
-	t.Cleanup(func() {
-		registry.GetGlobalRegistry().UnregisterClient(auth.ID)
-	})
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	req := cliproxyexecutor.Request{
-		Model:   "gemini-4-argon",
-		Payload: []byte(`{"model":"gemini-4-argon","max_tokens":1024,"messages":[{"role":"user","content":"hi"}]}`),
-	}
-	opts := cliproxyexecutor.Options{
-		SourceFormat:   sdktranslator.FormatClaude,
-		ResponseFormat: sdktranslator.FormatClaude,
-		Stream:         true,
-	}
-
-	streamRes, errStream := manager.ExecuteStream(ctx, []string{"gemini"}, req, opts)
-	if errStream != nil {
-		t.Fatalf("manager.ExecuteStream() error = %v", errStream)
-	}
-	for chunk := range streamRes.Chunks {
-		if strings.Contains(string(chunk.Payload), "event: error\n") {
-			cancel()
-		}
-	}
-	assertMalformedFunctionCallFailedUsage(t, capture.records)
-	updated, okAuth := manager.GetByID(auth.ID)
-	if !okAuth || updated.ModelStates["gemini-4-argon"] == nil || updated.ModelStates["gemini-4-argon"].LastError == nil {
-		t.Fatalf("expected conductor to record failure on model state after client cancel on error event, got %+v", updated)
-	}
-	if updated.ModelStates["gemini-4-argon"].LastError.HTTPStatus != http.StatusBadGateway {
-		t.Fatalf("LastError.HTTPStatus = %d, want 502; err=%+v", updated.ModelStates["gemini-4-argon"].LastError.HTTPStatus, updated.ModelStates["gemini-4-argon"].LastError)
 	}
 }

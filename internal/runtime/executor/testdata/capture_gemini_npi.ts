@@ -42,7 +42,7 @@ const other = { name: "other", description: "", parameters: { type: "object", pr
 const usage = { input: 1, output: 1, totalTokens: 2, cost: { input: 0, output: 0, total: 0 } };
 const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 // A valid base64 thought signature (length % 4 == 0).
-const signature = "Cg4IARIKc2lnbmF0dXJlMDE=";
+const signature = "EggKBgEMOdbHNA==";
 const user = (content: unknown) => ({ role: "user", content, timestamp: 0 });
 const assistant = (model: any, same: boolean, content: any[], stopReason = "toolUse") => ({
 	role: "assistant",

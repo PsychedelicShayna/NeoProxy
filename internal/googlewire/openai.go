@@ -132,7 +132,14 @@ func FromOpenAIChat(body []byte, model *Model) (Context, Options, error) {
 				}
 				for _, p := range thoughtSignaturePaths {
 					if signature := call.Get(p); signature.Exists() && signature.String() != "" {
-						block.Signature = signature.String()
+						value := signature.String()
+						if model.NormalizeSignature != nil {
+							var ok bool
+							if value, ok = model.NormalizeSignature(value); !ok {
+								continue
+							}
+						}
+						block.Signature = value
 						out.Provider = model.Provider
 						break
 					}

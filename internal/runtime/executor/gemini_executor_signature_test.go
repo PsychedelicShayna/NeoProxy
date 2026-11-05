@@ -217,7 +217,7 @@ func TestGeminiExecutorExecute_FunctionCall_ReplacesClaudeSignatureWithBypass(t 
 	}`)
 
 	req := cliproxyexecutor.Request{
-		Model:   "gemini-2.5-flash",
+		Model:   "gemini-3-flash-preview",
 		Payload: reqPayload,
 	}
 
@@ -230,7 +230,7 @@ func TestGeminiExecutorExecute_FunctionCall_ReplacesClaudeSignatureWithBypass(t 
 		t.Fatalf("Execute() error = %v", err)
 	}
 
-	gotSig := gjson.GetBytes(upstreamBody, "contents.1.parts.0.thoughtSignature").String()
+	gotSig := gjson.GetBytes(upstreamBody, "contents.0.parts.0.thoughtSignature").String()
 	if gotSig != internalsignature.GeminiSkipThoughtSignatureValidator {
 		t.Fatalf("first functionCall thoughtSignature = %q, want bypass sentinel %q; upstreamBody=%s",
 			gotSig, internalsignature.GeminiSkipThoughtSignatureValidator, upstreamBody)
@@ -295,7 +295,7 @@ func TestGeminiExecutorExecute_PreservesNativeGeminiSignature(t *testing.T) {
 		t.Fatalf("Execute() error = %v", err)
 	}
 
-	gotSig := gjson.GetBytes(upstreamBody, "contents.1.parts.0.thoughtSignature").String()
+	gotSig := gjson.GetBytes(upstreamBody, "contents.0.parts.0.thoughtSignature").String()
 	if gotSig != nativeSig {
 		t.Fatalf("thoughtSignature = %q, want preserved native signature %q; upstreamBody=%s",
 			gotSig, nativeSig, upstreamBody)

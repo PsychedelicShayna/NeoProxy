@@ -108,6 +108,10 @@ type Model struct {
 	// NameCharset is the tool-call name charset the wire accepts ("google").
 	// NameMaxLength bounds a replayed tool-call name.
 	NameMaxLength int
+	// NormalizeSignature, when set, decides whether a thought signature a
+	// downstream client replays is Google's (returning its replayable form);
+	// a signature another provider minted leaves the turn foreign.
+	NormalizeSignature func(signature string) (string, bool)
 }
 
 func (m *Model) supportsImages() bool {
