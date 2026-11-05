@@ -66,3 +66,19 @@ func withoutImages(content gjson.Result) (json.RawMessage, bool) {
 	))
 	return jsjson.Marshal(kept), true
 }
+
+// plainUserMessages drops the `type: "message"` a translator adds to user
+// input items: NeoPi builds user turns as `{role, content}` and only replays
+// output items (which carry an id) with a type.
+func plainUserMessages(items []json.RawMessage) []json.RawMessage {
+	out := make([]json.RawMessage, len(items))
+	for i, item := range items {
+		out[i] = item
+		if gjson.GetBytes(item, "type").String() == "message" && gjson.GetBytes(item, "role").String() == "user" && !gjson.GetBytes(item, "id").Exists() {
+			if next, err := sjson.DeleteBytes(item, "type"); err == nil {
+				out[i] = next
+			}
+		}
+	}
+	return out
+}

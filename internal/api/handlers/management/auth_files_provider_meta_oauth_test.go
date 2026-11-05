@@ -13,21 +13,17 @@ import (
 func TestBuildMetaAuthRecord_PreservesSubscriptionMetadata_Issue6117(t *testing.T) {
 	bundle := &metaauth.MetaAuthBundle{
 		Email: "user@example.com",
-		Name:  "Test User",
 		TokenData: &metaauth.TokenData{
 			AccessToken: "dca:access-token",
 			TokenType:   "Bearer",
-			ExpiresIn:   3600,
 		},
 		MintedKey: &metaauth.MintedKeyResponse{
-			APIKey:           "LLM|minted-key",
-			BaseURL:          "https://api.meta.ai/v1",
-			UserEmail:        "user@example.com",
-			UserFullName:     "Test User",
-			SubsTierName:     "High Usage",
-			SubsTierID:       "high_usage",
-			IsSubsActive:     true,
-			HasPaymentMethod: true,
+			APIKey:       "LLM|minted-key",
+			UserEmail:    "user@example.com",
+			UserID:       "meta-user",
+			SubsTierName: "High Usage",
+			SubsTierID:   "high_usage",
+			IsSubsActive: true,
 		},
 	}
 	tokenStorage := metaauth.NewMetaAuth(nil).CreateTokenStorage(bundle)
@@ -41,10 +37,8 @@ func TestBuildMetaAuthRecord_PreservesSubscriptionMetadata_Issue6117(t *testing.
 	}
 
 	expectedMetadata := map[string]any{
-		"subs_tier_name":     "High Usage",
-		"subs_tier_id":       "high_usage",
-		"is_subs_active":     true,
-		"has_payment_method": true,
+		"subs_tier_name": "High Usage",
+		"subs_tier_id":   "high_usage",
 	}
 	for key, want := range expectedMetadata {
 		got, ok := record.Metadata[key]
@@ -60,21 +54,17 @@ func TestBuildMetaAuthRecord_SavesToDiskWithSubscriptionMetadata_Issue6117(t *te
 
 	bundle := &metaauth.MetaAuthBundle{
 		Email: "user@example.com",
-		Name:  "Test User",
 		TokenData: &metaauth.TokenData{
 			AccessToken: "dca:access-token",
 			TokenType:   "Bearer",
-			ExpiresIn:   3600,
 		},
 		MintedKey: &metaauth.MintedKeyResponse{
-			APIKey:           "LLM|minted-key",
-			BaseURL:          "https://api.meta.ai/v1",
-			UserEmail:        "user@example.com",
-			UserFullName:     "Test User",
-			SubsTierName:     "High Usage",
-			SubsTierID:       "high_usage",
-			IsSubsActive:     true,
-			HasPaymentMethod: true,
+			APIKey:       "LLM|minted-key",
+			UserEmail:    "user@example.com",
+			UserID:       "meta-user",
+			SubsTierName: "High Usage",
+			SubsTierID:   "high_usage",
+			IsSubsActive: true,
 		},
 	}
 	tokenStorage := metaauth.NewMetaAuth(nil).CreateTokenStorage(bundle)
@@ -95,7 +85,7 @@ func TestBuildMetaAuthRecord_SavesToDiskWithSubscriptionMetadata_Issue6117(t *te
 		t.Fatalf("failed to parse saved auth file: %v", errJSON)
 	}
 
-	for _, key := range []string{"subs_tier_name", "subs_tier_id", "is_subs_active", "has_payment_method"} {
+	for _, key := range []string{"subs_tier_name", "subs_tier_id"} {
 		if _, ok := parsed[key]; !ok {
 			t.Errorf("saved auth file missing expected metadata key %q", key)
 		}

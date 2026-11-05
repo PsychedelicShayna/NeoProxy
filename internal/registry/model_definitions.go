@@ -29,7 +29,6 @@ type staticModelsJSON struct {
 	AIStudio    []*ModelInfo `json:"aistudio"`
 	Antigravity []*ModelInfo `json:"antigravity"`
 	XAI         []*ModelInfo `json:"xai"`
-	Meta        []*ModelInfo `json:"meta"`
 }
 
 // GetClaudeModels returns NeoPi's bundled Anthropic definitions.
@@ -406,9 +405,20 @@ func LookupStaticModelInfoByChannel(modelID, channel string) *ModelInfo {
 	return nil
 }
 
-// GetMetaModels returns the standard Meta Muse model definitions.
+// GetMetaModels returns NeoPi's bundled Meta catalogs: the Muse Code rows,
+// then the Model API rows its subscription catalog lacks.
 func GetMetaModels() []*ModelInfo {
-	return cloneModelInfos(getModels().Meta)
+	out := ResponsesModels(ResponsesMuseCode, "meta", "meta", nil)
+	seen := make(map[string]bool, len(out))
+	for _, model := range out {
+		seen[model.ID] = true
+	}
+	for _, model := range ResponsesModels(ResponsesMeta, "meta", "meta", nil) {
+		if !seen[model.ID] {
+			out = append(out, model)
+		}
+	}
+	return out
 }
 
 // LookupStaticModelInfo searches all static model definitions for a model by ID.

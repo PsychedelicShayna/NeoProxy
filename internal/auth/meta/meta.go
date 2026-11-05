@@ -423,7 +423,7 @@ func (a *MetaAuth) pollDeviceToken(ctx context.Context, tokenEndpoint, deviceCod
 	_ = json.Unmarshal(body, &decoded)
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 && decoded.Error == "" {
 		if decoded.AccessToken == "" {
-			return nil, false, fmt.Errorf("muse-code token response missing access token: %s", truncate(strings.TrimSpace(string(body)), 500))
+			return nil, false, fmt.Errorf("muse-code token response missing access token")
 		}
 		return &decoded, false, nil
 	}
@@ -511,7 +511,7 @@ func (a *MetaAuth) WaitForAuthorization(ctx context.Context, dcr *DeviceCodeResp
 			return nil, err
 		}
 		if token != nil {
-			return a.finishLogin(ctx, token)
+			return a.finishLogin(ctx, token, true)
 		}
 		if expired() {
 			break
@@ -541,7 +541,7 @@ func (a *MetaAuth) WaitForAuthorization(ctx context.Context, dcr *DeviceCodeResp
 // finishLogin is attachMuseCodeApiKey over a fresh device token: the key is
 // minted with onboarding, and an inactive or unpaid subscription fails the
 // login.
-func (a *MetaAuth) finishLogin(ctx context.Context, token *TokenData) (*MetaAuthBundle, error) {
+func (a *MetaAuth) finishLogin(ctx context.Context, token *TokenData, requireIdentity bool) (*MetaAuthBundle, error) {
 	payload, err := a.RequestKey(ctx, token.AccessToken, true)
 	if err != nil {
 		return nil, err
@@ -562,7 +562,7 @@ func (a *MetaAuth) finishLogin(ctx context.Context, token *TokenData) (*MetaAuth
 		}
 		return nil, &KeyError{Message: "Muse Code key response is missing api_key"}
 	}
-	if strings.TrimSpace(payload.AccountID()) == "" {
+	if requireIdentity && strings.TrimSpace(payload.AccountID()) == "" {
 		return nil, &KeyError{Message: "Muse Code key response is missing a stable account identity"}
 	}
 	return &MetaAuthBundle{TokenData: token, MintedKey: payload, Email: payload.NormalizedEmail()}, nil
@@ -571,7 +571,7 @@ func (a *MetaAuth) finishLogin(ctx context.Context, token *TokenData) (*MetaAuth
 // MintAPIKey exchanges the device (dca:) token for the subscription's Model
 // API key, as a sign-in does. A response that carries no key is an error.
 func (a *MetaAuth) MintAPIKey(ctx context.Context, dcaToken string) (*MintedKeyResponse, error) {
-	bundle, err := a.finishLogin(ctx, &TokenData{AccessToken: strings.TrimSpace(dcaToken)})
+	bundle, err := a.finishLogin(ctx, &TokenData{AccessToken: strings.TrimSpace(dcaToken)}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -595,10 +595,19 @@ func (a *MetaAuth) RequestKey(ctx context.Context, accessToken string, onboard b
 	}
 	mintURL := a.mintURL
 	if mintURL == "" {
+		// META_MINT_URL redirects the key exchange (tests, staging); NeoPi's own
+		// endpoint is the default.
+		mintURL = strings.TrimSpace(os.Getenv("META_MINT_URL"))
+	}
+	if mintURL == "" {
 		mintURL = MuseKeyURL
 	}
-	ctx, cancel := context.WithTimeout(ctx, KeyRequestTimeout)
-	defer cancel()
+	if onboard {
+		// Only the interactive key mint is credential acquisition.
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, KeyRequestTimeout)
+		defer cancel()
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, mintURL, bytes.NewReader(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("meta auth: create mint request: %w", err)
@@ -607,6 +616,11 @@ func (a *MetaAuth) RequestKey(ctx context.Context, accessToken string, onboard b
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
 	client := *a.httpClient
+	if !onboard {
+		// A usage read happens against a connected account, not during
+		// credential acquisition: no response deadline applies to it.
+		client.Timeout = 0
+	}
 	// fetch(..., { redirect: "error" }): a redirect is a failure, never followed.
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	resp, err := client.Do(req)

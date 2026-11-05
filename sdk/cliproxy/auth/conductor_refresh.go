@@ -427,9 +427,9 @@ func authHasRefreshCredential(auth *Auth) bool {
 	if authMetadataString(auth, "refreshToken") != "" {
 		return true
 	}
-	// Meta exchanges its device token for a replacement API key after a 401.
-	return auth != nil && strings.EqualFold(strings.TrimSpace(auth.Provider), "meta") &&
-		(authMetadataString(auth, "dca_token") != "" || strings.TrimSpace(auth.Attributes["dca_token"]) != "")
+	// A Muse sign-in has no refresh grant (NeoPi: refresh "none"), and its key
+	// is never re-minted after a 401.
+	return false
 }
 
 // CredentialsChanged reports whether authentication credentials (tokens or API keys)

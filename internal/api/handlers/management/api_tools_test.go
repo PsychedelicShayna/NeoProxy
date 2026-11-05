@@ -500,14 +500,14 @@ func TestResolveMetaTokenUpdatesManagerAndStore(t *testing.T) {
 	if live.Metadata["api_key"] != "LLM|minted" {
 		t.Error("live manager did not retain minted key")
 	}
-	if live.Metadata["base_url"] != "https://regional.meta.example/v1" || live.Attributes["base_url"] != "https://regional.meta.example/v1" {
-		t.Error("live manager did not retain minted base URL")
+	if live.Metadata["base_url"] != "https://previous.meta.example/v1" || live.Attributes["base_url"] != "https://previous.meta.example/v1" {
+		t.Error("live manager changed the account base URL (NeoPi ignores the key response base_url)")
 	}
 	saved, err := store.List(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(saved) != 1 || saved[0].Metadata["api_key"] != "LLM|minted" || saved[0].Metadata["base_url"] != "https://regional.meta.example/v1" {
+	if len(saved) != 1 || saved[0].Metadata["api_key"] != "LLM|minted" || saved[0].Metadata["base_url"] != "https://previous.meta.example/v1" {
 		t.Fatalf("configured store did not retain minted credentials: %#v", saved)
 	}
 }

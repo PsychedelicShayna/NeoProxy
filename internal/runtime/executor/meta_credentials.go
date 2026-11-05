@@ -17,7 +17,6 @@ import (
 var metaRefreshGroup singleflight.Group
 
 const (
-	metaNotFoundCooldown           = 5 * time.Minute
 	metaSubscriptionUsageEventType = "response.subscription_usage"
 )
 
@@ -226,7 +225,7 @@ func metaCreds(a *cliproxyauth.Auth) (baseURL, token string) {
 }
 
 func parseMetaRetryAfter(statusCode int, errorBody []byte, now time.Time) *time.Duration {
-	if (statusCode != http.StatusTooManyRequests && statusCode != http.StatusNotFound) || len(errorBody) == 0 {
+	if statusCode != http.StatusTooManyRequests || len(errorBody) == 0 {
 		return nil
 	}
 	if resetsAt := gjson.GetBytes(errorBody, "error.resets_at").Int(); resetsAt > 0 {
@@ -257,11 +256,7 @@ func isMetaSubscriptionQuota(statusCode int, body []byte) bool {
 		return false
 	}
 	msg := strings.ToLower(gjson.GetBytes(body, "error.message").String())
-	code := strings.ToLower(gjson.GetBytes(body, "error.code").String())
 	if strings.Contains(msg, "subscription quota") || strings.Contains(msg, "quota exhausted") {
-		return true
-	}
-	if (code == "rate_limit_exceeded" || strings.Contains(code, "quota")) && gjson.GetBytes(body, "error.resets_at").Exists() {
 		return true
 	}
 	return false
@@ -285,14 +280,6 @@ func wrapMetaUpstreamError(statusCode int, body []byte) error {
 		}
 		if isMetaSubscriptionQuota(statusCode, body) {
 			return metaRateLimitError{statusErr: se, credentialScoped: true}
-		}
-	}
-	if statusCode == http.StatusNotFound {
-		if retryAfter := parseMetaRetryAfter(statusCode, body, time.Now()); retryAfter != nil {
-			se.retryAfter = retryAfter
-		} else {
-			retry := metaNotFoundCooldown
-			se.retryAfter = &retry
 		}
 	}
 	return se

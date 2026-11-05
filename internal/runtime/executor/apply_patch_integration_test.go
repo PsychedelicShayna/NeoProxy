@@ -312,8 +312,6 @@ data: {"type":"response.completed","response":{"output":[{"type":"function_call"
 		stream   bool
 		compact  bool
 	}{
-		{name: "meta-direct", provider: "meta", body: `{"object":"response","output":[{"type":"function_call","id":"c","name":"apply_patch","arguments":"{}"}],"usage":{"input_tokens":5,"output_tokens":3}}`},
-		{name: "meta-direct-event", provider: "meta", body: `{"type":"response.completed","response":{"output":[{"type":"function_call","id":"c","name":"apply_patch","arguments":"{}"}],"usage":{"input_tokens":5,"output_tokens":3}}}`},
 		{name: "xai-compact", provider: "xai", body: `{"id":"r","output":[{"type":"function_call","id":"c","name":"apply_patch","arguments":"{}"}],"usage":{"input_tokens":5,"output_tokens":3}}`, compact: true},
 		{name: "meta-sse", provider: "meta", body: sseBody, stream: true},
 		{name: "xai-sse", provider: "xai", body: sseBody, stream: true},

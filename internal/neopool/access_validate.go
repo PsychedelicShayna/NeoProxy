@@ -15,6 +15,7 @@ import (
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/anthropicnpi"
 	zaiauth "github.com/router-for-me/CLIProxyAPI/v8/internal/auth/zai"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
 
@@ -170,6 +171,9 @@ func listUpstreamModels(ctx context.Context, style, base, key string) ([]string,
 // dropped so they never reach the model list. routes carries the API each
 // model is served over (see modelRoutes).
 func validateCatalogKey(ctx context.Context, info ProviderInfo, base, preferred, key string) (string, []string, map[string]modelRoute, error) {
+	if registry.ResponsesProviderForBaseURL(base) != "" {
+		return base, nil, nil, validateResponsesKey(ctx, base, key)
+	}
 	if info.ID == "zai" {
 		return zaiauth.CodingPlanBaseURL, nil, nil, validateZaiKey(ctx, key)
 	}

@@ -105,7 +105,13 @@ func (d *neoPiDiscovery) models(a *coreauth.Auth, now time.Time) ([]*ModelInfo, 
 	if entry == nil {
 		return d.bundled(), true
 	}
-	fresh := !entry.fetchedAt.IsZero() && now.Sub(entry.fetchedAt) < d.ttl
+	ttl := d.ttl
+	if entry.models != nil && len(entry.models) == 0 {
+		// A successful empty roster is not cached as authoritative
+		// (model-manager.ts): it is retried at the failure cadence.
+		ttl = d.retry
+	}
+	fresh := !entry.fetchedAt.IsZero() && now.Sub(entry.fetchedAt) < ttl
 	backingOff := !entry.failedAt.IsZero() && now.Sub(entry.failedAt) < d.retry
 	stale := !fresh && !backingOff && !entry.inFlight
 	if entry.models == nil {
@@ -253,8 +259,30 @@ func (s *Service) neoPiResponsesModelsFor(a *coreauth.Auth, fallback []*ModelInf
 			owner = strings.TrimSpace(a.Provider)
 		}
 		models := s.registerNeoPiDiscovered(d, a)
+		byID := make(map[string]*ModelInfo, len(models))
 		for _, model := range models {
 			model.OwnedBy = owner
+			byID[model.ID] = model
+		}
+		// Configured client-facing aliases ride on the canonical NeoPi rows: the
+		// upstream id and its bytes stay NeoPi's, the proxy's routing name stays
+		// the operator's.
+		for _, configured := range fallback {
+			if configured == nil || configured.ID == configured.MetadataModelID || configured.MetadataModelID == "" || byID[configured.ID] != nil {
+				continue
+			}
+			canonical := byID[configured.MetadataModelID]
+			if canonical == nil {
+				continue
+			}
+			alias := *canonical
+			alias.NeoPi = canonical.NeoPi.Clone()
+			alias.ID = configured.ID
+			alias.MetadataModelID = canonical.ID
+			if configured.DisplayName != "" {
+				alias.DisplayName = configured.DisplayName
+			}
+			models = append(models, &alias)
 		}
 		return models
 	}

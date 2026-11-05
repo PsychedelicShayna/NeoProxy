@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -190,13 +189,18 @@ func (e *NeoPiResponsesExecutor) CountTokens(ctx context.Context, auth *cliproxy
 	if errExpand := helps.ExpandResponsesCompactionCapsules(&req, &opts, e.Identifier()); errExpand != nil {
 		return cliproxyexecutor.Response{}, statusErr{code: http.StatusBadRequest, msg: errExpand.Error()}
 	}
-	baseModel := thinking.ParseSuffix(req.Model).ModelName
-	from := opts.SourceFormat
 	to := sdktranslator.FormatCodex
-	body, err := helps.TranslateRequestReturningError(ctx, opts.Headers, e.cfg, from, to, baseModel, bytes.Clone(req.Payload), false, helps.APIKeyModelIsCompat(req))
+	model := e.neoPiResponsesModel(auth, req)
+	if model == nil {
+		return cliproxyexecutor.Response{}, statusErr{code: http.StatusBadRequest, msg: fmt.Sprintf("%s: model %s is not in NeoPi's catalog", e.Identifier(), req.Model)}
+	}
+	// The count reads the bytes Execute would send: shaped as NeoPi shapes them,
+	// payload rules applied (once).
+	_, turn, err := e.shapeNeoPi(ctx, auth, model, req, opts)
 	if err != nil {
 		return cliproxyexecutor.Response{}, err
 	}
+	body := turn.request.Body
 	enc, err := tokenizer.Get(tokenizer.O200kBase)
 	if err != nil {
 		return cliproxyexecutor.Response{}, fmt.Errorf("%s executor: tokenizer init failed: %w", e.Identifier(), err)

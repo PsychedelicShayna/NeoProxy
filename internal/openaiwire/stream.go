@@ -161,6 +161,8 @@ func (t *Turn) attempt(ctx context.Context, body []byte, emit func([]byte) error
 		return false, err
 	}
 	defer func() { _ = response.Body.Close() }()
+	// Connected: no deadline applies to the stream from here on.
+	watchdog.Stop()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		data, _ := io.ReadAll(response.Body)
 		return false, &HTTPError{Status: response.StatusCode, Header: response.Header, Body: data}
@@ -197,7 +199,17 @@ func (t *Turn) attempt(ctx context.Context, body []byte, emit func([]byte) error
 			return io.EOF
 		}
 		if !json.Valid(frame) {
+			if inBand := classifyInBandText(string(frame)); inBand != nil {
+				return inBand
+			}
 			return &StreamError{Message: "provider sent a non-JSON stream frame: " + string(frame)}
+		}
+		if text := gjson.ParseBytes(frame); text.Type == gjson.String {
+			// A double-encoded proxy page: a throttle fails, anything else is no event.
+			if inBand := classifyInBandText(text.String()); inBand != nil {
+				return inBand
+			}
+			return nil
 		}
 		watchdog.Stop()
 		event := gjson.ParseBytes(frame)

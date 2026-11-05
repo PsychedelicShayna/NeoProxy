@@ -71,7 +71,7 @@ func FromResponses(body []byte, model *registry.NeoPiModel) (Context, Options) {
 			)})},
 		)}
 	}
-	ctx.Input = omitUnsupportedImages(ctx.Input, model)
+	ctx.Input = plainUserMessages(omitUnsupportedImages(ctx.Input, model))
 	for _, tool := range root.Get("tools").Array() {
 		ctx.Tools = append(ctx.Tools, json.RawMessage(tool.Raw))
 	}
@@ -111,7 +111,9 @@ func FromResponses(body []byte, model *registry.NeoPiModel) (Context, Options) {
 		opts.ToolChoice = json.RawMessage(choice.Raw)
 	}
 	for _, value := range root.Get("include").Array() {
-		if value.Type == gjson.String {
+		// The Codex-shaped body always asks for encrypted reasoning; NeoPi
+		// asks only when the model's compat does, and BuildResponses adds it then.
+		if value.Type == gjson.String && value.String() != "reasoning.encrypted_content" {
 			opts.Include = append(opts.Include, value.String())
 		}
 	}
