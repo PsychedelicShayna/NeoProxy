@@ -172,8 +172,9 @@ for (const id of ids) {
 	add(id, "tool-history", history([text("Found.")]), level(first), { tools: [lookup] });
 	add(id, "tool-history-signed", history([text("Found.")], false, true), level(first), { tools: [lookup] });
 	add(id, "tool-result-blocks", history([text("Line one."), text("  "), text("Line two.")]), level(first), { tools: [lookup] });
-	add(id, "tool-result-empty-error", history([], true), level(first), { tools: [lookup] });
-	add(id, "tool-result-error-text", history([text("Boom.")], true), level(first), { tools: [lookup] });
+	// A tool result's isError flag has no OpenAI Chat carrier, so error tool
+	// results are covered by gemini_neopi_unit_test.go instead of a capture.
+	add(id, "tool-result-empty", history([]), level(first), { tools: [lookup] });
 	add(id, "forced-any", lookupTurns, { ...level(first), toolChoice: "any" }, { tools: [lookup] });
 	add(id, "forced-named", lookupTurns, { ...level(first), toolChoice: { type: "tool", name: "lookup" } }, { tools: [lookup, other] });
 	add(id, "choice-none", lookupTurns, { ...level(first), toolChoice: "none" }, { tools: [lookup] });
@@ -207,7 +208,9 @@ for (const id of ["gemini-3.1-pro-preview", "gemini-2.5-flash"]) {
 		{ kind: "result", id: "call_a", name: "lookup", blocks: [text("A"), imageBlock] },
 	], { reasoning: first }, { tools: [lookup] });
 	add(id, "orphan-call", [{ kind: "user", text: "Use lookup." }, call(), { kind: "user", text: "Never mind." }], { reasoning: first }, { tools: [lookup] });
-	add(id, "orphan-result", [{ kind: "user", text: "Hi." }, result("call_gone", "late"), { kind: "user", text: "Continue." }], { reasoning: first });
+	// An orphan tool result becomes NeoPi's stale-tool-result note, but its tool
+	// NAME exists only on the NeoPi message (an OpenAI Chat tool message carries
+	// just tool_call_id), so that shape is covered by gemini_neopi_unit_test.go.
 	add(id, "odd-call-id", [{ kind: "user", text: "Use lookup." }, { kind: "calls", calls: [{ id: "call/odd id|fc_1", name: "lookup", args: { term: "é\u2028😀" } }] }, { kind: "result", id: "call/odd id|fc_1", name: "lookup", blocks: [text("ok")] }], { reasoning: first }, { tools: [lookup] });
 	add(id, "multi-turn", [
 		{ kind: "user", text: "First." },

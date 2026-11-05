@@ -91,7 +91,9 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	var models []*ModelInfo
 	switch provider {
 	case constant.Gemini:
-		models = registry.GetGeminiModels()
+		// NeoPi serves its bundled catalog until the account's /v1beta/models
+		// listing answers; a configured model list replaces it.
+		models = s.registerNeoPiDiscovered(googleDiscovery, a)
 		if entry := resolveConfigGeminiKeyForConfig(cfg, a); entry != nil {
 			if len(entry.Models) > 0 {
 				models = buildGeminiConfigModels(entry)

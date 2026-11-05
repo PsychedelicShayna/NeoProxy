@@ -261,7 +261,7 @@ func TestCustomMagicHeaders_GeminiInteractions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	executor := NewGeminiExecutor(&config.Config{})
+	executor := NewGeminiInteractionsExecutor(&config.Config{})
 	auth := &cliproxyauth.Auth{
 		Provider: "gemini-interactions",
 		Attributes: map[string]string{
@@ -649,7 +649,7 @@ func TestCustomMagicHeaders_CPASessionID_GeminiInteractions(t *testing.T) {
 	}))
 	defer server.Close()
 
-	executor := NewGeminiExecutor(&config.Config{})
+	executor := NewGeminiInteractionsExecutor(&config.Config{})
 	auth := &cliproxyauth.Auth{
 		Provider: "gemini-interactions",
 		Attributes: map[string]string{
