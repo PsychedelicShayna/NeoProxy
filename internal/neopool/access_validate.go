@@ -88,10 +88,17 @@ func listUpstreamModels(ctx context.Context, style, base, key string) ([]string,
 		return nil, nil, accessErr(http.StatusBadRequest, "The base URL is not a valid address.")
 	}
 	req.Header = header
-	req.Header.Set("Accept", "application/json")
-	// Some providers sit behind bot protection that rejects Go's default
-	// User-Agent with a 403 page (Nous Portal does), which would read as a bad key.
-	req.Header.Set("User-Agent", "NeoProxy")
+	if registry.ResponsesProviderForBaseURL(base) != "" {
+		// NeoPi's models-endpoint validation (validateApiKeyAgainstModelsEndpoint):
+		// fetch's default Accept and Bun's User-Agent, nothing else.
+		req.Header.Set("Accept", "*/*")
+		req.Header.Set("User-Agent", openaiwire.BunUserAgent)
+	} else {
+		req.Header.Set("Accept", "application/json")
+		// Some providers sit behind bot protection that rejects Go's default
+		// User-Agent with a 403 page (Nous Portal does), which would read as a bad key.
+		req.Header.Set("User-Agent", "NeoProxy")
+	}
 	resp, err := accessHTTPClient.Do(req)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) || strings.Contains(err.Error(), "Client.Timeout") {

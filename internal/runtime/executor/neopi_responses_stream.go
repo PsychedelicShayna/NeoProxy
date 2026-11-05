@@ -54,6 +54,12 @@ func neoPiResponsesSessionID(provider string, req cliproxyexecutor.Request, opts
 // Payload rules run once on the shaped body, inside the transport.
 func (e *NeoPiResponsesExecutor) shapeNeoPi(ctx context.Context, auth *cliproxyauth.Auth, model *registry.NeoPiModel, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (context.Context, *neoPiResponsesTurn, error) {
 	baseModel := thinking.ParseSuffix(req.Model).ModelName
+	// Claude and Gemini reasoning signatures translate by the model they
+	// target: a Meta model keeps its Muse envelopes.
+	translateModel := baseModel
+	if model.Provider == registry.ResponsesMeta || model.Provider == registry.ResponsesMuseCode {
+		translateModel = resolveMetaSignatureTargetModel(baseModel, req, opts)
+	}
 	from := opts.SourceFormat
 	to := sdktranslator.FormatCodex
 	originalPayload := req.Payload
@@ -62,9 +68,9 @@ func (e *NeoPiResponsesExecutor) shapeNeoPi(ctx context.Context, auth *cliproxya
 	}
 	originalPayload = bytes.Clone(originalPayload)
 	compat := helps.APIKeyModelIsCompat(req)
-	originalTranslated := helps.TranslateRequestWithAPIKeyModelCompatibilityForExecutor(ctx, opts.Headers, e.cfg, e.Identifier(), from, to, baseModel, originalPayload, true, compat)
+	originalTranslated := helps.TranslateRequestWithAPIKeyModelCompatibilityForExecutor(ctx, opts.Headers, e.cfg, e.Identifier(), from, to, translateModel, originalPayload, true, compat)
 	originalTranslated = helps.SetStringIfDifferent(originalTranslated, "model", baseModel)
-	body, updatesChanged, err := helps.TranslateRequestWithAPIKeyModelCompatibilityAndUpdateIntentForExecutor(ctx, opts.Headers, e.cfg, e.Identifier(), from, to, baseModel, bytes.Clone(req.Payload), true, compat)
+	body, updatesChanged, err := helps.TranslateRequestWithAPIKeyModelCompatibilityAndUpdateIntentForExecutor(ctx, opts.Headers, e.cfg, e.Identifier(), from, to, translateModel, bytes.Clone(req.Payload), true, compat)
 	if err != nil {
 		return ctx, nil, err
 	}
@@ -75,6 +81,12 @@ func (e *NeoPiResponsesExecutor) shapeNeoPi(ctx context.Context, auth *cliproxya
 	applyPatch := helps.NewApplyPatchResponsesState(from, originalPayload, originalTranslated)
 	if body, err = helps.NormalizeApplyPatchResponsesRequest(body, originalPayload); err != nil {
 		return ctx, nil, err
+	}
+	if model.Provider == registry.ResponsesMeta || model.Provider == registry.ResponsesMuseCode {
+		// Reasoning envelopes another provider produced never reach api.meta.ai,
+		// and its web_search tool takes fewer fields than the hosted tool's.
+		body = sanitizeOpenAIResponsesReasoningEncryptedContentForMetaBaseURL(ctx, e.Identifier()+" executor", body, model.BaseURL)
+		body = helps.SanitizeMetaWebSearchTools(body)
 	}
 	ctx = helps.WithPayloadFinalizer(ctx, helps.NewPayloadFinalizer(e.cfg, e.Identifier(), baseModel, to.String(), "", originalTranslated, req, opts))
 	_, token := e.neoPiResponsesCreds(auth)
