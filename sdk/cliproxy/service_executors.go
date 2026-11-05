@@ -302,6 +302,22 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 		if compatProviderKey == "" {
 			compatProviderKey = "openai-compatibility"
 		}
+		if neoPi := neoPiCompatProvider(a); neoPi != "" {
+			// NeoPi serves Nous Portal and Marineris keys itself.
+			existing, hasExisting := s.coreManager.Executor(compatProviderKey)
+			if neoPi == "marineris" {
+				if current, ok := existing.(*executor.MarinerisExecutor); hasExisting && ok && current.UsesConfig(cfg) && !forceReplace {
+					return
+				}
+				s.coreManager.RegisterExecutor(executor.NewMarinerisExecutor(compatProviderKey, cfg))
+			} else {
+				if current, ok := existing.(*executor.NousExecutor); hasExisting && ok && current.UsesConfig(cfg) && !forceReplace {
+					return
+				}
+				s.coreManager.RegisterExecutor(executor.NewNousExecutor(compatProviderKey, cfg))
+			}
+			return
+		}
 		if zaiauth.IsCodingPlanBaseURL(a.Attributes["base_url"]) {
 			// NeoPi serves Z.ai keys itself: Anthropic Messages for most of its
 			// catalog, Chat Completions for GLM-5.3-Flash.
@@ -375,7 +391,7 @@ func (s *Service) registerExecutorForAuth(a *coreauth.Auth, forceReplace bool) {
 	case "cursor":
 		s.coreManager.RegisterExecutor(executor.NewCursorExecutor(cfg))
 	case "nous-portal":
-		s.coreManager.RegisterExecutor(executor.NewNousExecutor(cfg))
+		s.coreManager.RegisterExecutor(executor.NewNousExecutor("nous-portal", cfg))
 	default:
 		providerKey := strings.ToLower(strings.TrimSpace(a.Provider))
 		if providerKey == "" {

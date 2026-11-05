@@ -215,6 +215,10 @@ func attachResolvedAPIKeyModelInfo(routing *apiKeyModelRoutingSnapshot, req clip
 		metadataKey = resolvedOAuthModelInfoMetadataKey
 	}
 	if !ok {
+		modelInfo, ok = lookupDiscoveredNeoPiModel(auth, upstreamModel)
+		metadataKey = resolvedOAuthModelInfoMetadataKey
+	}
+	if !ok {
 		_, hadAPIKey := req.Metadata[resolvedAPIKeyModelInfoMetadataKey]
 		_, hadOAuth := req.Metadata[resolvedOAuthModelInfoMetadataKey]
 		if !hadAPIKey && !hadOAuth {
@@ -287,12 +291,35 @@ func lookupOAuthModelCapability(auth *Auth, upstreamModel string) (*registry.Mod
 		if len(models) == 0 {
 			models = registry.DevinBundledModels()
 		}
+	case "nous-portal":
+		if len(models) == 0 {
+			models = registry.NousBundledModels("nous-portal")
+		}
 	default:
 		return nil, false
 	}
 	selected := strings.TrimSpace(thinking.ParseSuffix(strings.TrimSpace(upstreamModel)).ModelName)
 	for _, model := range models {
 		if model != nil && strings.EqualFold(model.ID, selected) {
+			return model, true
+		}
+	}
+	return nil, false
+}
+
+// lookupDiscoveredNeoPiModel resolves a model of an openai-compatibility
+// account whose roster NeoPi's own discovery supplied: the registry holds the
+// account's models with their NeoPi records (ModelInfo.NeoPi), which the
+// executor shapes requests from. Accounts with a configured model list never
+// reach it.
+func lookupDiscoveredNeoPiModel(auth *Auth, upstreamModel string) (*registry.ModelInfo, bool) {
+	if auth == nil || auth.Attributes == nil || strings.TrimSpace(auth.Attributes["compat_name"]) == "" {
+		return nil, false
+	}
+	models, _ := registry.GetGlobalRegistry().GetModelsAndEpochForClient(auth.ID)
+	selected := strings.TrimSpace(thinking.ParseSuffix(strings.TrimSpace(upstreamModel)).ModelName)
+	for _, model := range models {
+		if model != nil && model.NeoPi != nil && strings.EqualFold(model.ID, selected) {
 			return model, true
 		}
 	}

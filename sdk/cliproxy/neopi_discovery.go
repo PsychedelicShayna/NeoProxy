@@ -62,7 +62,21 @@ var (
 	sakanaDiscovery       = newResponsesDiscovery(registry.ResponsesSakana, "")
 	abliterationDiscovery = newResponsesDiscovery(registry.ResponsesAbliterate, "")
 
-	neoPiDiscoveries = []*neoPiDiscovery{kimiDiscovery, devinDiscovery, museCodeDiscovery, metaAPIKeyDiscovery, sakanaDiscovery, abliterationDiscovery}
+	// nousDiscovery is the Nous Portal extension's fetchDynamicModels: its
+	// 15s bound, serving the extension's bundled snapshot until it answers.
+	nousDiscovery = &neoPiDiscovery{provider: "nous-portal", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: executor.NousDiscoveryTimeout,
+		match: func(a *coreauth.Auth) bool {
+			return a.Provider == "nous-portal" || neoPiCompatProvider(a) == "nous-portal"
+		},
+		bundled: func() []*ModelInfo { return registry.NousBundledModels("nous-portal") },
+		fetch:   executor.FetchNousModels, entries: map[string]*neoPiDiscoveryEntry{}}
+	// marinerisDiscovery is the Marineris extension's fetchDynamicModels: the
+	// gateway lists what the key is scoped to and there is no bundled seed.
+	marinerisDiscovery = &neoPiDiscovery{provider: "marineris", ttl: 2 * time.Hour, retry: 5 * time.Minute, timeout: executor.MarinerisDiscoveryTimeout,
+		match:   func(a *coreauth.Auth) bool { return neoPiCompatProvider(a) == "marineris" },
+		bundled: func() []*ModelInfo { return nil }, fetch: executor.FetchMarinerisModels, entries: map[string]*neoPiDiscoveryEntry{}}
+
+	neoPiDiscoveries = []*neoPiDiscovery{kimiDiscovery, devinDiscovery, museCodeDiscovery, metaAPIKeyDiscovery, sakanaDiscovery, abliterationDiscovery, nousDiscovery, marinerisDiscovery}
 )
 
 // newResponsesDiscovery is the discovery of one NeoPi Responses provider: the

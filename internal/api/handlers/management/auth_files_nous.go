@@ -13,8 +13,9 @@ import (
 )
 
 // RequestNousToken starts Nous Portal's device sign-in. The person confirms the
-// code on portal.nousresearch.com; the token, its refresh token and the models
-// it can use are saved as a nous-portal auth file.
+// code on portal.nousresearch.com; the token and its refresh token are saved as
+// a nous-portal auth file. Like NeoPi's extension, sign-in does not list models:
+// discovery runs when the account is registered.
 func (h *Handler) RequestNousToken(c *gin.Context) {
 	ctx := PopulateAuthContext(context.Background(), c)
 	client := nous.NewClient(h.cfg, "")
@@ -32,7 +33,7 @@ func (h *Handler) RequestNousToken(c *gin.Context) {
 		defer cancelPoll()
 		go watchOAuthSessionCancel(pollCtx, cancelPoll, state, nous.Provider)
 
-		token, errWait := client.WaitForToken(pollCtx, device)
+		token, errWait := client.WaitForToken(pollCtx, device, nil)
 		if errWait != nil {
 			if IsOAuthSessionPending(state, nous.Provider) {
 				SetOAuthSessionError(state, oauthSessionErrorWithCause("Authentication failed", errWait))
@@ -40,11 +41,6 @@ func (h *Handler) RequestNousToken(c *gin.Context) {
 			return
 		}
 		if !IsOAuthSessionPending(state, nous.Provider) {
-			return
-		}
-		models, errModels := client.ListModels(pollCtx, token.AccessToken)
-		if errModels != nil {
-			SetOAuthSessionError(state, oauthSessionErrorWithCause("Signed in, but the model list could not be read", errModels))
 			return
 		}
 		metadata := map[string]any{
@@ -55,7 +51,6 @@ func (h *Handler) RequestNousToken(c *gin.Context) {
 			"scope":         nous.Scope,
 			"expired":       token.ExpiresAt.UTC().Format(time.RFC3339),
 			"timestamp":     time.Now().UnixMilli(),
-			"models":        models,
 		}
 		fileName := fmt.Sprintf("%s-%d.json", nous.Provider, time.Now().UnixMilli())
 		record := &coreauth.Auth{ID: fileName, Provider: nous.Provider, FileName: fileName, Label: "Nous Portal", Metadata: metadata}

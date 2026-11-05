@@ -1,6 +1,8 @@
-// Package nous implements Nous Research Portal's OAuth device sign-in, token
-// refresh and model discovery. Client id, scope, endpoints and the refresh
-// header match Nous's own Hermes client, which NeoPi's extension also uses.
+// Package nous is a port of NeoPi's Nous Portal provider extension
+// (extensions/nous-portal): the device-code sign-in, the refresh grant and
+// model discovery, with the same endpoints, request shapes, timing and error
+// messages. Parity is pinned by testdata/capture_neopi_nous_auth.ts, which
+// runs the extension itself against a loopback server.
 package nous
 
 import (
@@ -9,8 +11,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,8 +34,13 @@ const (
 	Scope    = "inference:invoke"
 
 	deviceGrant = "urn:ietf:params:oauth:grant-type:device_code"
-	// userAgent avoids the bot protection that rejects Go's default agent.
-	userAgent = "NeoProxy"
+	// requestTimeout is the extension's REQUEST_TIMEOUT_MS.
+	requestTimeout = 15 * time.Second
+	// userAgent is Bun's fetch default, which the extension's requests carry.
+	userAgent = "Bun/1.3.14"
+	// verificationHost is the only host a verification URL may point at.
+	verificationHost = "portal.nousresearch.com"
+	maxInterval      = 30
 )
 
 // DeviceCode is an issued device authorization.
@@ -50,9 +59,16 @@ type Token struct {
 	ExpiresAt    time.Time
 }
 
-// Client talks to the portal and inference API.
+// Client talks to the portal and inference API. The endpoints are fields so
+// tests can point them at a fake upstream.
 type Client struct {
-	http *http.Client
+	http         *http.Client
+	PortalURL    string
+	InferenceURL string
+	// Sleep waits between device-code polls; tests replace it.
+	Sleep func(ctx context.Context, d time.Duration) error
+	// Now stamps token expiries; tests replace it.
+	Now func() time.Time
 }
 
 // NewClient builds a proxy-aware client. proxyURL overrides cfg's proxy.
@@ -65,7 +81,15 @@ func NewClient(cfg *config.Config, proxyURL string) *Client {
 		}
 	}
 	sdk.ProxyURL = strings.TrimSpace(proxyURL)
-	return &Client{http: util.SetProxy(&sdk, &http.Client{Timeout: 30 * time.Second})}
+	return NewClientWithHTTP(util.SetProxy(&sdk, &http.Client{}))
+}
+
+// NewClientWithHTTP builds a client over an existing transport.
+func NewClientWithHTTP(client *http.Client) *Client {
+	if client == nil {
+		client = &http.Client{}
+	}
+	return &Client{http: client, PortalURL: PortalURL, InferenceURL: InferenceURL, Sleep: sleep, Now: time.Now}
 }
 
 // SetHTTPClient replaces the transport (executors pass their proxy-aware one).
@@ -75,52 +99,131 @@ func (c *Client) SetHTTPClient(client *http.Client) {
 	}
 }
 
-func (c *Client) postForm(ctx context.Context, path string, fields url.Values, header http.Header) (int, map[string]any, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, PortalURL+path, strings.NewReader(fields.Encode()))
-	if err != nil {
-		return 0, nil, err
+func sleep(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
-	for k, v := range header {
-		req.Header[k] = v
+}
+
+// formEncode is URLSearchParams.toString for ordered fields: JavaScript keeps
+// insertion order, so url.Values (sorted) would change the bytes.
+func formEncode(pairs ...string) string {
+	var out strings.Builder
+	for i := 0; i+1 < len(pairs); i += 2 {
+		if i > 0 {
+			out.WriteByte('&')
+		}
+		formEscape(&out, pairs[i])
+		out.WriteByte('=')
+		formEscape(&out, pairs[i+1])
 	}
+	return out.String()
+}
+
+func formEscape(out *strings.Builder, value string) {
+	const hex = "0123456789ABCDEF"
+	for i := 0; i < len(value); i++ {
+		b := value[i]
+		switch {
+		case b >= 'a' && b <= 'z', b >= 'A' && b <= 'Z', b >= '0' && b <= '9', b == '*', b == '-', b == '.', b == '_':
+			out.WriteByte(b)
+		case b == ' ':
+			out.WriteByte('+')
+		default:
+			out.WriteByte('%')
+			out.WriteByte(hex[b>>4])
+			out.WriteByte(hex[b&15])
+		}
+	}
+}
+
+// do sends req with the extension's headers and its 15 s timeout, and returns
+// the decoded body. An explicit Accept-Encoding disables Go's transparent
+// decompression, so the body is decoded here.
+func (c *Client) do(ctx context.Context, req *http.Request, header http.Header) (int, []byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
+	defer cancel()
+	req = req.WithContext(ctx)
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept-Encoding", "gzip, deflate, br, zstd")
+	req.Header.Set("Connection", "keep-alive")
 	req.Header.Set("User-Agent", userAgent)
+	for key, values := range header {
+		req.Header[key] = values
+	}
 	resp, err := c.http.Do(req)
 	if err != nil {
 		return 0, nil, err
 	}
 	defer resp.Body.Close()
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	decoded, err := util.DecodeResponseBody(resp.Body, resp.Header.Get("Content-Encoding"))
 	if err != nil {
 		return resp.StatusCode, nil, err
 	}
-	body := map[string]any{}
-	_ = json.Unmarshal(raw, &body)
-	return resp.StatusCode, body, nil
+	defer decoded.Close()
+	raw, err := io.ReadAll(io.LimitReader(decoded, 32<<20))
+	return resp.StatusCode, raw, err
 }
 
+func (c *Client) postForm(ctx context.Context, path, body string, header http.Header) (int, []byte, error) {
+	req, err := http.NewRequest(http.MethodPost, c.PortalURL+path, strings.NewReader(body))
+	if err != nil {
+		return 0, nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return c.do(ctx, req, header)
+}
+
+// record is the extension's record(): a JSON object, else empty.
+func record(raw []byte) map[string]any {
+	var value any
+	if json.Unmarshal(raw, &value) != nil {
+		return map[string]any{}
+	}
+	if obj, ok := value.(map[string]any); ok {
+		return obj
+	}
+	return map[string]any{}
+}
+
+// str is the extension's string(): a non-blank string, trimmed.
 func str(m map[string]any, key string) string {
 	s, _ := m[key].(string)
 	return strings.TrimSpace(s)
 }
 
-func positive(m map[string]any, key string, fallback int) int {
-	if n, ok := m[key].(float64); ok && n > 0 {
-		return int(n)
+// positiveInteger is the extension's positiveInteger(): a positive finite
+// number, or a numeric string, floored.
+func positiveInteger(value any) (int, bool) {
+	var n float64
+	switch v := value.(type) {
+	case float64:
+		n = v
+	case string:
+		parsed, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
+		if err != nil {
+			return 0, false
+		}
+		n = parsed
+	default:
+		return 0, false
 	}
-	return fallback
+	if math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 {
+		return 0, false
+	}
+	return int(math.Floor(n)), true
 }
 
-func portalError(status int, body map[string]any, what string) error {
-	msg := fmt.Sprintf("%s (HTTP %d)", what, status)
-	if code := str(body, "error"); code != "" {
-		msg += ": " + code
+func positive(m map[string]any, key string, fallback int) int {
+	if n, ok := positiveInteger(m[key]); ok {
+		return n
 	}
-	if desc := firstNonEmpty(str(body, "error_description"), str(body, "message")); desc != "" {
-		msg += ": " + desc
-	}
-	return errors.New(msg)
+	return fallback
 }
 
 func firstNonEmpty(values ...string) string {
@@ -132,128 +235,133 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+// HTTPError is a portal or inference answer the extension turns into an
+// error; Status is the HTTP status behind the message.
+type HTTPError struct {
+	Status  int
+	Message string
+}
+
+func (e *HTTPError) Error() string { return e.Message }
+
+// responseError is the extension's responseError(): "<what> (<status>)",
+// then the error code and description when the body carries them.
+func responseError(status int, body map[string]any, what string) error {
+	msg := fmt.Sprintf("%s (%d)", what, status)
+	if code := str(body, "error"); code != "" {
+		msg += ": " + code
+	}
+	if desc := firstNonEmpty(str(body, "error_description"), str(body, "message")); desc != "" {
+		msg += ": " + desc
+	}
+	return &HTTPError{Status: status, Message: msg}
+}
+
 // RequestDeviceCode starts a device authorization.
 func (c *Client) RequestDeviceCode(ctx context.Context) (*DeviceCode, error) {
-	status, body, err := c.postForm(ctx, "/api/oauth/device/code", url.Values{"client_id": {ClientID}, "scope": {Scope}}, nil)
+	status, raw, err := c.postForm(ctx, "/api/oauth/device/code", formEncode("client_id", ClientID, "scope", Scope), nil)
 	if err != nil {
-		return nil, fmt.Errorf("nous: device code request: %w", err)
+		return nil, err
 	}
-	if status != http.StatusOK {
-		return nil, portalError(status, body, "nous: device code request failed")
+	if status < 200 || status > 299 {
+		return nil, responseError(status, record(raw), "Device-code request failed")
 	}
+	body := record(raw)
 	verification := firstNonEmpty(str(body, "verification_uri_complete"), str(body, "verification_uri"))
 	parsed, errParse := url.Parse(verification)
-	if errParse != nil || parsed.Scheme != "https" || parsed.Hostname() != "portal.nousresearch.com" {
-		return nil, errors.New("nous: the portal returned an unexpected verification URL")
+	if verification == "" || errParse != nil || parsed.Scheme != "https" || parsed.Hostname() != verificationHost {
+		return nil, errors.New("Nous Portal returned an unexpected verification URL")
 	}
 	dc := &DeviceCode{DeviceCode: str(body, "device_code"), UserCode: str(body, "user_code"), VerificationURL: parsed.String(),
 		ExpiresIn: positive(body, "expires_in", 600), Interval: positive(body, "interval", 5)}
 	if dc.DeviceCode == "" || dc.UserCode == "" {
-		return nil, errors.New("nous: the portal returned an incomplete device code")
+		return nil, errors.New("Nous Portal returned an incomplete device code")
 	}
 	return dc, nil
 }
 
 // WaitForToken polls until the person approves, the code expires or ctx ends.
-func (c *Client) WaitForToken(ctx context.Context, dc *DeviceCode) (*Token, error) {
-	deadline := time.Now().Add(time.Duration(dc.ExpiresIn) * time.Second)
-	interval := min(dc.Interval, 30)
-	for time.Now().Before(deadline) {
-		status, body, err := c.postForm(ctx, "/api/oauth/token", url.Values{"grant_type": {deviceGrant}, "client_id": {ClientID}, "device_code": {dc.DeviceCode}}, nil)
+// progress, when set, is called before each poll like the extension's
+// onProgress.
+func (c *Client) WaitForToken(ctx context.Context, dc *DeviceCode, progress func(string)) (*Token, error) {
+	deadline := c.Now().Add(time.Duration(dc.ExpiresIn) * time.Second)
+	interval := min(dc.Interval, maxInterval)
+	for c.Now().Before(deadline) {
+		if progress != nil {
+			progress("Waiting for Nous Portal authorization…")
+		}
+		status, raw, err := c.postForm(ctx, "/api/oauth/token",
+			formEncode("grant_type", deviceGrant, "client_id", ClientID, "device_code", dc.DeviceCode), nil)
 		if err != nil {
-			return nil, fmt.Errorf("nous: token poll: %w", err)
+			return nil, err
 		}
-		if status == http.StatusOK {
-			return tokenFrom(body, "")
+		if status >= 200 && status <= 299 {
+			return c.tokenFrom(record(raw), "")
 		}
+		body := record(raw)
 		switch str(body, "error") {
 		case "authorization_pending":
 		case "slow_down":
-			interval = min(interval+1, 30)
+			interval = min(interval+1, maxInterval)
 		default:
-			return nil, portalError(status, body, "nous: device authorization failed")
+			return nil, responseError(status, body, "Device authorization failed")
 		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(time.Duration(interval) * time.Second):
+		if err = c.Sleep(ctx, time.Duration(interval)*time.Second); err != nil {
+			return nil, err
 		}
 	}
-	return nil, errors.New("nous: device authorization expired")
+	return nil, errors.New("Nous Portal device authorization expired")
 }
 
 // Refresh exchanges a refresh token; the portal reads it from a header.
 func (c *Client) Refresh(ctx context.Context, refreshToken string) (*Token, error) {
-	status, body, err := c.postForm(ctx, "/api/oauth/token", url.Values{"grant_type": {"refresh_token"}, "client_id": {ClientID}},
+	status, raw, err := c.postForm(ctx, "/api/oauth/token", formEncode("grant_type", "refresh_token", "client_id", ClientID),
 		http.Header{"X-Nous-Refresh-Token": {refreshToken}})
-	if err != nil {
-		return nil, fmt.Errorf("nous: token refresh: %w", err)
-	}
-	if status != http.StatusOK {
-		return nil, portalError(status, body, "nous: token refresh failed")
-	}
-	return tokenFrom(body, refreshToken)
-}
-
-// tokenFrom mirrors NeoPi: a missing refresh token keeps the previous one, and
-// the expiry is brought forward by up to two minutes of skew.
-func tokenFrom(body map[string]any, previousRefresh string) (*Token, error) {
-	t := &Token{AccessToken: str(body, "access_token"), RefreshToken: firstNonEmpty(str(body, "refresh_token"), previousRefresh)}
-	if t.AccessToken == "" || t.RefreshToken == "" {
-		return nil, errors.New("nous: the token response omitted access_token or refresh_token")
-	}
-	ttl := positive(body, "expires_in", 3600)
-	t.ExpiresAt = time.Now().Add(time.Duration(ttl-min(120, ttl/10)) * time.Second)
-	return t, nil
-}
-
-// ListModels returns the text-capable model ids the token can use.
-func (c *Client) ListModels(ctx context.Context, accessToken string) ([]string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, InferenceURL+"/models", nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+accessToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", userAgent)
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("nous: model list: %w", err)
+	if status < 200 || status > 299 {
+		return nil, responseError(status, record(raw), "Token refresh failed")
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("nous: model list answered HTTP %d", resp.StatusCode)
-	}
-	var body struct {
-		Data []struct {
-			ID           string `json:"id"`
-			Architecture struct {
-				OutputModalities []string `json:"output_modalities"`
-			} `json:"architecture"`
-		} `json:"data"`
-	}
-	if err = json.NewDecoder(io.LimitReader(resp.Body, 16<<20)).Decode(&body); err != nil {
-		return nil, fmt.Errorf("nous: model list: %w", err)
-	}
-	out := make([]string, 0, len(body.Data))
-	for _, m := range body.Data {
-		// Same filter as NeoPi: skip batch aliases and models without text output.
-		if m.ID == "" || strings.HasSuffix(m.ID, ":batch") {
-			continue
-		}
-		if mods := m.Architecture.OutputModalities; len(mods) > 0 && !contains(mods, "text") {
-			continue
-		}
-		out = append(out, m.ID)
-	}
-	return out, nil
+	return c.tokenFrom(record(raw), refreshToken)
 }
 
-func contains(list []string, want string) bool {
-	for _, v := range list {
-		if v == want {
-			return true
-		}
+// tokenFrom is the extension's credentials(): a missing refresh token keeps
+// the previous one, and the expiry is brought forward by min(120 s, ttl/10).
+func (c *Client) tokenFrom(body map[string]any, previousRefresh string) (*Token, error) {
+	access := str(body, "access_token")
+	refresh := firstNonEmpty(str(body, "refresh_token"), previousRefresh)
+	if access == "" {
+		return nil, errors.New("Nous Portal token response omitted access_token")
 	}
-	return false
+	if refresh == "" {
+		return nil, errors.New("Nous Portal token response omitted refresh_token")
+	}
+	ttl := positive(body, "expires_in", 3600)
+	skew := min(120, ttl/10)
+	return &Token{AccessToken: access, RefreshToken: refresh, ExpiresAt: c.Now().Add(time.Duration(ttl-skew) * time.Second)}, nil
+}
+
+// FetchModelRows is the extension's fetchJson(): GET /models with the bearer
+// credential, returning the raw catalog rows.
+func (c *Client) FetchModelRows(ctx context.Context, credential string) ([]json.RawMessage, error) {
+	req, err := http.NewRequest(http.MethodGet, c.InferenceURL+"/models", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+credential)
+	status, raw, err := c.do(ctx, req, nil)
+	if err != nil {
+		return nil, err
+	}
+	if status < 200 || status > 299 {
+		return nil, responseError(status, record(raw), "Model discovery failed")
+	}
+	var envelope struct {
+		Data []json.RawMessage `json:"data"`
+	}
+	if err = json.Unmarshal(raw, &envelope); err != nil || envelope.Data == nil {
+		return nil, errors.New("Nous Portal returned an invalid model catalog")
+	}
+	return envelope.Data, nil
 }

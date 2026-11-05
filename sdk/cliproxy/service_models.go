@@ -192,7 +192,7 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 	case "devin":
 		models = applyExcludedModels(s.registerNeoPiDiscovered(devinDiscovery, a), excluded)
 	case "nous-portal":
-		models = applyExcludedModels(nousModelsForAuth(ctx, cfg, a), excluded)
+		models = applyExcludedModels(s.registerNeoPiDiscovered(nousDiscovery, a), excluded)
 	case "meta":
 		models = s.registerNeoPiDiscovered(metaDiscoveryFor(a), a)
 		if entry := resolveConfigMetaKeyForConfig(cfg, a); entry != nil {
@@ -244,6 +244,20 @@ func (s *Service) registerModelsForAuthWithConfigAndCache(ctx context.Context, c
 					providerKey = strings.ToLower(v)
 					isCompatAuth = true
 				}
+			}
+			// NeoPi serves Nous Portal and Marineris keys from their own discovery,
+			// not from a configured model list.
+			if d := neoPiCompatDiscovery(a); isCompatAuth && d != nil {
+				if providerKey == "" {
+					providerKey = "openai-compatibility"
+				}
+				ms := s.appendPluginModels(providerKey, s.registerNeoPiDiscovered(d, a), nil)
+				if len(ms) > 0 {
+					published = s.registerResolvedModelsForAuthFenced(a, fence, providerKey, applyModelPrefixes(ms, a.Prefix, cfg.ForceModelPrefix))
+				} else {
+					published = s.unregisterModelsForAuthFenced(a, fence)
+				}
+				return published
 			}
 			registerCompat := func(compat *config.OpenAICompatibility) bool {
 				if compat == nil || compat.Disabled {
