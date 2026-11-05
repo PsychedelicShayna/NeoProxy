@@ -29,6 +29,19 @@ type NeoPiModel struct {
 	RequestModelID string `json:"requestModelId,omitempty"`
 	// DevinCompat is the compat NeoPi resolves for a devin-agent row.
 	DevinCompat *NeoPiDevinCompat `json:"devinCompat,omitempty"`
+	// GoogleCompat is the compat NeoPi resolves for a google-generative-ai row.
+	GoogleCompat *NeoPiGoogleCompat `json:"googleCompat,omitempty"`
+}
+
+// NeoPiGoogleCompat is the resolved compat NeoPi's Google request builders read
+// (ResolvedGoogleCompat), under NeoPi's names.
+type NeoPiGoogleCompat struct {
+	MultimodalFunctionResponse                      bool `json:"multimodalFunctionResponse"`
+	RequiresSkipThoughtSignature                    bool `json:"requiresSkipThoughtSignature"`
+	RequiresSkipThoughtSignatureOnFirstFunctionCall bool `json:"requiresSkipThoughtSignatureOnFirstFunctionCall"`
+	SupportsFunctionPartID                          bool `json:"supportsFunctionPartId"`
+	DropUnsignedThinking                            bool `json:"dropUnsignedThinking"`
+	CCALegacyParametersSchema                       bool `json:"ccaLegacyParametersSchema"`
 }
 
 // NeoPiDevinCompat is DevinCompat: whether the row is an AssignModel router
@@ -54,6 +67,10 @@ type NeoPiThinking struct {
 	// EffortRouting maps an effort (or "off") to the wire id that serves it.
 	EffortRouting map[string]string `json:"effortRouting,omitempty"`
 	DefaultLevel  string            `json:"defaultLevel,omitempty"`
+	// SuppressWhenOff models handle "off" provider-side through explicit wire suppression.
+	SuppressWhenOff bool `json:"suppressWhenOff,omitempty"`
+	// EffortBudgets maps an effort to its thinking-token budget (budget mode).
+	EffortBudgets map[string]int `json:"effortBudgets,omitempty"`
 }
 
 // NeoPiAnthropicCompat is the resolved compat NeoPi's Anthropic Messages
@@ -241,6 +258,10 @@ func (m *NeoPiModel) Clone() *NeoPiModel {
 		out.AnthropicCompat = &compat
 	}
 	out.CompletionsCompat = m.CompletionsCompat.Clone()
+	if m.GoogleCompat != nil {
+		compat := *m.GoogleCompat
+		out.GoogleCompat = &compat
+	}
 	if m.DevinCompat != nil {
 		compat := *m.DevinCompat
 		out.DevinCompat = &compat
@@ -257,6 +278,7 @@ func (t *NeoPiThinking) Clone() *NeoPiThinking {
 	out.Efforts = slices.Clone(t.Efforts)
 	out.EffortMap = maps.Clone(t.EffortMap)
 	out.EffortRouting = maps.Clone(t.EffortRouting)
+	out.EffortBudgets = maps.Clone(t.EffortBudgets)
 	if t.SupportsDisplay != nil {
 		display := *t.SupportsDisplay
 		out.SupportsDisplay = &display
