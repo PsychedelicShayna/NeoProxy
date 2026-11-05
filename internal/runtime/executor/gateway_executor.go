@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"strings"
 
@@ -162,6 +163,7 @@ func gatewayIdentityHeaders(gateway string) func() http.Header {
 
 // Execute sends the request on the row's API.
 func (e *GatewayExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (cliproxyexecutor.Response, error) {
+	opts = e.withSession(auth, req, opts)
 	if row, err := e.routeRow(req); err != nil {
 		return cliproxyexecutor.Response{}, err
 	} else if row.API != "anthropic-messages" {
@@ -172,12 +174,30 @@ func (e *GatewayExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, 
 
 // ExecuteStream streams the request on the row's API.
 func (e *GatewayExecutor) ExecuteStream(ctx context.Context, auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) (*cliproxyexecutor.StreamResult, error) {
+	opts = e.withSession(auth, req, opts)
 	if row, err := e.routeRow(req); err != nil {
 		return nil, err
 	} else if row.API != "anthropic-messages" {
 		return e.streamOther(ctx, auth, req, opts, row)
 	}
 	return e.ClaudeExecutor.ExecuteStream(ctx, auth, req, opts)
+}
+
+// withSession gives a request that carries no conversation identity the
+// account's install id, as NeoPi does outside a conversation: OpenCode answers
+// 400 MissingSessionID to a request without x-opencode-session. The id is
+// stable per account, so the gateway's cache affinity holds across requests.
+func (e *GatewayExecutor) withSession(auth *cliproxyauth.Auth, req cliproxyexecutor.Request, opts cliproxyexecutor.Options) cliproxyexecutor.Options {
+	if gatewaySessionHeader(e.gateway) == "" || helps.ProviderSessionUUID(e.Identifier(), req.Metadata, opts.Metadata) != "" {
+		return opts
+	}
+	metadata := maps.Clone(opts.Metadata)
+	if metadata == nil {
+		metadata = make(map[string]any, 1)
+	}
+	metadata[cliproxyexecutor.ExecutionSessionMetadataKey] = gatewayInstallID(e.gateway, auth)
+	opts.Metadata = metadata
+	return opts
 }
 
 // executeOther sends a non-Anthropic row through the engine that speaks its API.
