@@ -46,7 +46,10 @@ type NeoPiThinking struct {
 	// Mode is NeoPi's ThinkingConfig.mode ("budget", "anthropic-budget-effort", ...).
 	Mode string `json:"mode,omitempty"`
 	// RequiresEffort models always think: no effort or thinking-off sends the lowest effort.
-	RequiresEffort  bool  `json:"requiresEffort,omitempty"`
+	RequiresEffort bool `json:"requiresEffort,omitempty"`
+	// SuppressWhenOff models turn thinking off provider-side instead of
+	// clamping an effort-less request to their floor.
+	SuppressWhenOff bool  `json:"suppressWhenOff,omitempty"`
 	SupportsDisplay *bool `json:"supportsDisplay,omitempty"`
 	// EffortRouting maps an effort (or "off") to the wire id that serves it.
 	EffortRouting map[string]string `json:"effortRouting,omitempty"`
@@ -137,7 +140,26 @@ type NeoPiCompletionsCompat struct {
 	RejectRootObjectUnion                        bool                    `json:"rejectRootObjectUnion"`
 	IsOpenRouterHost                             bool                    `json:"isOpenRouterHost"`
 	IsVercelGatewayHost                          bool                    `json:"isVercelGatewayHost"`
+	CacheControlFormat                           string                  `json:"cacheControlFormat,omitempty"`
+	OpenRouterRouting                            *NeoPiRouting           `json:"openRouterRouting,omitempty"`
+	VercelGatewayRouting                         *NeoPiVercelRouting     `json:"vercelGatewayRouting,omitempty"`
 	WhenThinking                                 *NeoPiCompletionsCompat `json:"whenThinking,omitempty"`
+}
+
+// NeoPiRouting is OpenRouter's provider routing preference: the upstreams a
+// request may use, and the order to try them in.
+type NeoPiRouting struct {
+	Only  []string `json:"only,omitempty"`
+	Order []string `json:"order,omitempty"`
+}
+
+// NeoPiVercelRouting is Vercel AI Gateway's provider routing preference.
+type NeoPiVercelRouting struct {
+	Only             []string `json:"only,omitempty"`
+	Order            []string `json:"order,omitempty"`
+	Caching          string   `json:"caching,omitempty"`
+	CacheTtl         string   `json:"cacheTtl,omitempty"`
+	CacheAnchorItems *int     `json:"cacheAnchorItems,omitempty"`
 }
 
 // Clone deep-copies the compat so readers cannot alias its maps.
@@ -149,6 +171,16 @@ func (c *NeoPiCompletionsCompat) Clone() *NeoPiCompletionsCompat {
 	out.ReasoningEffortMap = maps.Clone(c.ReasoningEffortMap)
 	out.ExtraBody = maps.Clone(c.ExtraBody)
 	out.WhenThinking = c.WhenThinking.Clone()
+	if c.OpenRouterRouting != nil {
+		routing := *c.OpenRouterRouting
+		routing.Only, routing.Order = slices.Clone(c.OpenRouterRouting.Only), slices.Clone(c.OpenRouterRouting.Order)
+		out.OpenRouterRouting = &routing
+	}
+	if c.VercelGatewayRouting != nil {
+		routing := *c.VercelGatewayRouting
+		routing.Only, routing.Order = slices.Clone(c.VercelGatewayRouting.Only), slices.Clone(c.VercelGatewayRouting.Order)
+		out.VercelGatewayRouting = &routing
+	}
 	return &out
 }
 

@@ -63,10 +63,39 @@ func setOf(keys ...string) map[string]bool {
 	return out
 }
 
+// normalizeOptions is the subset of NeoPi's NormalizeSchemaOptions that the
+// Go-ported provider option sets (Google, Moonshot) differ on.
+type normalizeOptions struct {
+	permissiveBooleans   bool // coerceBooleanSubschemas "permissive": false becomes {} instead of {not:{}}
+	unsupported          map[string]bool
+	renameFields         bool // normalizeFieldNames
+	collapseNull         bool // collapseNullFields
+	stripNullable        bool // stripNullableKeyword
+	autoPropertyOrdering bool
+	ensureObjectProps    bool // ensureObjectProperties
+	stringEnumsOnly      bool
+	foldOneOf            bool // foldOneOfIntoAnyOf
+	dropNonScalarEnum    bool
+}
+
+var googleNormalizeOptions = &normalizeOptions{
+	unsupported:          googleUnsupportedSchemaFields,
+	renameFields:         true,
+	collapseNull:         true,
+	autoPropertyOrdering: true,
+	ensureObjectProps:    true,
+	stringEnumsOnly:      true,
+}
+
 // NormalizeSchemaForGoogle is normalizeSchemaForGoogle over a JSON schema.
 func NormalizeSchemaForGoogle(schema json.RawMessage) json.RawMessage {
+	return normalizeSchemaWith(schema, googleNormalizeOptions)
+}
+
+// normalizeSchemaWith is normalizeSchema: upgrade, dereference, then the node walk.
+func normalizeSchemaWith(schema json.RawMessage, options *normalizeOptions) json.RawMessage {
 	upgraded := upgradeSchema(decodeTree(gjson.ParseBytes(schema)))
-	return encodeTree(normalizeGoogleNode(dereferenceSchema(upgraded), false, true))
+	return encodeTree(options.node(dereferenceSchema(upgraded), false, true))
 }
 
 // classifyNormalizeChild is classifySchemaChild: "schema", "map" or "".
@@ -324,53 +353,68 @@ func spillToDescription(node *jmap, spill []spillEntry) {
 	node.set("description", formatted)
 }
 
-func normalizeGoogleNode(value any, insideSchemaMap, booleanIsSubschema bool) any {
+func (o *normalizeOptions) node(value any, insideSchemaMap, booleanIsSubschema bool) any {
 	switch typed := value.(type) {
 	case []any:
 		out := make([]any, len(typed))
 		for i, entry := range typed {
-			out[i] = normalizeGoogleNode(entry, insideSchemaMap, booleanIsSubschema)
+			out[i] = o.node(entry, insideSchemaMap, booleanIsSubschema)
 		}
 		return out
 	case bool:
 		if !booleanIsSubschema {
 			return typed
 		}
-		if typed {
+		if typed || o.permissiveBooleans {
 			return newJmap()
 		}
 		not := newJmap()
 		not.set("not", newJmap())
 		return not
 	case *jmap:
-		return normalizeGoogleObject(typed, insideSchemaMap, booleanIsSubschema)
+		return o.object(typed, insideSchemaMap, booleanIsSubschema)
 	}
 	return value
 }
 
-func normalizeGoogleChild(key string, entry any, insideSchemaMap bool) any {
+func (o *normalizeOptions) child(key string, entry any, insideSchemaMap bool) any {
 	kind := classifyNormalizeChild(key, entry, insideSchemaMap)
 	if kind == "" {
 		return entry
 	}
-	return normalizeGoogleNode(entry, kind == "map", kind == "schema")
+	return o.node(entry, kind == "map", kind == "schema")
 }
 
-func normalizeGoogleObject(value *jmap, insideSchemaMap, booleanIsSubschema bool) any {
+// object is normalizeSchemaObjectNode. One JS quirk is not reproduced: a `type`
+// array without any string member leaves `type: undefined` in place in NeoPi,
+// so a later const/enum inference reuses its key slot; here the key is removed
+// and re-added at the end.
+func (o *normalizeOptions) object(value *jmap, insideSchemaMap, booleanIsSubschema bool) any {
 	obj := value
 	if !insideSchemaMap {
-		obj = preHandleNullFields(splitTypeArrayIntoAnyOf(applySnakeCaseRenames(obj)))
+		if o.renameFields {
+			obj = applySnakeCaseRenames(obj)
+		}
+		obj = splitTypeArrayIntoAnyOf(obj)
+		if o.collapseNull {
+			obj = preHandleNullFields(obj)
+		}
 	}
 	result := newJmap()
 	var spill []spillEntry
+	// skipKey reports whether a keyword is dropped from the output, spilling
+	// stripped liftable keywords into the description.
 	skipKey := func(key string, entry any) bool {
-		if !insideSchemaMap && googleUnsupportedSchemaFields[key] {
+		if !insideSchemaMap && o.unsupported[key] {
 			if liftableToDescriptionFields[key] {
 				spill = append(spill, spillEntry{key: key, value: entry})
 			}
 			return true
 		}
-		return !insideSchemaMap && key == "not" && hasUnrepresentableGoogleEnum(entry, false)
+		if o.stripNullable && key == "nullable" {
+			return true
+		}
+		return o.stringEnumsOnly && !insideSchemaMap && key == "not" && hasUnrepresentableGoogleEnum(entry, false)
 	}
 	for _, combiner := range []string{"anyOf", "oneOf"} {
 		variants, ok := obj.get(combiner).([]any)
@@ -428,7 +472,9 @@ func normalizeGoogleObject(value *jmap, insideSchemaMap, booleanIsSubschema bool
 				result.set("type", inferred[0])
 			case sawNull && len(nonNull) == 1:
 				result.set("type", firstNonNull)
-				result.set("nullable", true)
+				if !o.stripNullable {
+					result.set("nullable", true)
+				}
 			}
 		}
 		for _, key := range obj.keys {
@@ -439,30 +485,24 @@ func normalizeGoogleObject(value *jmap, insideSchemaMap, booleanIsSubschema bool
 			if skipKey(key, entry) {
 				continue
 			}
-			result.set(key, normalizeGoogleChild(key, entry, insideSchemaMap))
+			result.set(key, o.child(key, entry, insideSchemaMap))
 		}
 		spillToDescription(result, spill)
-		return postProcessGoogle(result, booleanIsSubschema)
+		return o.postProcess(result, booleanIsSubschema)
 	}
 
 	var constValue any
 	hasConst := false
 	for _, key := range obj.keys {
 		entry := obj.vals[key]
-		if !insideSchemaMap && googleUnsupportedSchemaFields[key] {
-			if liftableToDescriptionFields[key] {
-				spill = append(spill, spillEntry{key: key, value: entry})
-			}
+		if skipKey(key, entry) {
 			continue
 		}
 		if key == "const" {
 			constValue, hasConst = entry, true
 			continue
 		}
-		if !insideSchemaMap && key == "not" && hasUnrepresentableGoogleEnum(entry, false) {
-			continue
-		}
-		result.set(key, normalizeGoogleChild(key, entry, insideSchemaMap))
+		result.set(key, o.child(key, entry, insideSchemaMap))
 	}
 	if typeList, ok := result.get("type").([]any); ok {
 		var types, nonNull []string
@@ -474,7 +514,7 @@ func normalizeGoogleObject(value *jmap, insideSchemaMap, booleanIsSubschema bool
 				}
 			}
 		}
-		if len(types) > len(nonNull) {
+		if len(types) > len(nonNull) && !o.stripNullable {
 			result.set("nullable", true)
 		}
 		switch {
@@ -513,11 +553,11 @@ func normalizeGoogleObject(value *jmap, insideSchemaMap, booleanIsSubschema bool
 			}
 		}
 	}
-	if result.get("type") == "null" {
+	if o.collapseNull && result.get("type") == "null" {
 		result.del("type")
 		result.set("nullable", true)
 	}
-	if result.get("type") == "object" && !result.has("propertyOrdering") {
+	if o.autoPropertyOrdering && result.get("type") == "object" && !result.has("propertyOrdering") {
 		if props, ok := asMap(result.get("properties")); ok && len(props.keys) > 1 {
 			ordering := make([]any, len(props.keys))
 			for i, key := range props.keys {
@@ -526,11 +566,11 @@ func normalizeGoogleObject(value *jmap, insideSchemaMap, booleanIsSubschema bool
 			result.set("propertyOrdering", ordering)
 		}
 	}
-	if result.get("type") == "object" && !result.has("properties") {
+	if o.ensureObjectProps && result.get("type") == "object" && !result.has("properties") {
 		result.set("properties", newJmap())
 	}
 	spillToDescription(result, spill)
-	return postProcessGoogle(result, booleanIsSubschema)
+	return o.postProcess(result, booleanIsSubschema)
 }
 
 // truthy is JavaScript truthiness for a schema keyword value.
@@ -548,12 +588,59 @@ func truthy(value any) bool {
 	return true
 }
 
-// postProcessGoogle is applyNodePostProcessing for the Google options: an
-// enum that is not all strings is dropped from a subschema node.
-func postProcessGoogle(schema *jmap, booleanIsSubschema bool) *jmap {
-	if !booleanIsSubschema {
+// postProcess is applyNodePostProcessing for the option sets ported here:
+// residual oneOf folds into anyOf, and enums the provider cannot express drop.
+func (o *normalizeOptions) postProcess(schema *jmap, booleanIsSubschema bool) *jmap {
+	current := schema
+	if o.foldOneOf {
+		current = foldOneOfIntoAnyOf(current)
+	}
+	if o.dropNonScalarEnum {
+		current = dropNonScalarEnum(current)
+	}
+	if o.stringEnumsOnly && booleanIsSubschema {
+		current = dropNonStringEnum(current)
+	}
+	return current
+}
+
+// foldOneOfIntoAnyOf: MFJS recognizes only anyOf, so a residual oneOf is
+// appended to it (taking anyOf's slot when present, the end otherwise).
+func foldOneOfIntoAnyOf(schema *jmap) *jmap {
+	oneOf, ok := schema.get("oneOf").([]any)
+	if !ok {
 		return schema
 	}
+	out := schema.clone()
+	out.del("oneOf")
+	var merged []any
+	if existing, isArray := out.get("anyOf").([]any); isArray {
+		merged = append(merged, existing...)
+	}
+	out.set("anyOf", append(merged, oneOf...))
+	return out
+}
+
+// dropNonScalarEnum: MFJS enums admit only string and number literals.
+func dropNonScalarEnum(schema *jmap) *jmap {
+	enum, ok := schema.get("enum").([]any)
+	if !ok {
+		return schema
+	}
+	for _, entry := range enum {
+		switch entry.(type) {
+		case string, float64:
+		default:
+			out := schema.clone()
+			out.del("enum")
+			return out
+		}
+	}
+	return schema
+}
+
+// dropNonStringEnum: Google's enum field takes non-empty string lists only.
+func dropNonStringEnum(schema *jmap) *jmap {
 	enum, ok := schema.get("enum").([]any)
 	if !ok {
 		return schema

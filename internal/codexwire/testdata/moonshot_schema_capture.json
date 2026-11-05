@@ -1,0 +1,2266 @@
+{
+  "source": "NeoPi OWN toolWireSchema + normalizeSchemaForMoonshot",
+  "cases": [
+    {
+      "name": "bare-const-string",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "fixed": {
+            "const": "x"
+          },
+          "num": {
+            "const": 3
+          },
+          "flag": {
+            "const": true
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"const\":\"x\"},\"num\":{\"const\":3},\"flag\":{\"const\":true}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"enum\":[\"x\"],\"type\":\"string\"},\"num\":{\"enum\":[3],\"type\":\"number\"},\"flag\":{\"type\":\"boolean\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"enum\":[\"x\"],\"type\":\"string\"},\"num\":{\"enum\":[3],\"type\":\"number\"},\"flag\":{\"type\":\"boolean\"}}}"
+    },
+    {
+      "name": "bare-const-null-object",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nothing": {
+            "const": null
+          },
+          "rec": {
+            "const": {
+              "a": 1
+            }
+          },
+          "list": {
+            "const": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"const\":null},\"rec\":{\"const\":{\"a\":1}},\"list\":{\"const\":[1,2]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":\"null\"},\"rec\":{\"type\":\"object\"},\"list\":{\"type\":\"array\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":\"null\"},\"rec\":{\"type\":\"object\"},\"list\":{\"type\":\"array\"}}}"
+    },
+    {
+      "name": "const-with-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "fixed": {
+            "type": "string",
+            "const": "x",
+            "description": "Fixed."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"type\":\"string\",\"const\":\"x\",\"description\":\"Fixed.\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"type\":\"string\",\"description\":\"Fixed.\",\"enum\":[\"x\"]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"fixed\":{\"type\":\"string\",\"description\":\"Fixed.\",\"enum\":[\"x\"]}}}"
+    },
+    {
+      "name": "const-with-enum",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "enum": [
+              "a",
+              "b"
+            ],
+            "const": "c"
+          },
+          "dup": {
+            "enum": [
+              "a"
+            ],
+            "const": "a"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\"],\"const\":\"c\",\"type\":\"string\"},\"dup\":{\"enum\":[\"a\"],\"const\":\"a\",\"type\":\"string\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\",\"c\"],\"type\":\"string\"},\"dup\":{\"enum\":[\"a\"],\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\",\"c\"],\"type\":\"string\"},\"dup\":{\"enum\":[\"a\"],\"type\":\"string\"}}}"
+    },
+    {
+      "name": "const-anyof-strings",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "anyOf": [
+              {
+                "const": "a"
+              },
+              {
+                "const": "b"
+              },
+              {
+                "const": "a"
+              }
+            ],
+            "description": "Mode."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"mode\":{\"description\":\"Mode.\",\"type\":\"string\",\"enum\":[\"a\",\"b\",\"a\"]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"mode\":{\"description\":\"Mode.\",\"type\":\"string\",\"enum\":[\"a\",\"b\",\"a\"]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"mode\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\",\"description\":\"Mode.\"}}}"
+    },
+    {
+      "name": "const-anyof-explicit-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "a"
+              },
+              {
+                "type": "string",
+                "const": "b"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"mode\":{\"anyOf\":[{\"type\":\"string\",\"const\":\"a\"},{\"type\":\"string\",\"const\":\"b\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"mode\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"mode\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}}}"
+    },
+    {
+      "name": "const-anyof-mixed-explicit-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "a"
+              },
+              {
+                "type": "number",
+                "const": 2
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"mode\":{\"anyOf\":[{\"type\":\"string\",\"const\":\"a\"},{\"type\":\"number\",\"const\":2}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"mode\":{\"enum\":[\"a\",2]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"mode\":{\"enum\":[\"a\",2]}}}"
+    },
+    {
+      "name": "const-oneof-numbers",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "oneOf": [
+              {
+                "const": 1
+              },
+              {
+                "const": 2
+              }
+            ],
+            "title": "Pick",
+            "minimum": 1
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"oneOf\":[{\"const\":1},{\"const\":2}],\"title\":\"Pick\",\"minimum\":1}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[1,2],\"type\":\"number\",\"description\":\"{minimum: 1}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[1,2],\"type\":\"number\",\"description\":\"{minimum: 1}\"}}}"
+    },
+    {
+      "name": "const-oneof-mixed-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "oneOf": [
+              {
+                "const": 1
+              },
+              {
+                "const": null
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"oneOf\":[{\"const\":1},{\"const\":null}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"type\":\"number\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"type\":\"number\"}}}"
+    },
+    {
+      "name": "const-anyof-mixed-types",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "const": 1
+              },
+              {
+                "const": "s"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"const\":1},{\"const\":\"s\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[1,\"s\"]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[1,\"s\"]}}}"
+    },
+    {
+      "name": "const-anyof-with-siblings",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "const": "a"
+              },
+              {
+                "const": "b"
+              }
+            ],
+            "default": "a",
+            "nullable": true,
+            "pattern": "^a",
+            "description": "Pick."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"const\":\"a\"},{\"const\":\"b\"},{\"type\":\"null\"}],\"default\":\"a\",\"pattern\":\"^a\",\"description\":\"Pick.\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"enum\":[\"a\"],\"type\":\"string\"},{\"enum\":[\"b\"],\"type\":\"string\"},{\"type\":\"null\"}],\"default\":\"a\",\"description\":\"Pick.\\n\\n{pattern: \\\"^a\\\"}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"enum\":[\"a\"],\"type\":\"string\"},{\"enum\":[\"b\"],\"type\":\"string\"},{\"type\":\"null\"}],\"default\":\"a\",\"description\":\"Pick.\\n\\n{pattern: \\\"^a\\\"}\"}}}"
+    },
+    {
+      "name": "const-anyof-and-oneof",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "const": "a"
+              }
+            ],
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"const\":\"a\"}],\"oneOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\"],\"type\":\"string\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\"],\"type\":\"string\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}"
+    },
+    {
+      "name": "const-anyof-extra-key-const",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "const": "z",
+            "anyOf": [
+              {
+                "const": "a"
+              },
+              {
+                "const": "b"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"const\":\"z\",\"anyOf\":[{\"const\":\"a\"},{\"const\":\"b\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\",\"const\":\"z\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\",\"const\":\"z\"}}}"
+    },
+    {
+      "name": "anyof-partial-const",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "const": "a"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"const\":\"a\"},{\"type\":\"string\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"enum\":[\"a\"],\"type\":\"string\"},{\"type\":\"string\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"enum\":[\"a\"],\"type\":\"string\"},{\"type\":\"string\"}]}}}"
+    },
+    {
+      "name": "anyof-const-object-variants",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pick": {
+            "anyOf": [
+              {
+                "const": {
+                  "k": 1
+                }
+              },
+              {
+                "const": {
+                  "k": 2
+                }
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pick\":{\"anyOf\":[{\"const\":{\"k\":1}},{\"const\":{\"k\":2}}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pick\":{\"type\":\"object\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pick\":{\"type\":\"object\"}}}"
+    },
+    {
+      "name": "oneof-residual",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number",
+                "minimum": 0
+              }
+            ],
+            "description": "Either."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"number\",\"minimum\":0}],\"description\":\"Either.\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"Either.\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\",\"description\":\"{minimum: 0}\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"Either.\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\",\"description\":\"{minimum: 0}\"}]}}}"
+    },
+    {
+      "name": "oneof-with-anyof",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "type": "string"
+              }
+            ],
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"}],\"oneOf\":[{\"type\":\"number\"},{\"type\":\"boolean\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"boolean\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"boolean\"}]}}}"
+    },
+    {
+      "name": "oneof-before-anyof-key-order",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "oneOf": [
+              {
+                "type": "number"
+              }
+            ],
+            "description": "d",
+            "anyOf": [
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"oneOf\":[{\"type\":\"number\"}],\"description\":\"d\",\"anyOf\":[{\"type\":\"string\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"d\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"description\":\"d\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}"
+    },
+    {
+      "name": "oneof-nested-in-items",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "a": {
+                      "oneOf": [
+                        {
+                          "type": "integer"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"a\":{\"oneOf\":[{\"type\":\"integer\"}]}}}]}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"a\":{\"anyOf\":[{\"type\":\"integer\"}]}}}]}}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"object\",\"properties\":{\"a\":{\"anyOf\":[{\"type\":\"integer\"}]}}}]}}}}"
+    },
+    {
+      "name": "type-array-nullable",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Max hits."
+          },
+          "term": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "term"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":[\"number\",\"null\"],\"description\":\"Max hits.\"},\"term\":{\"type\":\"string\"}},\"required\":[\"term\"]}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"},\"term\":{\"type\":\"string\"}},\"required\":[\"term\"]}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"number\",\"description\":\"Max hits.\"},\"term\":{\"type\":\"string\"}},\"required\":[\"term\"]}"
+    },
+    {
+      "name": "type-array-null-first",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "minimum": 1
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":[\"null\",\"integer\"],\"minimum\":1}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"integer\",\"description\":\"{minimum: 1}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"integer\",\"description\":\"{minimum: 1}\"}}}"
+    },
+    {
+      "name": "type-array-only-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nothing": {
+            "type": [
+              "null"
+            ]
+          },
+          "also": {
+            "type": [
+              "null",
+              "null"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":[\"null\"]},\"also\":{\"type\":[\"null\",\"null\"]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":\"null\"},\"also\":{\"type\":\"null\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":\"null\"},\"also\":{\"type\":\"null\"}}}"
+    },
+    {
+      "name": "type-array-single",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "one": {
+            "type": [
+              "string"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "properties": {
+              "a": {}
+            },
+            "required": [
+              "a"
+            ],
+            "description": "d"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"one\":{\"type\":[\"string\"],\"items\":{\"type\":\"string\"},\"properties\":{\"a\":true},\"required\":[\"a\"],\"description\":\"d\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"string\",\"description\":\"d\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"string\",\"description\":\"d\"}}}"
+    },
+    {
+      "name": "type-array-empty",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "none": {
+            "type": [],
+            "description": "d"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"none\":{\"type\":[],\"description\":\"d\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"none\":{\"description\":\"d\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"none\":{\"description\":\"d\"}}}"
+    },
+    {
+      "name": "type-array-multi",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "string",
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "minLength": 2,
+            "maxItems": 3
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":[\"string\",\"array\",\"null\"],\"items\":{\"type\":\"string\"},\"minLength\":2,\"maxItems\":3}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"value\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"{minLength: 2}\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{maxItems: 3}\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"value\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"{minLength: 2}\"},{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{maxItems: 3}\"}]}}}"
+    },
+    {
+      "name": "type-array-multi-object",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": [
+              "object",
+              "string"
+            ],
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ],
+            "additionalProperties": false,
+            "format": "uri",
+            "description": "Either."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"value\":{\"type\":[\"object\",\"string\"],\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"],\"additionalProperties\":false,\"format\":\"uri\",\"description\":\"Either.\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"value\":{\"description\":\"Either.\",\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"],\"additionalProperties\":false},{\"type\":\"string\",\"description\":\"{format: \\\"uri\\\"}\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"value\":{\"description\":\"Either.\",\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"],\"additionalProperties\":false},{\"type\":\"string\",\"description\":\"{format: \\\"uri\\\"}\"}]}}}"
+    },
+    {
+      "name": "type-array-multi-numeric",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": [
+              "integer",
+              "number",
+              "integer"
+            ],
+            "minimum": 0,
+            "maximum": 5,
+            "multipleOf": 1
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"n\":{\"type\":[\"integer\",\"number\",\"integer\"],\"minimum\":0,\"maximum\":5,\"multipleOf\":1}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"n\":{\"anyOf\":[{\"type\":\"integer\",\"description\":\"{minimum: 0, maximum: 5, multipleOf: 1}\"},{\"type\":\"number\",\"description\":\"{minimum: 0, maximum: 5, multipleOf: 1}\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"n\":{\"anyOf\":[{\"type\":\"integer\",\"description\":\"{minimum: 0, maximum: 5, multipleOf: 1}\"},{\"type\":\"number\",\"description\":\"{minimum: 0, maximum: 5, multipleOf: 1}\"}]}}}"
+    },
+    {
+      "name": "type-array-multi-with-anyof",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[\"string\",\"number\"],\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}"
+    },
+    {
+      "name": "type-array-multi-with-enum",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              "string",
+              "number"
+            ],
+            "enum": [
+              "a",
+              1
+            ],
+            "default": "a"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[\"string\",\"number\"],\"enum\":[\"a\",1],\"default\":\"a\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",1],\"default\":\"a\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\",1],\"default\":\"a\",\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"}]}}}"
+    },
+    {
+      "name": "type-array-non-string-members",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": [
+              1,
+              "string"
+            ]
+          },
+          "w": {
+            "type": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":[1,\"string\"]},\"w\":{\"type\":[1,2]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"},\"w\":{}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"type\":\"string\"},\"w\":{}}}"
+    },
+    {
+      "name": "enum-without-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "enum": [
+              "s",
+              "m"
+            ]
+          },
+          "level": {
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "nums": {
+            "enum": [
+              1.5,
+              2
+            ]
+          },
+          "flag": {
+            "enum": [
+              true,
+              false
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"size\":{\"enum\":[\"s\",\"m\"],\"type\":\"string\"},\"level\":{\"enum\":[1,2],\"type\":\"number\"},\"nums\":{\"enum\":[1.5,2],\"type\":\"number\"},\"flag\":{\"enum\":[true,false],\"type\":\"boolean\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"size\":{\"enum\":[\"s\",\"m\"],\"type\":\"string\"},\"level\":{\"enum\":[1,2],\"type\":\"number\"},\"nums\":{\"enum\":[1.5,2],\"type\":\"number\"},\"flag\":{\"type\":\"boolean\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"size\":{\"enum\":[\"s\",\"m\"],\"type\":\"string\"},\"level\":{\"enum\":[1,2],\"type\":\"number\"},\"nums\":{\"enum\":[1.5,2],\"type\":\"number\"},\"flag\":{\"type\":\"boolean\"}}}"
+    },
+    {
+      "name": "enum-mixed-no-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mixed": {
+            "enum": [
+              "a",
+              2
+            ]
+          },
+          "withNull": {
+            "enum": [
+              "a",
+              null
+            ]
+          },
+          "onlyNull": {
+            "enum": [
+              null
+            ]
+          },
+          "empty": {
+            "enum": []
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"mixed\":{\"enum\":[\"a\",2]},\"withNull\":{\"enum\":[\"a\",null]},\"onlyNull\":{\"enum\":[null]},\"empty\":{\"enum\":[]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"mixed\":{\"enum\":[\"a\",2]},\"withNull\":{},\"onlyNull\":{\"type\":\"null\"},\"empty\":{\"enum\":[]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"mixed\":{\"enum\":[\"a\",2]},\"withNull\":{},\"onlyNull\":{\"type\":\"null\"},\"empty\":{\"enum\":[]}}}"
+    },
+    {
+      "name": "enum-with-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "mixed": {
+            "type": "string",
+            "enum": [
+              "a",
+              2
+            ]
+          },
+          "bool": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "obj": {
+            "type": "object",
+            "enum": [
+              {
+                "a": 1
+              }
+            ]
+          },
+          "nulls": {
+            "type": "string",
+            "enum": [
+              "a",
+              null
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"mixed\":{\"type\":\"string\",\"enum\":[\"a\",2]},\"bool\":{\"type\":\"boolean\",\"enum\":[true]},\"obj\":{\"type\":\"object\",\"enum\":[{\"a\":1}]},\"nulls\":{\"type\":\"string\",\"enum\":[\"a\",null]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"mixed\":{\"type\":\"string\",\"enum\":[\"a\",2]},\"bool\":{\"type\":\"boolean\"},\"obj\":{\"type\":\"object\"},\"nulls\":{\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"mixed\":{\"type\":\"string\",\"enum\":[\"a\",2]},\"bool\":{\"type\":\"boolean\"},\"obj\":{\"type\":\"object\"},\"nulls\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "enum-with-anyof-no-infer",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "enum": [
+              "a"
+            ],
+            "anyOf": [
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "w": {
+            "enum": [
+              "a"
+            ],
+            "oneOf": [
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\"],\"anyOf\":[{\"type\":\"string\"}],\"type\":\"string\"},\"w\":{\"enum\":[\"a\"],\"oneOf\":[{\"type\":\"string\"}],\"type\":\"string\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\"],\"anyOf\":[{\"type\":\"string\"}],\"type\":\"string\"},\"w\":{\"enum\":[\"a\"],\"type\":\"string\",\"anyOf\":[{\"type\":\"string\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"enum\":[\"a\"],\"anyOf\":[{\"type\":\"string\"}]},\"w\":{\"enum\":[\"a\"],\"anyOf\":[{\"type\":\"string\"}]}}}"
+    },
+    {
+      "name": "enum-non-scalar-dropped",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "arr": {
+            "enum": [
+              [
+                1
+              ],
+              [
+                2
+              ]
+            ]
+          },
+          "o": {
+            "enum": [
+              {
+                "a": 1
+              }
+            ]
+          },
+          "b": {
+            "enum": [
+              true
+            ]
+          },
+          "n": {
+            "enum": [
+              null
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"arr\":{\"enum\":[[1],[2]]},\"o\":{\"enum\":[{\"a\":1}]},\"b\":{\"enum\":[true],\"type\":\"boolean\"},\"n\":{\"enum\":[null]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"arr\":{\"type\":\"array\"},\"o\":{\"type\":\"object\"},\"b\":{\"type\":\"boolean\"},\"n\":{\"type\":\"null\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"arr\":{\"type\":\"array\"},\"o\":{\"type\":\"object\"},\"b\":{\"type\":\"boolean\"},\"n\":{\"type\":\"null\"}}}"
+    },
+    {
+      "name": "enum-inside-anyof-branches",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              {
+                "enum": [
+                  "a",
+                  "b"
+                ]
+              },
+              {
+                "enum": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "enum": [
+                  null
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"enum\":[\"a\",\"b\"],\"type\":\"string\"},{\"enum\":[1,2],\"type\":\"number\"},{\"enum\":[null]}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"enum\":[\"a\",\"b\"],\"type\":\"string\"},{\"enum\":[1,2],\"type\":\"number\"},{\"type\":\"null\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{\"enum\":[\"a\",\"b\"],\"type\":\"string\"},{\"enum\":[1,2],\"type\":\"number\"},{\"type\":\"null\"}]}}}"
+    },
+    {
+      "name": "null-type",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nothing": {
+            "type": "null",
+            "description": "Nada."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":\"null\",\"description\":\"Nada.\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":\"null\",\"description\":\"Nada.\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"nothing\":{\"type\":\"null\",\"description\":\"Nada.\"}}}"
+    },
+    {
+      "name": "anyof-null",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "maybe": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "many": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"maybe\":{\"maxLength\":5,\"type\":[\"string\",\"null\"]},\"many\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"},{\"type\":\"null\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"maybe\":{\"type\":\"string\",\"description\":\"{maxLength: 5}\"},\"many\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"},{\"type\":\"null\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"maybe\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"{maxLength: 5}\"},{\"type\":\"null\"}]},\"many\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"integer\"},{\"type\":\"null\"}]}}}"
+    },
+    {
+      "name": "nullable-keyword",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "nullable": true
+          },
+          "b": {
+            "nullable": false,
+            "type": "number"
+          },
+          "c": {
+            "anyOf": [
+              {
+                "type": "string",
+                "nullable": true
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":[\"string\",\"null\"]},\"b\":{\"type\":\"number\"},\"c\":{\"anyOf\":[{\"type\":[\"string\",\"null\"]}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"},\"c\":{\"anyOf\":[{\"type\":\"string\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"number\"},\"c\":{\"anyOf\":[{\"type\":\"string\"}]}}}"
+    },
+    {
+      "name": "property-named-nullable",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "nullable": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"nullable\":{\"type\":\"boolean\"},\"title\":{\"type\":\"string\"},\"format\":{\"type\":\"string\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"format\":{\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"},\"format\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "spill-validation",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z]+$",
+            "format": "uuid",
+            "default": "abc",
+            "examples": [
+              "x"
+            ],
+            "$comment": "c"
+          },
+          "n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9,
+            "exclusiveMinimum": 0,
+            "exclusiveMaximum": 10,
+            "multipleOf": 2,
+            "description": "Count."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"pattern\":\"^[a-z]+$\",\"format\":\"uuid\",\"default\":\"abc\",\"examples\":[\"x\"],\"$comment\":\"c\"},\"n\":{\"type\":\"integer\",\"minimum\":1,\"maximum\":9,\"exclusiveMinimum\":0,\"exclusiveMaximum\":10,\"multipleOf\":2,\"description\":\"Count.\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"default\":\"abc\",\"description\":\"{pattern: \\\"^[a-z]+$\\\", format: \\\"uuid\\\", examples: [\\\"x\\\"]}\"},\"n\":{\"type\":\"integer\",\"description\":\"Count.\\n\\n{minimum: 1, maximum: 9, exclusiveMinimum: 0, exclusiveMaximum: 10, multipleOf: 2}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"default\":\"abc\",\"description\":\"{pattern: \\\"^[a-z]+$\\\", format: \\\"uuid\\\", examples: [\\\"x\\\"]}\"},\"n\":{\"type\":\"integer\",\"description\":\"Count.\\n\\n{minimum: 1, maximum: 9, exclusiveMinimum: 0, exclusiveMaximum: 10, multipleOf: 2}\"}}}"
+    },
+    {
+      "name": "spill-array-object",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "uniqueItems": true
+          },
+          "rec": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 3,
+            "properties": {
+              "a": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"minItems\":1,\"maxItems\":5,\"uniqueItems\":true},\"rec\":{\"type\":\"object\",\"minProperties\":1,\"maxProperties\":3,\"properties\":{\"a\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":4}}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{minItems: 1, maxItems: 5, uniqueItems: true}\"},\"rec\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"description\":\"{minLength: 1, maxLength: 4}\"}},\"description\":\"{minProperties: 1, maxProperties: 3}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{minItems: 1, maxItems: 5, uniqueItems: true}\"},\"rec\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"description\":\"{minLength: 1, maxLength: 4}\"}},\"description\":\"{minProperties: 1, maxProperties: 3}\"}}}"
+    },
+    {
+      "name": "spill-existing-description",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "s": {
+            "type": "string",
+            "description": "Existing.",
+            "pattern": "^x",
+            "format": "email"
+          },
+          "empty": {
+            "type": "string",
+            "description": "",
+            "minLength": 2
+          },
+          "numeric": {
+            "type": "string",
+            "description": 5,
+            "minLength": 2
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"description\":\"Existing.\",\"pattern\":\"^x\",\"format\":\"email\"},\"empty\":{\"type\":\"string\",\"description\":\"\",\"minLength\":2},\"numeric\":{\"type\":\"string\",\"description\":5,\"minLength\":2}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"description\":\"Existing.\\n\\n{pattern: \\\"^x\\\", format: \\\"email\\\"}\"},\"empty\":{\"type\":\"string\",\"description\":\"{minLength: 2}\"},\"numeric\":{\"type\":\"string\",\"description\":\"{minLength: 2}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"description\":\"Existing.\\n\\n{pattern: \\\"^x\\\", format: \\\"email\\\"}\"},\"empty\":{\"type\":\"string\",\"description\":\"{minLength: 2}\"},\"numeric\":{\"type\":\"string\",\"description\":\"{minLength: 2}\"}}}"
+    },
+    {
+      "name": "spill-values-complex",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "s": {
+            "type": "string",
+            "pattern": "a\"b\\c\né ",
+            "examples": [
+              {
+                "k": [
+                  1,
+                  2.5,
+                  null,
+                  true
+                ]
+              }
+            ],
+            "format": "date-time"
+          },
+          "n": {
+            "type": "number",
+            "minimum": 1e+21,
+            "maximum": -0.5,
+            "multipleOf": 0.1
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"pattern\":\"a\\\"b\\\\c\\né \",\"examples\":[{\"k\":[1,2.5,null,true]}],\"format\":\"date-time\"},\"n\":{\"type\":\"number\",\"minimum\":1e+21,\"maximum\":-0.5,\"multipleOf\":0.1}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"description\":\"{pattern: \\\"a\\\\\\\"b\\\\\\\\c\\\\né \\\", examples: [{\\\"k\\\":[1,2.5,null,true]}], format: \\\"date-time\\\"}\"},\"n\":{\"type\":\"number\",\"description\":\"{minimum: 1e+21, maximum: -0.5, multipleOf: 0.1}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"description\":\"{pattern: \\\"a\\\\\\\"b\\\\\\\\c\\\\né \\\", examples: [{\\\"k\\\":[1,2.5,null,true]}], format: \\\"date-time\\\"}\"},\"n\":{\"type\":\"number\",\"description\":\"{minimum: 1e+21, maximum: -0.5, multipleOf: 0.1}\"}}}"
+    },
+    {
+      "name": "stripped-no-spill",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "s": {
+            "type": "string",
+            "title": "T",
+            "$schema": "x",
+            "deprecated": true,
+            "readOnly": true,
+            "writeOnly": false,
+            "contentEncoding": "base64",
+            "contentMediaType": "text/plain",
+            "$dynamicRef": "#a",
+            "$dynamicAnchor": "a"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"title\":\"T\",\"$schema\":\"x\",\"deprecated\":true,\"readOnly\":true,\"writeOnly\":false,\"contentEncoding\":\"base64\",\"contentMediaType\":\"text/plain\",\"$dynamicRef\":\"#a\",\"$dynamicAnchor\":\"a\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "stripped-structural-keywords",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "s": {
+            "type": "string",
+            "if": {
+              "minLength": 1
+            },
+            "then": {
+              "pattern": "a"
+            },
+            "else": {
+              "pattern": "b"
+            },
+            "not": {
+              "const": "z"
+            },
+            "patternProperties": {
+              "^a": {
+                "type": "string"
+              }
+            },
+            "propertyNames": {
+              "pattern": "^a"
+            },
+            "contains": {
+              "type": "string"
+            },
+            "minContains": 1,
+            "maxContains": 2,
+            "unevaluatedProperties": false,
+            "unevaluatedItems": false,
+            "dependentRequired": {
+              "a": [
+                "b"
+              ]
+            },
+            "dependentSchemas": {
+              "a": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"if\":{\"minLength\":1},\"then\":{\"pattern\":\"a\"},\"else\":{\"pattern\":\"b\"},\"not\":{\"const\":\"z\"},\"patternProperties\":{\"^a\":{\"type\":\"string\"}},\"propertyNames\":{\"pattern\":\"^a\"},\"contains\":{\"type\":\"string\"},\"minContains\":1,\"maxContains\":2,\"unevaluatedProperties\":false,\"unevaluatedItems\":false,\"dependentRequired\":{\"a\":[\"b\"]},\"dependentSchemas\":{\"a\":{\"type\":\"string\"}}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "prefix-items-tuple",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "items": false,
+            "minItems": 2
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"string\"},{\"type\":\"number\"}],\"items\":false,\"minItems\":2}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\",\"items\":{},\"description\":\"{minItems: 2}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\",\"items\":{},\"description\":\"{minItems: 2}\"}}}"
+    },
+    {
+      "name": "draft7-items-tuple",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"string\"},{\"type\":\"number\"}]},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{uniqueItems: true}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\"},\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"{uniqueItems: true}\"}}}"
+    },
+    {
+      "name": "draft7-additional-items",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "pair": {
+            "type": "array",
+            "items": [
+              {
+                "type": "string"
+              }
+            ],
+            "additionalItems": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"string\"}],\"items\":{\"type\":\"number\"}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"pair\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}}}}"
+    },
+    {
+      "name": "draft7-nullable-and-const",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "const": "x"
+          },
+          "b": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "definitions": {
+          "Foo": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"const\":\"x\"},\"b\":{\"type\":[\"string\",\"null\"]}},\"$defs\":{\"Foo\":{\"type\":\"string\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"enum\":[\"x\"]},\"b\":{\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"enum\":[\"x\"]},\"b\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "boolean-subschemas",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "anything": true,
+          "never": false,
+          "arr": {
+            "type": "array",
+            "items": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"anything\":true,\"never\":false,\"arr\":{\"type\":\"array\",\"items\":true}},\"additionalProperties\":false}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"anything\":{},\"never\":{},\"arr\":{\"type\":\"array\",\"items\":{}}},\"additionalProperties\":false}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"anything\":{},\"never\":{},\"arr\":{\"type\":\"array\",\"items\":{}}},\"additionalProperties\":false}"
+    },
+    {
+      "name": "boolean-subschemas-combiners",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "anyOf": [
+              true,
+              false,
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "w": {
+            "allOf": [
+              true,
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "x": {
+            "oneOf": [
+              false
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[true,false,{\"type\":\"string\"}]},\"w\":{\"allOf\":[true,{\"type\":\"number\"}]},\"x\":{\"oneOf\":[false]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{},{},{\"type\":\"string\"}]},\"w\":{\"allOf\":[{},{\"type\":\"number\"}]},\"x\":{\"anyOf\":[{}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"v\":{\"anyOf\":[{},{},{\"type\":\"string\"}]},\"w\":{\"allOf\":[{},{\"type\":\"number\"}]},\"x\":{\"anyOf\":[{}]}}}"
+    },
+    {
+      "name": "boolean-keyword-slots",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "s": {
+            "type": "string",
+            "nullable": true,
+            "default": true
+          },
+          "e": {
+            "enum": [
+              true,
+              false
+            ]
+          },
+          "a": {
+            "type": "object",
+            "additionalProperties": true,
+            "unevaluatedProperties": false
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":[\"string\",\"null\"],\"default\":true},\"e\":{\"enum\":[true,false],\"type\":\"boolean\"},\"a\":{\"type\":\"object\",\"additionalProperties\":true,\"unevaluatedProperties\":false}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"default\":true},\"e\":{\"type\":\"boolean\"},\"a\":{\"type\":\"object\",\"additionalProperties\":true}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"s\":{\"type\":\"string\",\"default\":true},\"e\":{\"type\":\"boolean\"},\"a\":{\"type\":\"object\",\"additionalProperties\":true}}}"
+    },
+    {
+      "name": "boolean-in-properties-map",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": true,
+          "b": false,
+          "c": {
+            "type": "object",
+            "properties": {
+              "d": true
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":true,\"b\":false,\"c\":{\"type\":\"object\",\"properties\":{\"d\":true}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{},\"b\":{},\"c\":{\"type\":\"object\",\"properties\":{\"d\":{}}}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{},\"b\":{},\"c\":{\"type\":\"object\",\"properties\":{\"d\":{}}}}}"
+    },
+    {
+      "name": "boolean-items-false",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "array",
+            "items": false
+          },
+          "list2": {
+            "type": "array",
+            "items": true
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":false},\"list2\":{\"type\":\"array\",\"items\":true}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{}},\"list2\":{\"type\":\"array\",\"items\":{}}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"list\":{\"type\":\"array\",\"items\":{}},\"list2\":{\"type\":\"array\",\"items\":{}}}}"
+    },
+    {
+      "name": "additional-properties-bool-and-schema",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "b": {
+            "type": "object",
+            "additionalProperties": false
+          },
+          "c": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^x"
+            }
+          },
+          "d": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "const": "a"
+                },
+                {
+                  "const": "b"
+                }
+              ]
+            }
+          },
+          "e": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"additionalProperties\":true},\"b\":{\"type\":\"object\",\"additionalProperties\":false},\"c\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\",\"pattern\":\"^x\"}},\"d\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\",\"enum\":[\"a\",\"b\"]}},\"e\":{\"type\":\"object\",\"additionalProperties\":true}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"additionalProperties\":true},\"b\":{\"type\":\"object\",\"additionalProperties\":false},\"c\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\",\"description\":\"{pattern: \\\"^x\\\"}\"}},\"d\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\",\"enum\":[\"a\",\"b\"]}},\"e\":{\"type\":\"object\",\"additionalProperties\":true}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"additionalProperties\":true},\"b\":{\"type\":\"object\",\"additionalProperties\":false},\"c\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\",\"description\":\"{pattern: \\\"^x\\\"}\"}},\"d\":{\"type\":\"object\",\"additionalProperties\":{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}},\"e\":{\"type\":\"object\",\"additionalProperties\":{}}}}"
+    },
+    {
+      "name": "default-and-description-preserved",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "default": "x",
+            "description": "D."
+          },
+          "b": {
+            "type": "integer",
+            "default": 3
+          },
+          "c": {
+            "type": "object",
+            "default": {
+              "z": 1
+            },
+            "properties": {}
+          },
+          "d": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "default": "q"
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"default\":\"x\",\"description\":\"D.\"},\"b\":{\"type\":\"integer\",\"default\":3},\"c\":{\"type\":\"object\",\"default\":{\"z\":1},\"properties\":{}},\"d\":{\"type\":\"array\",\"default\":[],\"items\":{\"type\":\"string\",\"default\":\"q\"}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"default\":\"x\",\"description\":\"D.\"},\"b\":{\"type\":\"integer\",\"default\":3},\"c\":{\"type\":\"object\",\"default\":{\"z\":1},\"properties\":{}},\"d\":{\"type\":\"array\",\"default\":[],\"items\":{\"type\":\"string\",\"default\":\"q\"}}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"default\":\"x\",\"description\":\"D.\"},\"b\":{\"type\":\"integer\",\"default\":3},\"c\":{\"type\":\"object\",\"default\":{\"z\":1},\"properties\":{}},\"d\":{\"type\":\"array\",\"default\":[],\"items\":{\"type\":\"string\",\"default\":\"q\"}}}}"
+    },
+    {
+      "name": "default-with-nested-schema-like",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "object",
+            "default": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "const": 1,
+              "minLength": 2
+            }
+          },
+          "b": {
+            "const": "x",
+            "default": {
+              "enum": [
+                1,
+                null
+              ]
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"default\":{\"type\":[\"string\",\"null\"],\"const\":1,\"minLength\":2}},\"b\":{\"const\":\"x\",\"default\":{\"enum\":[1,null]}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"default\":{\"type\":[\"string\",\"null\"],\"const\":1,\"minLength\":2}},\"b\":{\"default\":{\"enum\":[1,null]},\"enum\":[\"x\"],\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"object\",\"default\":{\"type\":[\"string\",\"null\"],\"const\":1,\"minLength\":2}},\"b\":{\"default\":{\"enum\":[1,null]},\"enum\":[\"x\"],\"type\":\"string\"}}}"
+    },
+    {
+      "name": "allof-kept",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "allOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              {
+                "required": [
+                  "x"
+                ]
+              }
+            ]
+          },
+          "b": {
+            "allOf": [
+              {
+                "const": "a"
+              },
+              {
+                "const": "b"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"allOf\":[{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\",\"minLength\":1}}},{\"required\":[\"x\"]}]},\"b\":{\"allOf\":[{\"const\":\"a\"},{\"const\":\"b\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"allOf\":[{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\",\"description\":\"{minLength: 1}\"}}},{\"required\":[\"x\"]}]},\"b\":{\"allOf\":[{\"enum\":[\"a\"],\"type\":\"string\"},{\"enum\":[\"b\"],\"type\":\"string\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"allOf\":[{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\",\"description\":\"{minLength: 1}\"}}},{\"required\":[\"x\"]}]},\"b\":{\"allOf\":[{\"enum\":[\"a\"],\"type\":\"string\"},{\"enum\":[\"b\"],\"type\":\"string\"}]}}}"
+    },
+    {
+      "name": "anyof-allof-nested",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "anyOf": [
+              {
+                "allOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                ]
+              },
+              {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"anyOf\":[{\"allOf\":[{\"type\":\"string\",\"format\":\"uri\"}]},{\"type\":[\"number\",\"null\"]}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"anyOf\":[{\"allOf\":[{\"type\":\"string\",\"description\":\"{format: \\\"uri\\\"}\"}]},{\"type\":\"number\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"anyOf\":[{\"allOf\":[{\"type\":\"string\",\"description\":\"{format: \\\"uri\\\"}\"}]},{\"type\":\"number\"}]}}}"
+    },
+    {
+      "name": "refs",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "$ref": "#/$defs/Node",
+            "description": "Root node."
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Leaf"
+            }
+          }
+        },
+        "$defs": {
+          "Node": {
+            "type": "object",
+            "properties": {
+              "child": {
+                "$ref": "#/$defs/Node"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "definitions": {
+          "Leaf": {
+            "type": "string",
+            "enum": [
+              "x",
+              "y"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"node\":{\"$ref\":\"#/$defs/Node\",\"description\":\"Root node.\"},\"list\":{\"type\":\"array\",\"items\":{\"$ref\":\"#/$defs/Leaf\"}}},\"$defs\":{\"Node\":{\"type\":\"object\",\"properties\":{\"child\":{\"$ref\":\"#/$defs/Node\"},\"name\":{\"type\":\"string\",\"minLength\":1}}},\"Leaf\":{\"type\":\"string\",\"enum\":[\"x\",\"y\"]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"node\":{\"type\":\"object\",\"properties\":{\"child\":{},\"name\":{\"type\":\"string\",\"description\":\"{minLength: 1}\"}},\"description\":\"Root node.\"},\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"x\",\"y\"]}}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"node\":{\"type\":\"object\",\"properties\":{\"child\":{},\"name\":{\"type\":\"string\",\"description\":\"{minLength: 1}\"}},\"description\":\"Root node.\"},\"list\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"x\",\"y\"]}}}}"
+    },
+    {
+      "name": "refs-with-null-and-const",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/Mode"
+          },
+          "b": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Mode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "$defs": {
+          "Mode": {
+            "oneOf": [
+              {
+                "const": "fast"
+              },
+              {
+                "const": "slow"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"$ref\":\"#/$defs/Mode\"},\"b\":{\"anyOf\":[{\"$ref\":\"#/$defs/Mode\"},{\"type\":\"null\"}]}},\"$defs\":{\"Mode\":{\"oneOf\":[{\"const\":\"fast\"},{\"const\":\"slow\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"enum\":[\"fast\",\"slow\"],\"type\":\"string\"},\"b\":{\"anyOf\":[{\"enum\":[\"fast\",\"slow\"],\"type\":\"string\"},{\"type\":\"null\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"enum\":[\"fast\",\"slow\"],\"type\":\"string\"},\"b\":{\"anyOf\":[{\"enum\":[\"fast\",\"slow\"],\"type\":\"string\"},{\"type\":\"null\"}]}}}"
+    },
+    {
+      "name": "refs-unresolved",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/Missing"
+          },
+          "b": {
+            "$ref": "https://example.com/s.json"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"$ref\":\"#/$defs/Missing\"},\"b\":{\"$ref\":\"https://example.com/s.json\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"$ref\":\"#/$defs/Missing\"},\"b\":{\"$ref\":\"https://example.com/s.json\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"$ref\":\"#/$defs/Missing\"},\"b\":{\"$ref\":\"https://example.com/s.json\"}}}"
+    },
+    {
+      "name": "refs-ref-with-siblings",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/$defs/S",
+            "description": "Own.",
+            "minLength": 3,
+            "default": "x"
+          }
+        },
+        "$defs": {
+          "S": {
+            "type": "string",
+            "pattern": "^a",
+            "description": "Shared."
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"$ref\":\"#/$defs/S\",\"description\":\"Own.\",\"minLength\":3,\"default\":\"x\"}},\"$defs\":{\"S\":{\"type\":\"string\",\"pattern\":\"^a\",\"description\":\"Shared.\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"description\":\"Own.\\n\\n{pattern: \\\"^a\\\", minLength: 3}\",\"default\":\"x\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"description\":\"Own.\\n\\n{pattern: \\\"^a\\\", minLength: 3}\",\"default\":\"x\"}}}"
+    },
+    {
+      "name": "id-anchor-kept",
+      "parameters": {
+        "$id": "https://example.com/s.json",
+        "$anchor": "a",
+        "type": "object",
+        "properties": {
+          "a": {
+            "$id": "x",
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"$id\":\"https://example.com/s.json\",\"$anchor\":\"a\",\"type\":\"object\",\"properties\":{\"a\":{\"$id\":\"x\",\"type\":\"string\"}}}",
+      "moonshot": "{\"$id\":\"https://example.com/s.json\",\"$anchor\":\"a\",\"type\":\"object\",\"properties\":{\"a\":{\"$id\":\"x\",\"type\":\"string\"}}}",
+      "raw": "{\"$id\":\"https://example.com/s.json\",\"$anchor\":\"a\",\"type\":\"object\",\"properties\":{\"a\":{\"$id\":\"x\",\"type\":\"string\"}}}"
+    },
+    {
+      "name": "empty-schema",
+      "parameters": {},
+      "wire": "{}",
+      "moonshot": "{}",
+      "raw": "{}"
+    },
+    {
+      "name": "empty-properties",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{}}",
+      "raw": "{\"type\":\"object\",\"properties\":{}}"
+    },
+    {
+      "name": "empty-object-property",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cfg": {
+            "type": "object"
+          },
+          "nested": {
+            "type": "object",
+            "properties": {
+              "one": {
+                "type": "boolean"
+              }
+            }
+          },
+          "any": {}
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\"},\"nested\":{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"boolean\"}}},\"any\":true}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\"},\"nested\":{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"boolean\"}}},\"any\":{}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"cfg\":{\"type\":\"object\"},\"nested\":{\"type\":\"object\",\"properties\":{\"one\":{\"type\":\"boolean\"}}},\"any\":{}}}"
+    },
+    {
+      "name": "title-everywhere",
+      "parameters": {
+        "title": "Root",
+        "type": "object",
+        "properties": {
+          "a": {
+            "title": "A",
+            "type": "string"
+          }
+        },
+        "$defs": {
+          "X": {
+            "title": "X"
+          }
+        }
+      },
+      "wire": "{\"title\":\"Root\",\"type\":\"object\",\"properties\":{\"a\":{\"title\":\"A\",\"type\":\"string\"}},\"$defs\":{\"X\":{\"title\":\"X\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "property-named-keywords",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "const": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "enum": {
+            "type": "string"
+          },
+          "oneOf": {
+            "type": "string"
+          },
+          "anyOf": {
+            "type": "string"
+          },
+          "default": {
+            "type": "string"
+          },
+          "not": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"const\":{\"type\":\"string\"},\"type\":{\"type\":\"string\"},\"enum\":{\"type\":\"string\"},\"oneOf\":{\"type\":\"string\"},\"anyOf\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"not\":{\"type\":\"string\"}},\"required\":[\"type\"]}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\"},\"oneOf\":{\"type\":\"string\"},\"anyOf\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"not\":{\"type\":\"string\"}},\"required\":[\"type\"]}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"type\":{\"type\":\"string\"},\"oneOf\":{\"type\":\"string\"},\"anyOf\":{\"type\":\"string\"},\"default\":{\"type\":\"string\"},\"not\":{\"type\":\"string\"}},\"required\":[\"type\"]}"
+    },
+    {
+      "name": "property-named-keywords-array-types",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "properties": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"properties\":{\"type\":[\"string\",\"null\"]},\"items\":{\"type\":[\"integer\",\"null\"]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"properties\":{\"type\":\"string\"},\"items\":{\"type\":\"integer\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"properties\":{\"type\":\"string\"},\"items\":{\"type\":\"integer\"}}}"
+    },
+    {
+      "name": "snake-case-untouched",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "opts": {
+            "type": "object",
+            "additional_properties": false,
+            "any_of": [
+              {
+                "type": "object",
+                "properties": {
+                  "a": {
+                    "type": "string"
+                  }
+                }
+              }
+            ],
+            "prefix_items": [
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"additional_properties\":false,\"any_of\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}],\"prefix_items\":[{\"type\":\"string\"}]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"additional_properties\":false,\"any_of\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}],\"prefix_items\":[{\"type\":\"string\"}]}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"opts\":{\"type\":\"object\",\"additional_properties\":false,\"any_of\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}}],\"prefix_items\":[{\"type\":\"string\"}]}}}"
+    },
+    {
+      "name": "numeric-property-names-order",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "1": {
+            "type": "string"
+          },
+          "2": {
+            "type": "string"
+          },
+          "b": {
+            "type": "string"
+          },
+          "a": {
+            "type": "string"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"string\"},\"2\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"string\"},\"2\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"string\"},\"2\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"},\"a\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "unicode-and-escapes",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "é\"k": {
+            "type": "string",
+            "description": "Line\nbreak   and \"quote\".",
+            "format": "x\ty"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"é\\\"k\":{\"type\":\"string\",\"description\":\"Line\\nbreak   and \\\"quote\\\".\",\"format\":\"x\\ty\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"é\\\"k\":{\"type\":\"string\",\"description\":\"Line\\nbreak   and \\\"quote\\\".\\n\\n{format: \\\"x\\\\ty\\\"}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"é\\\"k\":{\"type\":\"string\",\"description\":\"Line\\nbreak   and \\\"quote\\\".\\n\\n{format: \\\"x\\\\ty\\\"}\"}}}"
+    },
+    {
+      "name": "deep-nesting",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "l1": {
+            "type": "object",
+            "properties": {
+              "l2": {
+                "type": "object",
+                "properties": {
+                  "l3": {
+                    "type": "object",
+                    "properties": {
+                      "l4": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "l5": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "pattern": "^a",
+                              "description": "Deep."
+                            },
+                            "l5b": {
+                              "anyOf": [
+                                {
+                                  "const": 1
+                                },
+                                {
+                                  "const": 2
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "l5"
+                          ]
+                        },
+                        "minItems": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"l1\":{\"type\":\"object\",\"properties\":{\"l2\":{\"type\":\"object\",\"properties\":{\"l3\":{\"type\":\"object\",\"properties\":{\"l4\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"l5\":{\"type\":[\"string\",\"null\"],\"pattern\":\"^a\",\"description\":\"Deep.\"},\"l5b\":{\"type\":\"number\",\"enum\":[1,2]}},\"required\":[\"l5\"]},\"minItems\":1}}}}}}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"l1\":{\"type\":\"object\",\"properties\":{\"l2\":{\"type\":\"object\",\"properties\":{\"l3\":{\"type\":\"object\",\"properties\":{\"l4\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"l5\":{\"type\":\"string\",\"description\":\"Deep.\\n\\n{pattern: \\\"^a\\\"}\"},\"l5b\":{\"type\":\"number\",\"enum\":[1,2]}},\"required\":[\"l5\"]},\"description\":\"{minItems: 1}\"}}}}}}}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"l1\":{\"type\":\"object\",\"properties\":{\"l2\":{\"type\":\"object\",\"properties\":{\"l3\":{\"type\":\"object\",\"properties\":{\"l4\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"l5\":{\"type\":\"string\",\"description\":\"Deep.\\n\\n{pattern: \\\"^a\\\"}\"},\"l5b\":{\"enum\":[1,2],\"type\":\"number\"}},\"required\":[\"l5\"]},\"description\":\"{minItems: 1}\"}}}}}}}}}"
+    },
+    {
+      "name": "items-nested-arrays",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "grid": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "minItems": 2
+            }
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"grid\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":[\"number\",\"null\"]},\"minItems\":2}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"grid\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"number\"},\"description\":\"{minItems: 2}\"}}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"grid\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"number\"},\"description\":\"{minItems: 2}\"}}}}"
+    },
+    {
+      "name": "mixed-realistic-tool",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "const": "r"
+              },
+              {
+                "const": "w"
+              }
+            ],
+            "description": "Open mode."
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Max lines."
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^f"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "k": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "maxItems": 10
+          },
+          "opts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "default": {}
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"File path.\"},\"mode\":{\"description\":\"Open mode.\",\"type\":\"string\",\"enum\":[\"r\",\"w\"]},\"limit\":{\"type\":[\"integer\",\"null\"],\"minimum\":1,\"description\":\"Max lines.\"},\"filters\":{\"type\":\"array\",\"items\":{\"oneOf\":[{\"type\":\"string\",\"pattern\":\"^f\"},{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\"}},\"additionalProperties\":false}]},\"maxItems\":10},\"opts\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"boolean\"},\"default\":{}}},\"required\":[\"path\"],\"additionalProperties\":false}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"File path.\"},\"mode\":{\"description\":\"Open mode.\",\"type\":\"string\",\"enum\":[\"r\",\"w\"]},\"limit\":{\"type\":\"integer\",\"description\":\"Max lines.\\n\\n{minimum: 1}\"},\"filters\":{\"type\":\"array\",\"items\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"{pattern: \\\"^f\\\"}\"},{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\"}},\"additionalProperties\":false}]},\"description\":\"{maxItems: 10}\"},\"opts\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"boolean\"},\"default\":{}}},\"required\":[\"path\"],\"additionalProperties\":false}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\",\"description\":\"File path.\"},\"mode\":{\"enum\":[\"r\",\"w\"],\"type\":\"string\",\"description\":\"Open mode.\"},\"limit\":{\"type\":\"integer\",\"description\":\"Max lines.\\n\\n{minimum: 1}\"},\"filters\":{\"type\":\"array\",\"items\":{\"anyOf\":[{\"type\":\"string\",\"description\":\"{pattern: \\\"^f\\\"}\"},{\"type\":\"object\",\"properties\":{\"k\":{\"type\":\"string\"}},\"additionalProperties\":false}]},\"description\":\"{maxItems: 10}\"},\"opts\":{\"type\":\"object\",\"additionalProperties\":{\"type\":\"boolean\"},\"default\":{}}},\"required\":[\"path\"],\"additionalProperties\":false}"
+    },
+    {
+      "name": "root-type-array",
+      "parameters": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "a": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "a"
+        ]
+      },
+      "wire": "{\"type\":[\"object\",\"null\"],\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}},\"required\":[\"a\"]}"
+    },
+    {
+      "name": "root-anyof",
+      "parameters": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "wire": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "moonshot": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}",
+      "raw": "{\"anyOf\":[{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"}}},{\"type\":\"object\",\"properties\":{\"b\":{\"type\":\"string\"}}}]}"
+    },
+    {
+      "name": "root-oneof-const",
+      "parameters": {
+        "oneOf": [
+          {
+            "const": "a"
+          },
+          {
+            "const": "b"
+          }
+        ]
+      },
+      "wire": "{\"oneOf\":[{\"const\":\"a\"},{\"const\":\"b\"}]}",
+      "moonshot": "{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}",
+      "raw": "{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}"
+    },
+    {
+      "name": "root-enum",
+      "parameters": {
+        "enum": [
+          "a",
+          "b"
+        ]
+      },
+      "wire": "{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}",
+      "moonshot": "{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}",
+      "raw": "{\"enum\":[\"a\",\"b\"],\"type\":\"string\"}"
+    },
+    {
+      "name": "deprecated-annotations",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string",
+            "deprecated": true,
+            "readOnly": true,
+            "x-mcp-header": "X-A",
+            "description": "d"
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"deprecated\":true,\"readOnly\":true,\"x-mcp-header\":\"X-A\",\"description\":\"d\"}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-mcp-header\":\"X-A\",\"description\":\"d\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\",\"x-mcp-header\":\"X-A\",\"description\":\"d\"}}}"
+    },
+    {
+      "name": "dependencies-draft7",
+      "parameters": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "a": {
+            "type": "string"
+          },
+          "b": {
+            "type": "string"
+          }
+        },
+        "dependencies": {
+          "a": [
+            "b"
+          ],
+          "b": {
+            "properties": {
+              "c": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      },
+      "wire": "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}},\"dependentRequired\":{\"a\":[\"b\"]},\"dependentSchemas\":{\"b\":{\"properties\":{\"c\":{\"type\":\"string\",\"minLength\":1}}}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"string\"},\"b\":{\"type\":\"string\"}}}"
+    },
+    {
+      "name": "examples-and-default-array",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "a"
+              ]
+            ],
+            "default": [
+              "a"
+            ]
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"examples\":[[\"a\"]],\"default\":[\"a\"]}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"default\":[\"a\"],\"description\":\"{examples: [[\\\"a\\\"]]}\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"default\":[\"a\"],\"description\":\"{examples: [[\\\"a\\\"]]}\"}}}"
+    },
+    {
+      "name": "integer-vs-number-const",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "i": {
+            "const": 1
+          },
+          "f": {
+            "const": 1.5
+          },
+          "big": {
+            "const": 12345678901234567000
+          }
+        }
+      },
+      "wire": "{\"type\":\"object\",\"properties\":{\"i\":{\"const\":1},\"f\":{\"const\":1.5},\"big\":{\"const\":12345678901234567000}}}",
+      "moonshot": "{\"type\":\"object\",\"properties\":{\"i\":{\"enum\":[1],\"type\":\"number\"},\"f\":{\"enum\":[1.5],\"type\":\"number\"},\"big\":{\"enum\":[12345678901234567000],\"type\":\"number\"}}}",
+      "raw": "{\"type\":\"object\",\"properties\":{\"i\":{\"enum\":[1],\"type\":\"number\"},\"f\":{\"enum\":[1.5],\"type\":\"number\"},\"big\":{\"enum\":[12345678901234567000],\"type\":\"number\"}}}"
+    },
+    {
+      "name": "raw-boolean-true",
+      "parameters": true,
+      "raw": "{}"
+    },
+    {
+      "name": "raw-boolean-false",
+      "parameters": false,
+      "raw": "{}"
+    },
+    {
+      "name": "raw-array-root",
+      "parameters": [
+        {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        true
+      ],
+      "raw": "[{\"type\":\"string\"},{}]"
+    },
+    {
+      "name": "raw-string-root",
+      "parameters": "x",
+      "raw": "\"x\""
+    },
+    {
+      "name": "raw-null-root",
+      "parameters": null,
+      "raw": "null"
+    }
+  ]
+}
