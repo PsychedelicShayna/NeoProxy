@@ -43,9 +43,17 @@ func ShapeResponses(model *registry.NeoPiModel, ctx Context, opts Options, acces
 			header.Set(name, key)
 		}
 	}
-	if model.Provider == "xai" || model.Provider == "xai-oauth" {
+	switch model.Provider {
+	case "xai", "xai-oauth":
 		header.Set("User-Agent", NeoPiUserAgent)
-	} else {
+	case "opencode-go", "opencode-zen":
+		// applyInferenceHeaders: OpenCode attributes a request by NeoPi's user
+		// agent and the conversation id in x-opencode-session.
+		header.Set("User-Agent", NeoPiUserAgent)
+		if opts.SessionID != "" {
+			header.Set("x-opencode-session", opts.SessionID)
+		}
+	default:
 		header.Set("User-Agent", BunUserAgent)
 	}
 	header.Set("Authorization", "Bearer "+accessToken)

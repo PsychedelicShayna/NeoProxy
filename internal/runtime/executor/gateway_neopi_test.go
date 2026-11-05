@@ -8,11 +8,13 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/auth/anthropicnpi"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/googlewire"
+	"github.com/router-for-me/CLIProxyAPI/v8/internal/openaiwire"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 )
@@ -149,11 +151,11 @@ func readGzipFixture(t *testing.T, path string) []byte {
 // gatewayHeaderParity diffs the headers a Go request carries against the
 // captured ones. connection is transport-owned: Bun stamps keep-alive and Go's
 // transport manages it (and forbids it on HTTP/2).
-func gatewayHeaderParity(t *testing.T, headers http.Header, captured map[string]string) {
+func gatewayHeaderParity(t *testing.T, headers http.Header, captured map[string]string, framing ...string) {
 	t.Helper()
 	want := map[string]string{}
 	for name, value := range captured {
-		if name != "host" && name != "content-length" && name != "connection" {
+		if name != "host" && name != "content-length" && name != "connection" && !slices.Contains(framing, name) {
 			want[name] = value
 		}
 	}
@@ -259,5 +261,44 @@ func TestGatewayNeoPiGoogleParity(t *testing.T) {
 	}
 	if tested == 0 {
 		t.Fatal("capture has no google-generative-ai fixtures")
+	}
+}
+
+// Every captured openai-responses request of the OpenCode gateways is
+// reproduced through NeoPi's shared Responses request builder.
+func TestGatewayNeoPiResponsesParity(t *testing.T) {
+	capture := readGatewayCapture(t)
+	tested := 0
+	for _, fixture := range capture.Fixtures {
+		if fixture.API != "openai-responses" {
+			continue
+		}
+		tested++
+		t.Run(fixture.Name, func(t *testing.T) {
+			_, row := gatewayRow(t, fixture.Row)
+			var downstream bytes.Buffer
+			if err := json.Compact(&downstream, fixture.Downstream); err != nil {
+				t.Fatal(err)
+			}
+			conversation, options := openaiwire.FromResponses(downstream.Bytes(), row)
+			options.SessionID = capture.SessionID
+			// streamSimple asks for the model's whole output allowance (the
+			// executor's StreamSimple rule).
+			if gatewayResponsesExecutor("p", row.Provider, nil).StreamSimple && options.MaxTokens == nil && row.MaxTokens > 0 {
+				maxTokens := float64(row.MaxTokens)
+				options.MaxTokens = &maxTokens
+			}
+			shaped := openaiwire.ShapeResponses(row, conversation, options, capture.APIKey)
+			if shaped.URL != fixture.RequestedURL {
+				t.Errorf("url = %s, want %s", shaped.URL, fixture.RequestedURL)
+			}
+			if string(shaped.Body) != fixture.RawBody {
+				t.Errorf("body:\n got %s\nwant %s", shaped.Body, fixture.RawBody)
+			}
+			gatewayHeaderParity(t, shaped.Header, fixture.Headers, "accept-encoding")
+		})
+	}
+	if tested == 0 {
+		t.Fatal("capture has no openai-responses fixtures")
 	}
 }

@@ -112,7 +112,7 @@ func TestGatewaySyntheticListingsMatchNeoPi(t *testing.T) {
 				want[i].CompletionsCompat, want[i].AnthropicCompat, want[i].Compat = nil, nil, nil
 				// NeoPi classifies a never-seen id's own text for its
 				// thinking surface and compat; our API default row cannot.
-				if strings.HasPrefix(want[i].ID, "zz") || museSparkLineage(want[i].ID) {
+				if strings.HasPrefix(want[i].ID, "zz") || gatewayMuseSpark(want[i].ID) {
 					info.NeoPi.Thinking, want[i].Thinking = nil, nil
 				}
 			}

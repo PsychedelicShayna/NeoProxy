@@ -28,9 +28,11 @@ type GatewayExecutor struct {
 	gateway string
 	// counter estimates tokens locally; NeoPi never asks the gateway to count.
 	counter *OpenAICompatExecutor
-	// completions and google speak NeoPi's openai-completions and
-	// google-generative-ai routes; both are the shared NeoPi engines.
+	// completions, responses and google speak NeoPi's openai-completions,
+	// openai-responses and google-generative-ai routes; all are the shared
+	// NeoPi engines.
 	completions *NeoPiCompletionsExecutor
+	responses   *NeoPiResponsesExecutor
 	google      *NeoPiGoogleExecutor
 }
 
@@ -44,6 +46,7 @@ func NewGatewayExecutor(provider, gateway string, cfg *config.Config) *GatewayEx
 	return &GatewayExecutor{
 		ClaudeExecutor: messages, cfg: cfg, gateway: gateway, counter: NewOpenAICompatExecutor(provider, cfg),
 		completions: NewNeoPiCompletionsExecutor(provider, cfg, gatewayCompletionsProfile(gateway)),
+		responses:   gatewayResponsesExecutor(provider, gateway, cfg),
 		google:      NewNeoPiGoogleExecutor(provider, cfg, gatewayGoogleHooks(gateway)),
 	}
 }
@@ -229,6 +232,8 @@ func (e *GatewayExecutor) engineFor(api string) (gatewayEngine, error) {
 	switch api {
 	case "openai-completions":
 		return e.completions, nil
+	case "openai-responses":
+		return e.responses, nil
 	case "google-generative-ai":
 		return e.google, nil
 	}
@@ -257,6 +262,17 @@ func gatewayCompletionsProfile(gateway string) NeoPiCompletionsProfile {
 			applyGatewayIdentity(headers, gateway, sessionID)
 		},
 	}
+}
+
+// gatewayResponsesExecutor binds NeoPi's Responses engine to a gateway: the
+// gateway's own catalog rows, reached through streamSimple.
+func gatewayResponsesExecutor(provider, gateway string, cfg *config.Config) *NeoPiResponsesExecutor {
+	engine := NewNeoPiResponsesExecutor(provider, cfg)
+	engine.Row = func(_ *cliproxyauth.Auth, req cliproxyexecutor.Request) *registry.NeoPiModel {
+		return gatewayCatalogRow(gateway)(req, thinking.ParseSuffix(req.Model).ModelName)
+	}
+	engine.StreamSimple = true
+	return engine
 }
 
 // gatewayGoogleHooks binds NeoPi's Google engine to a gateway. The endpoint

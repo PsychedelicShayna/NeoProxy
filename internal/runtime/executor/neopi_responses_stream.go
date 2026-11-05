@@ -92,6 +92,10 @@ func (e *NeoPiResponsesExecutor) shapeNeoPi(ctx context.Context, auth *cliproxya
 	_, token := e.neoPiResponsesCreds(auth)
 	conversation, options := openaiwire.FromResponses(body, model)
 	options.SessionID = neoPiResponsesSessionID(e.Identifier(), req, opts)
+	if e.StreamSimple && options.MaxTokens == nil && model.MaxTokens > 0 {
+		maxTokens := float64(model.MaxTokens)
+		options.MaxTokens = &maxTokens
+	}
 	responseFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
 	shaped := openaiwire.ShapeResponses(model, conversation, options, token)
 	e.applyTransportHeaders(shaped.Header, auth, model, opts.Headers)

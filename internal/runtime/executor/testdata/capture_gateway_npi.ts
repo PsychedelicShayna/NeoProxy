@@ -139,13 +139,14 @@ const chatBody = (model: any, turns: Turn[], options: any, extra: any) => {
 
 const responsesBody = (model: any, turns: Turn[], options: any, extra: any) => {
 	const items: any[] = [];
-	if (extra.system) items.push({ type: "message", role: "developer", content: [{ type: "input_text", text: extra.system }] });
+
 	for (const turn of turns) {
-		if (turn.kind === "user") items.push({ type: "message", role: "user", content: turn.text !== undefined ? [{ type: "input_text", text: turn.text }] : turn.blocks!.map((b: any) => (b.type === "text" ? { type: "input_text", text: b.text } : { type: "input_image", image_url: `data:image/png;base64,${b.source.data}` })) });
+		if (turn.kind === "user") items.push({ role: "user", content: turn.text !== undefined ? [{ type: "input_text", text: turn.text }] : turn.blocks!.map((b: any) => (b.type === "text" ? { type: "input_text", text: b.text } : { type: "input_image", detail: "auto", image_url: `data:image/png;base64,${b.source.data}` })) });
 		else if (turn.kind === "call") items.push({ type: "function_call", id: "fc_capture_1", call_id: "call_capture_1", name: "lookup", arguments: "{\"term\":\"a\"}" });
-		else items.push({ type: "function_call_output", call_id: "call_capture_1", output: turn.blocks.map((b: any) => (b.type === "text" ? b.text : "")).join("\n") });
+		else items.push({ type: "function_call_output", call_id: "call_capture_1", output: turn.blocks.some((b: any) => b.type !== "text") ? turn.blocks.map((b: any) => (b.type === "text" ? { type: "input_text", text: b.text } : { type: "input_image", detail: "auto", image_url: `data:image/png;base64,${b.source.data}` })) : turn.blocks.map((b: any) => b.text).join("\n") });
 	}
-	const body: any = { model: model.id, input: items, stream: true, store: false };
+	// A client names its system prompt in `instructions`; user turns are easy-input messages.
+	const body: any = { model: model.id, input: items, ...(extra.system ? { instructions: extra.system } : {}) };
 	if (extra.tools) body.tools = [{ type: "function", name: lookup.name, description: lookup.description, parameters: lookup.parameters }];
 	if (options.maxTokens) body.max_output_tokens = options.maxTokens;
 	if (options.temperature !== undefined) body.temperature = options.temperature;

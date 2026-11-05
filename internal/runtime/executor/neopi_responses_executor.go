@@ -44,6 +44,13 @@ const neoPiResponsesMuseVersion = "1.0.0"
 type NeoPiResponsesExecutor struct {
 	cfg        *config.Config
 	identifier string
+	// Row resolves the NeoPi record of a request's model ahead of the
+	// executor's own sources: a multi-API gateway (OpenCode) supplies the row
+	// its catalog holds for the model.
+	Row func(auth *cliproxyauth.Auth, req cliproxyexecutor.Request) *registry.NeoPiModel
+	// StreamSimple marks a provider reached through NeoPi's streamSimple, which
+	// requests the model's whole output allowance when the caller names none.
+	StreamSimple bool
 }
 
 // NewNeoPiResponsesExecutor creates the executor for one provider id: "meta",
@@ -125,7 +132,9 @@ func (e *NeoPiResponsesExecutor) neoPiResponsesCreds(auth *cliproxyauth.Auth) (b
 func (e *NeoPiResponsesExecutor) neoPiResponsesModel(auth *cliproxyauth.Auth, req cliproxyexecutor.Request) *registry.NeoPiModel {
 	provider := e.neoPiResponsesProvider(auth)
 	var model *registry.NeoPiModel
-	if info, ok := cliproxyauth.ResolvedModelInfo(req); ok && info != nil && info.NeoPi != nil && info.NeoPi.API == "openai-responses" {
+	if row := e.rowFor(auth, req); row != nil {
+		model = row
+	} else if info, ok := cliproxyauth.ResolvedModelInfo(req); ok && info != nil && info.NeoPi != nil && info.NeoPi.API == "openai-responses" {
 		model = info.NeoPi.Clone()
 	} else if provider != "" {
 		model = registry.ResponsesNeoPiModel(provider, thinking.ParseSuffix(req.Model).ModelName, nil)
@@ -139,6 +148,17 @@ func (e *NeoPiResponsesExecutor) neoPiResponsesModel(auth *cliproxyauth.Auth, re
 		}
 	}
 	return model
+}
+
+// rowFor is the Row hook's record, when it resolves an openai-responses row.
+func (e *NeoPiResponsesExecutor) rowFor(auth *cliproxyauth.Auth, req cliproxyexecutor.Request) *registry.NeoPiModel {
+	if e.Row == nil {
+		return nil
+	}
+	if row := e.Row(auth, req); row != nil && row.API == "openai-responses" {
+		return row.Clone()
+	}
+	return nil
 }
 
 // PrepareRequest injects the provider's credentials into an outgoing request.

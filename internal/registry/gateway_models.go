@@ -444,7 +444,7 @@ func openCodeDiscoveredModel(provider string, entry gjson.Result) *NeoPiModel {
 	if gatewayTypesafe(provider, id) {
 		return nil
 	}
-	if lineage := museSparkLineageRow(provider, id); lineage != nil {
+	if lineage := gatewayMuseSparkRow(provider, id); lineage != nil {
 		lineage.Name = gatewayName(entry.Get("name"), lineage.Name)
 		lineage.ContextWindow = gatewayPositive(entry.Get("context_length"), lineage.ContextWindow)
 		lineage.MaxTokens = gatewayPositive(entry.Get("max_completion_tokens"), lineage.MaxTokens)
@@ -460,11 +460,11 @@ func openCodeDiscoveredModel(provider string, entry gjson.Result) *NeoPiModel {
 		CompletionsCompat: template.CompletionsCompat, AnthropicCompat: template.AnthropicCompat, Compat: template.Compat}
 }
 
-// museSparkLineageRow is museSparkLineageSpec for an id the gateway lists but
+// gatewayMuseSparkRow is museSparkLineageSpec for an id the gateway lists but
 // the catalogs never did: the newest Muse Spark row of the same billing shape
 // becomes it (both gateways resolve the revision from the same meta seeds).
-func museSparkLineageRow(provider, id string) *NeoPiModel {
-	if !museSparkLineage(id) {
+func gatewayMuseSparkRow(provider, id string) *NeoPiModel {
+	if !gatewayMuseSpark(id) {
 		return nil
 	}
 	contributor := strings.HasSuffix(id, "-contributor")
@@ -477,10 +477,10 @@ func museSparkLineageRow(provider, id string) *NeoPiModel {
 	for _, rows := range [][]NeoPiModel{catalog.providers[provider], catalog.bundled[provider], catalog.providers[sibling], catalog.bundled[sibling]} {
 		for i := range rows {
 			row := &rows[i]
-			if row.API != "openai-responses" || !museSparkLineage(row.ID) || strings.HasSuffix(row.ID, "-contributor") != contributor {
+			if row.API != "openai-responses" || !gatewayMuseSpark(row.ID) || strings.HasSuffix(row.ID, "-contributor") != contributor {
 				continue
 			}
-			if best == nil || strings.Compare(museSparkRevision(row.ID), museSparkRevision(best.ID)) > 0 {
+			if best == nil || strings.Compare(gatewayMuseSparkRevision(row.ID), gatewayMuseSparkRevision(best.ID)) > 0 {
 				best = row
 			}
 		}
@@ -494,14 +494,14 @@ func museSparkLineageRow(provider, id string) *NeoPiModel {
 	return out
 }
 
-// museSparkRevision orders Muse Spark ids by their revision text.
-func museSparkRevision(id string) string {
+// gatewayMuseSparkRevision orders Muse Spark ids by their revision text.
+func gatewayMuseSparkRevision(id string) string {
 	return strings.TrimPrefix(id, "muse-spark-")
 }
 
-// museSparkLineage is museSparkLineageSpec's gate: a Muse Spark id with a
+// gatewayMuseSpark is museSparkLineageSpec's gate: a Muse Spark id with a
 // revision ("muse-spark-1.3", "muse-spark-9.8-contributor").
-func museSparkLineage(id string) bool {
+func gatewayMuseSpark(id string) bool {
 	rest, ok := strings.CutPrefix(id, "muse-spark-")
 	return ok && rest != "" && rest[0] >= '0' && rest[0] <= '9'
 }
