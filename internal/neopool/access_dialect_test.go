@@ -8,8 +8,8 @@ import (
 )
 
 // An OpenCode-style model list names each model's API; NeoProxy routes by it,
-// keeps advertised base URLs only on the gateway's own host, falls back to
-// family rules for undescribed ids and drops models it cannot speak to.
+// keeps advertised base URLs only on the gateway's own host and leaves
+// undescribed ids on chat completions.
 func TestModelRoutesFollowTheAdvertisedAPI(t *testing.T) {
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -30,10 +30,7 @@ func TestModelRoutesFollowTheAdvertisedAPI(t *testing.T) {
 	}))
 	defer server.Close()
 
-	info, ok := catalogProvider("opencode-go")
-	if !ok {
-		t.Fatal("opencode-go missing from the catalog")
-	}
+	info := ProviderInfo{ID: "advertising-gateway", Name: "Advertising Gateway", APIKey: &ProviderAPIKey{Style: "openai"}}
 	base := server.URL + "/zen/go/v1"
 	got, models, routes, err := validateCatalogKey(context.Background(), info, base, "", "test-key")
 	if err != nil || got != base {
@@ -52,7 +49,6 @@ func TestModelRoutesFollowTheAdvertisedAPI(t *testing.T) {
 		"qwen3.8-flash":    {dialect: "messages", baseURL: server.URL + "/inference/go/anthropic/v1"},
 		"grok-4.7":         {dialect: "responses"},
 		"gemini-4-argon":   {dialect: "generate-content", baseURL: server.URL + "/inference/go/google/v1beta"},
-		"claude-haiku-5-5": {dialect: "messages"},
 	}
 	if len(routes) != len(want) {
 		t.Fatalf("routes = %+v, want %+v", routes, want)
@@ -67,11 +63,6 @@ func TestModelRoutesFollowTheAdvertisedAPI(t *testing.T) {
 func TestResponsesOnlyProvidersDeclareTheirDialect(t *testing.T) {
 	for _, id := range []string{"sakana", "abliteration"} {
 		if info, ok := catalogProvider(id); !ok || info.dialect != "responses" || info.engine != "" {
-			t.Errorf("%s = %+v", id, info)
-		}
-	}
-	for _, id := range []string{"opencode-go", "opencode-zen"} {
-		if info, ok := catalogProvider(id); !ok || info.sessionHeader != "x-opencode-session" {
 			t.Errorf("%s = %+v", id, info)
 		}
 	}

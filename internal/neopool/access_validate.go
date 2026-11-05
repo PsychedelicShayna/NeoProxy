@@ -224,7 +224,7 @@ func validateCatalogKey(ctx context.Context, info ProviderInfo, base, preferred,
 			return "", nil, nil, accessErr(http.StatusBadRequest, "%s accepted the key but lists no chat models for it.", info.Name)
 		}
 	}
-	return base, models, modelRoutes(info, base, models, advertised), nil
+	return base, models, modelRoutes(base, models, advertised), nil
 }
 
 // validateZaiKey is NeoPi's Z.ai key check (validate "chat-completions"): a
@@ -342,22 +342,14 @@ func gatewayName(gateway string) string {
 }
 
 // modelRoutes decides each model's upstream API: what the model list
-// advertises, else the provider's family rules; models left on chat
+// advertises; models left on chat
 // completions at the entry's base URL need no route. An advertised base URL is
 // kept only on the entry's own scheme and host, so a model list can never send
 // the key elsewhere.
-func modelRoutes(info ProviderInfo, base string, models []string, advertised map[string]modelRoute) map[string]modelRoute {
+func modelRoutes(base string, models []string, advertised map[string]modelRoute) map[string]modelRoute {
 	out := map[string]modelRoute{}
 	for _, id := range models {
 		route := advertised[id]
-		if route.dialect == "" {
-			for _, rule := range info.dialectRules {
-				if strings.HasPrefix(id, rule.prefix) {
-					route.dialect = rule.dialect
-					break
-				}
-			}
-		}
 		if route.baseURL != "" && (route.baseURL == base || !sameOrigin(route.baseURL, base)) {
 			route.baseURL = ""
 		}
