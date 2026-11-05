@@ -8,14 +8,15 @@
 // then built with provider "marineris" at the gateway address. NeoProxy does
 // not port the catalog's rule engine; unknown ids use the class probe.
 //
-//   HOME=$(mktemp -d) NEOPI_SOURCE_MODULES=<...>/node_modules/@oh-my-pi \
+//   NEOPI_SOURCE_MODULES=<...>/node_modules/@oh-my-pi \
 //     bun --preserve-symlinks capture_neopi_marineris_profiles.ts > ../../../registry/models/marineris_neopi.json
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { ensureScratchHome } from "./scratch_home.ts";
+await ensureScratchHome();
 
 const root = process.env.NEOPI_SOURCE_MODULES;
 if (!root) throw new Error("NEOPI_SOURCE_MODULES is required");
-if (!homedir().startsWith(tmpdir() + "/")) throw new Error("run with HOME set to a scratch directory under " + tmpdir());
 const { buildModel } = await import(root + "/pi-catalog/src/build.ts");
 const { getBundledModels } = await import(root + "/pi-catalog/src/models.ts");
 // The catalog's compat depends on whether the gateway is a local-network
@@ -70,7 +71,9 @@ const resolve = (spec: any, baseUrl: string) => {
 	return { built, thinking, profile: profileOf(built) };
 };
 
-const specs = await map([...ids.map(id => ({ id, owned_by: sources[id] })), ...probes.map(id => ({ id }))]);
+// A row the gateway owns as "codex" is a Responses model whatever its id.
+const OWNER_PROBE = "zz-codex-owner-probe";
+const specs = await map([...ids.map(id => ({ id, owned_by: sources[id] })), ...probes.map(id => ({ id })), { id: OWNER_PROBE, provider: "codex" }]);
 const byId = new Map(specs.map(spec => [spec.id, spec]));
 const hosts: Record<string, { classes: unknown[]; models: unknown[] }> = {};
 for (const [host, baseUrl] of Object.entries(HOSTS)) {
@@ -84,6 +87,10 @@ for (const [host, baseUrl] of Object.entries(HOSTS)) {
 			const { built, profile } = resolve(byId.get(id), baseUrl);
 			classes.push({ prefix, api: built.api, reasoning: built.reasoning, profile });
 		}
+	}
+	{
+		const { built, profile } = resolve(byId.get(OWNER_PROBE), baseUrl);
+		classes.push({ prefix: "", api: built.api, reasoning: built.reasoning, profile });
 	}
 	hosts[host] = { classes, models };
 }

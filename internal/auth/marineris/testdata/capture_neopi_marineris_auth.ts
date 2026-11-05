@@ -7,22 +7,20 @@
 // is a scratch directory so the extension's config.json write is observable
 // and never touches a real profile.
 //
-//   HOME=$(mktemp -d) NEOPI_SOURCE_MODULES=<...>/node_modules/@oh-my-pi \
+//   NEOPI_SOURCE_MODULES=<...>/node_modules/@oh-my-pi \
 //     bun --preserve-symlinks capture_neopi_marineris_auth.ts > neopi_marineris_auth_capture.json
 import { readFileSync, existsSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { ensureScratchHome } from "./scratch_home.ts";
+await ensureScratchHome();
 
 const sourceModules = process.env.NEOPI_SOURCE_MODULES;
 if (!sourceModules) throw new Error("NEOPI_SOURCE_MODULES is required");
 const { buildModel } = await import(sourceModules + "/pi-catalog/src/build.ts");
-// The extension writes its gateway URL under the home directory on login, so
-// the script refuses to run unless HOME is a scratch directory:
-//   HOME=$(mktemp -d) NEOPI_SOURCE_MODULES=... bun --preserve-symlinks capture_neopi_marineris_auth.ts
-const scratch = homedir();
-if (!scratch.startsWith(tmpdir() + "/")) throw new Error("run with HOME set to a scratch directory under " + tmpdir() + "; the extension writes config.json there");
 delete process.env.MARINERIS_BASE_URL;
 delete process.env.MARINERIS_API_KEY;
+const scratch = homedir();
 const userConfig = join(scratch, ".omp", "agent", "extensions", "marineris", "config.json");
 
 const originalFetch = globalThis.fetch;
@@ -65,6 +63,8 @@ const rows = [
 	{ id: "o4-mini", name: "o4 mini" },
 	{ id: "orbit-1", name: "Starts with o, so the extension treats it as Codex" },
 	{ id: "llama-local", owned_by: "local", context_window: 8192 },
+	{ id: "gateway-alias-codex", provider: "codex", name: "A gateway alias owned by codex" },
+	{ id: "gateway-alias-owned", owned_by: "codex" },
 	{ name: "no id" },
 	"not-an-object",
 ];

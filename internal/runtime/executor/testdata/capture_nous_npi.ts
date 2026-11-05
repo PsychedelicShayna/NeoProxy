@@ -9,14 +9,15 @@
 // each captured request next to the downstream Chat Completions body NeoProxy
 // receives for it, plus the discovery rows the models came from.
 //
-//   HOME=$(mktemp -d) NEOPI_SOURCE_MODULES=<...>/node_modules/@oh-my-pi \
+//   NEOPI_SOURCE_MODULES=<...>/node_modules/@oh-my-pi \
 //     bun --preserve-symlinks capture_nous_npi.ts
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { ensureScratchHome } from "../../../auth/marineris/testdata/scratch_home.ts";
+await ensureScratchHome();
 
 const root = process.env.NEOPI_SOURCE_MODULES;
 if (!root) throw new Error("NEOPI_SOURCE_MODULES is required");
-if (!homedir().startsWith(tmpdir() + "/")) throw new Error("run with HOME set to a scratch directory under " + tmpdir());
 const { streamSimple } = await import(root + "/pi-ai/src/stream.ts");
 const { buildModel } = await import(root + "/pi-catalog/src/build.ts");
 const outDir = join(import.meta.dir, "neopi_nous");
@@ -29,12 +30,24 @@ const chatChunks = [
 ];
 const chatSSE = chatChunks.map(chunk => `data: ${JSON.stringify(chunk)}\n\n`).join("") + "data: [DONE]\n\n";
 let captured: any[] = [];
+const responseEvents = [
+	{ type: "response.created", response: { id: "resp_capture", object: "response", status: "in_progress", model: "capture", output: [] } },
+	{ type: "response.output_item.added", output_index: 0, item: { type: "message", id: "msg_capture", role: "assistant", status: "in_progress", content: [] } },
+	{ type: "response.content_part.added", item_id: "msg_capture", output_index: 0, content_index: 0, part: { type: "output_text", text: "", annotations: [] } },
+	{ type: "response.output_text.delta", item_id: "msg_capture", output_index: 0, content_index: 0, delta: "Captured." },
+	{ type: "response.output_text.done", item_id: "msg_capture", output_index: 0, content_index: 0, text: "Captured." },
+	{ type: "response.content_part.done", item_id: "msg_capture", output_index: 0, content_index: 0, part: { type: "output_text", text: "Captured.", annotations: [] } },
+	{ type: "response.output_item.done", output_index: 0, item: { type: "message", id: "msg_capture", role: "assistant", status: "completed", content: [{ type: "output_text", text: "Captured.", annotations: [] }] } },
+	{ type: "response.completed", response: { id: "resp_capture", object: "response", status: "completed", model: "capture", output: [{ type: "message", id: "msg_capture", role: "assistant", status: "completed", content: [{ type: "output_text", text: "Captured.", annotations: [] }] }], usage: { input_tokens: 3, output_tokens: 1, total_tokens: 4 } } },
+];
+const responsesSSE = responseEvents.map(event => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`).join("");
 const server = Bun.serve({
 	hostname: "127.0.0.1",
 	port: 0,
 	async fetch(request) {
 		const url = new URL(request.url);
 		captured.push({ method: request.method, path: url.pathname + url.search, headers: Object.fromEntries(request.headers), rawBody: await request.text() });
+		if (url.pathname.endsWith("/responses")) return new Response(responsesSSE, { headers: { "content-type": "text/event-stream" } });
 		return new Response(chatSSE, { headers: { "content-type": "text/event-stream" } });
 	},
 });
@@ -151,6 +164,58 @@ async function capture(provider: string, apiKey: string, models: any[], rows: un
 	console.error(`${provider}: ${picked.length} models, ${fixtures.length} fixtures, ${fixtures.filter(f => f.error).length} errors`);
 }
 
+// Marineris Codex-class rows go over NeoPi's openai-responses provider. The
+// downstream body is the Responses request a client sends NeoProxy.
+async function captureResponses(provider: string, apiKey: string, models: any[], rows: unknown) {
+	const input = (text: string) => ({ role: "user", content: [{ type: "input_text", text }] });
+	const scenarios: any[] = [];
+	for (const model of models) {
+		const efforts: string[] = model.thinking?.efforts ?? [];
+		const add = (name: string, turns: Turn[], options: any, extra: { system?: string[]; tools?: any[] } = {}) => {
+			const context: any = { ...(extra.system ? { systemPrompt: extra.system } : {}), messages: neopiTurns(model, turns), ...(extra.tools ? { tools: extra.tools } : {}) };
+			const downstream: any = { model: model.id, stream: true, input: turns.map(turn => (turn.kind === "user" ? input(turn.text ?? "") : turn.kind === "assistant" ? { role: "assistant", content: [{ type: "output_text", text: turn.text }] } : null)).filter(Boolean) };
+			if (extra.system) downstream.instructions = extra.system.join("\n\n");
+			if (extra.tools) downstream.tools = extra.tools.map((t: any) => ({ type: "function", name: t.name, description: t.description, parameters: t.parameters, strict: false }));
+			if (options.maxTokens) downstream.max_output_tokens = options.maxTokens;
+			if (options.reasoning) downstream.reasoning = { effort: options.reasoning };
+			scenarios.push({ name: `${model.id}/${name}`, model: model.id, context, options, downstream });
+		};
+		add("plain", hello, {});
+		for (const effort of [efforts[0], efforts[efforts.length - 1]].filter((e, i, all) => e && all.indexOf(e) === i)) add(`effort-${effort}`, hello, { reasoning: effort });
+		add("system-tool", lookupTurns, { reasoning: efforts[0], maxTokens: 512 }, { system: ["A source system."], tools: [lookup] });
+		add("multi-turn", multiTurn, { reasoning: efforts[0] });
+	}
+	const fixtures: any[] = [];
+	const byId = new Map(models.map(model => [model.id, model]));
+	for (const scenario of scenarios) {
+		captured = [];
+		const model = byId.get(scenario.model);
+		let requestedURL = "";
+		const redirectFetch = (async (input: any, init: any) => {
+			requestedURL = input instanceof Request ? input.url : String(input);
+			const u = new URL(requestedURL);
+			const headers = new Headers(init?.headers);
+			headers.set("host", u.host);
+			return fetch(local + u.pathname + u.search, { ...init, headers, tls: undefined });
+		}) as typeof fetch;
+		const base = { name: scenario.name, model: scenario.model, options: scenario.options, downstream: scenario.downstream };
+		try {
+			const result = await streamSimple(model, scenario.context, { apiKey, sessionId, fetch: redirectFetch, ...scenario.options }).result();
+			if (result.stopReason !== "stop") {
+				fixtures.push({ ...base, error: String(result.errorMessage) });
+				continue;
+			}
+		} catch (error) {
+			fixtures.push({ ...base, error: String(error) });
+			continue;
+		}
+		if (captured.length !== 1) throw new Error(`Capture ${provider}/${scenario.name} saw ${captured.length} requests`);
+		fixtures.push({ ...base, requestedURL, ...captured[0] });
+	}
+	await Bun.write(join(outDir, `${provider}.fixtures.json.gz`), Bun.gzipSync(JSON.stringify({ source: `NeoPi OWN streamSimple (openai-responses) over the marineris extension's Codex-class models`, provider, apiKey, sessionId, rows, fixtures })));
+	console.error(`${provider}: ${models.length} models, ${fixtures.length} fixtures, ${fixtures.filter(f => f.error).length} errors`);
+}
+
 // Nous Portal: the extension's bundled snapshot, built as NeoPi builds it.
 const nousDir = join(authDir, "nous/testdata/neopi-extension/nous-portal");
 const snapshot = JSON.parse(await Bun.file(join(nousDir, "snapshot.json")).text()) as any[];
@@ -164,6 +229,10 @@ const marinerisRows = [
 	{ id: "grok-code-fast-2", owned_by: "xai", input_modalities: ["text", "image"] },
 	{ id: "grok-3-mini-reasoning", owned_by: "xai" },
 	{ id: "llama-local", owned_by: "local", context_window: 8192 },
+	{ id: "gpt-6.1-sol", provider: "codex", context_window: 400000 },
+	{ id: "codex-mini", provider: "codex" },
+	{ id: "o4-mini", name: "o4 mini" },
+	{ id: "gateway-alias-codex", provider: "codex" },
 ];
 const originalFetch = globalThis.fetch;
 (globalThis as any).fetch = Object.assign(async () => Response.json({ data: marinerisRows }), { preconnect: originalFetch.preconnect });
@@ -174,4 +243,5 @@ const specs = (await marinerisProvider.fetchDynamicModels("mrn_fixturekey0001"))
 (globalThis as any).fetch = originalFetch;
 const marinerisModels = specs.map(spec => buildModel({ ...spec, provider: "marineris", baseUrl: "http://192.168.50.50:8801/v1" }));
 await capture("marineris", "mrn_fixturekey0001", marinerisModels.filter(model => model.api === "openai-completions"), marinerisRows);
+await captureResponses("marineris-responses", "mrn_fixturekey0001", marinerisModels.filter(model => model.api === "openai-responses"), marinerisRows);
 server.stop(true);

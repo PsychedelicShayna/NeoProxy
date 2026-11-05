@@ -10,6 +10,7 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/runtime/executor/helps"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
+	log "github.com/sirupsen/logrus"
 )
 
 // nousCredential is the bearer NeoPi's extension uses for an account: a
@@ -52,7 +53,10 @@ func FetchNousModels(ctx context.Context, cfg *config.Config, auth *cliproxyauth
 	client.SetHTTPClient(helps.NewProxyAwareHTTPClient(ctx, cfg, auth, 0))
 	rows, err := client.FetchModelRows(ctx, token)
 	if err != nil {
-		return nil, err
+		// The extension swallows a failed listing and serves its bundled
+		// snapshot, replacing whatever an earlier listing gave.
+		log.WithError(err).Warnf("nous-portal: model discovery failed for %s, serving NeoPi's bundled snapshot", auth.ID)
+		return registry.NousBundledModels(neoPiOwner(auth, nous.Provider)), nil
 	}
 	return registry.NousModels(rows, neoPiOwner(auth, nous.Provider)), nil
 }

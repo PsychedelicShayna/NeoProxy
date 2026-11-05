@@ -58,6 +58,15 @@
       "context_window": 8192
     },
     {
+      "id": "gateway-alias-codex",
+      "provider": "codex",
+      "name": "A gateway alias owned by codex"
+    },
+    {
+      "id": "gateway-alias-owned",
+      "owned_by": "codex"
+    },
+    {
       "name": "no id"
     },
     "not-an-object"
@@ -124,6 +133,15 @@
                 "id": "llama-local",
                 "owned_by": "local",
                 "context_window": 8192
+              },
+              {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
               },
               {
                 "name": "no id"
@@ -242,6 +260,15 @@
                 "id": "llama-local",
                 "owned_by": "local",
                 "context_window": 8192
+              },
+              {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
               },
               {
                 "name": "no id"
@@ -369,6 +396,15 @@
                 "context_window": 8192
               },
               {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
+              },
+              {
                 "name": "no id"
               },
               "not-an-object"
@@ -492,6 +528,15 @@
                 "id": "llama-local",
                 "owned_by": "local",
                 "context_window": 8192
+              },
+              {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
               },
               {
                 "name": "no id"
@@ -761,6 +806,15 @@
                 "context_window": 8192
               },
               {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
+              },
+              {
                 "name": "no id"
               },
               "not-an-object"
@@ -874,6 +928,15 @@
                 "id": "llama-local",
                 "owned_by": "local",
                 "context_window": 8192
+              },
+              {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
               },
               {
                 "name": "no id"
@@ -1845,6 +1908,228 @@
               "supportsPromptCacheKey": false
             }
           }
+        },
+        {
+          "spec": {
+            "id": "gateway-alias-codex",
+            "name": "A gateway alias owned by codex",
+            "api": "openai-responses",
+            "reasoning": true,
+            "thinking": {
+              "mode": "effort",
+              "efforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultLevel": "medium"
+            },
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 400000,
+            "maxTokens": 100000
+          },
+          "built": {
+            "id": "gateway-alias-codex",
+            "name": "A gateway alias owned by codex",
+            "api": "openai-responses",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "contextWindow": 400000,
+            "maxTokens": 100000,
+            "thinking": {
+              "mode": "effort",
+              "efforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultLevel": "medium"
+            },
+            "compat": {
+              "supportsDeveloperRole": false,
+              "supportsStrictMode": false,
+              "supportsReasoningEffort": true,
+              "supportsLongPromptCacheRetention": false,
+              "supportsPromptCacheBreakpoints": false,
+              "strictResponsesPairing": false,
+              "supportsImageDetailOriginal": false,
+              "supportsReasoningSummary": true,
+              "supportsAllTurnsReasoningContext": false,
+              "supportsConfigurationUpdate": false,
+              "supportsSteering": false,
+              "requiresReasoningOffJuiceInstruction": false,
+              "stripImageInput": false,
+              "reasoningEffortMap": {},
+              "supportsReasoningParams": true,
+              "supportsSamplingParams": true,
+              "supportsPenaltyAndStopParams": true,
+              "thinkingFormat": "openai",
+              "reasoningDisableMode": "lowest-effort",
+              "omitReasoningEffort": false,
+              "includeEncryptedReasoning": true,
+              "filterReasoningHistory": false,
+              "disableReasoningOnForcedToolChoice": false,
+              "disableReasoningOnToolChoice": false,
+              "disableReasoningWithTools": false,
+              "supportsToolChoice": true,
+              "supportsForcedToolChoice": true,
+              "supportsNamedToolChoice": true,
+              "reasoningContentField": "reasoning_content",
+              "requiresReasoningContentForToolCalls": false,
+              "requiresReasoningContentForAllAssistantTurns": false,
+              "allowsSyntheticReasoningContentForToolCalls": true,
+              "replayReasoningContent": false,
+              "qwenPreserveThinking": false,
+              "qwenTemplateReasoningEffort": false,
+              "requiresThinkingAsText": false,
+              "requiresMistralToolIds": false,
+              "requiresToolResultName": false,
+              "requiresAssistantAfterToolResult": false,
+              "requiresAssistantContentForToolCalls": false,
+              "isOpenRouterHost": false,
+              "isVercelGatewayHost": false,
+              "wireModelIdMode": "raw",
+              "alwaysSendMaxTokens": false,
+              "clampOutputToModelMax": true,
+              "supportsObfuscationOptOut": false,
+              "storeResponses": false,
+              "connectionBoundNativeHistory": false,
+              "officialEndpoint": false,
+              "harmonyLeakMitigation": false,
+              "rejectRootObjectUnion": false,
+              "retryWithoutStrictOnGrammarError": false,
+              "stripDeepseekSpecialTokens": false,
+              "streamMarkupHealingPattern": "thinking",
+              "reasoningDeltasMayBeCumulative": false,
+              "emptyLengthFinishIsContextError": false,
+              "usesOpenAIToolCallIdLimit": false,
+              "streamFirstEventTimeoutMs": 0,
+              "streamIdleTimeoutMs": 300000
+            }
+          }
+        },
+        {
+          "spec": {
+            "id": "gateway-alias-owned",
+            "name": "gateway-alias-owned",
+            "api": "openai-responses",
+            "reasoning": true,
+            "thinking": {
+              "mode": "effort",
+              "efforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultLevel": "medium"
+            },
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 400000,
+            "maxTokens": 100000
+          },
+          "built": {
+            "id": "gateway-alias-owned",
+            "name": "gateway-alias-owned",
+            "api": "openai-responses",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "contextWindow": 400000,
+            "maxTokens": 100000,
+            "thinking": {
+              "mode": "effort",
+              "efforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultLevel": "medium"
+            },
+            "compat": {
+              "supportsDeveloperRole": false,
+              "supportsStrictMode": false,
+              "supportsReasoningEffort": true,
+              "supportsLongPromptCacheRetention": false,
+              "supportsPromptCacheBreakpoints": false,
+              "strictResponsesPairing": false,
+              "supportsImageDetailOriginal": false,
+              "supportsReasoningSummary": true,
+              "supportsAllTurnsReasoningContext": false,
+              "supportsConfigurationUpdate": false,
+              "supportsSteering": false,
+              "requiresReasoningOffJuiceInstruction": false,
+              "stripImageInput": false,
+              "reasoningEffortMap": {},
+              "supportsReasoningParams": true,
+              "supportsSamplingParams": true,
+              "supportsPenaltyAndStopParams": true,
+              "thinkingFormat": "openai",
+              "reasoningDisableMode": "lowest-effort",
+              "omitReasoningEffort": false,
+              "includeEncryptedReasoning": true,
+              "filterReasoningHistory": false,
+              "disableReasoningOnForcedToolChoice": false,
+              "disableReasoningOnToolChoice": false,
+              "disableReasoningWithTools": false,
+              "supportsToolChoice": true,
+              "supportsForcedToolChoice": true,
+              "supportsNamedToolChoice": true,
+              "reasoningContentField": "reasoning_content",
+              "requiresReasoningContentForToolCalls": false,
+              "requiresReasoningContentForAllAssistantTurns": false,
+              "allowsSyntheticReasoningContentForToolCalls": true,
+              "replayReasoningContent": false,
+              "qwenPreserveThinking": false,
+              "qwenTemplateReasoningEffort": false,
+              "requiresThinkingAsText": false,
+              "requiresMistralToolIds": false,
+              "requiresToolResultName": false,
+              "requiresAssistantAfterToolResult": false,
+              "requiresAssistantContentForToolCalls": false,
+              "isOpenRouterHost": false,
+              "isVercelGatewayHost": false,
+              "wireModelIdMode": "raw",
+              "alwaysSendMaxTokens": false,
+              "clampOutputToModelMax": true,
+              "supportsObfuscationOptOut": false,
+              "storeResponses": false,
+              "connectionBoundNativeHistory": false,
+              "officialEndpoint": false,
+              "harmonyLeakMitigation": false,
+              "rejectRootObjectUnion": false,
+              "retryWithoutStrictOnGrammarError": false,
+              "stripDeepseekSpecialTokens": false,
+              "streamMarkupHealingPattern": "thinking",
+              "reasoningDeltasMayBeCumulative": false,
+              "emptyLengthFinishIsContextError": false,
+              "usesOpenAIToolCallIdLimit": false,
+              "streamFirstEventTimeoutMs": 0,
+              "streamIdleTimeoutMs": 300000
+            }
+          }
         }
       ],
       "requests": [
@@ -1927,6 +2212,15 @@
                 "id": "llama-local",
                 "owned_by": "local",
                 "context_window": 8192
+              },
+              {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
               },
               {
                 "name": "no id"
@@ -2876,6 +3170,224 @@
               "supportsPromptCacheKey": false
             }
           }
+        },
+        {
+          "spec": {
+            "id": "gateway-alias-codex",
+            "name": "A gateway alias owned by codex",
+            "api": "openai-responses",
+            "reasoning": true,
+            "thinking": {
+              "mode": "effort",
+              "efforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultLevel": "medium"
+            },
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 400000,
+            "maxTokens": 100000
+          },
+          "built": {
+            "id": "gateway-alias-codex",
+            "name": "A gateway alias owned by codex",
+            "api": "openai-responses",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "contextWindow": 400000,
+            "maxTokens": 100000,
+            "thinking": {
+              "mode": "effort",
+              "efforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultLevel": "medium"
+            },
+            "compat": {
+              "supportsDeveloperRole": false,
+              "supportsStrictMode": false,
+              "supportsReasoningEffort": true,
+              "supportsLongPromptCacheRetention": false,
+              "supportsPromptCacheBreakpoints": false,
+              "strictResponsesPairing": false,
+              "supportsImageDetailOriginal": false,
+              "supportsReasoningSummary": true,
+              "supportsAllTurnsReasoningContext": false,
+              "supportsConfigurationUpdate": false,
+              "supportsSteering": false,
+              "requiresReasoningOffJuiceInstruction": false,
+              "stripImageInput": false,
+              "reasoningEffortMap": {},
+              "supportsReasoningParams": true,
+              "supportsSamplingParams": true,
+              "supportsPenaltyAndStopParams": true,
+              "thinkingFormat": "openai",
+              "reasoningDisableMode": "lowest-effort",
+              "omitReasoningEffort": false,
+              "includeEncryptedReasoning": true,
+              "filterReasoningHistory": false,
+              "disableReasoningOnForcedToolChoice": false,
+              "disableReasoningOnToolChoice": false,
+              "disableReasoningWithTools": false,
+              "supportsToolChoice": true,
+              "supportsForcedToolChoice": true,
+              "supportsNamedToolChoice": true,
+              "reasoningContentField": "reasoning_content",
+              "requiresReasoningContentForToolCalls": false,
+              "requiresReasoningContentForAllAssistantTurns": false,
+              "allowsSyntheticReasoningContentForToolCalls": true,
+              "replayReasoningContent": false,
+              "qwenPreserveThinking": false,
+              "qwenTemplateReasoningEffort": false,
+              "requiresThinkingAsText": false,
+              "requiresMistralToolIds": false,
+              "requiresToolResultName": false,
+              "requiresAssistantAfterToolResult": false,
+              "requiresAssistantContentForToolCalls": false,
+              "isOpenRouterHost": false,
+              "isVercelGatewayHost": false,
+              "wireModelIdMode": "raw",
+              "alwaysSendMaxTokens": false,
+              "clampOutputToModelMax": false,
+              "supportsObfuscationOptOut": false,
+              "storeResponses": false,
+              "connectionBoundNativeHistory": false,
+              "officialEndpoint": false,
+              "harmonyLeakMitigation": false,
+              "rejectRootObjectUnion": false,
+              "retryWithoutStrictOnGrammarError": false,
+              "stripDeepseekSpecialTokens": false,
+              "streamMarkupHealingPattern": "thinking",
+              "reasoningDeltasMayBeCumulative": false,
+              "emptyLengthFinishIsContextError": false,
+              "usesOpenAIToolCallIdLimit": false
+            }
+          }
+        },
+        {
+          "spec": {
+            "id": "gateway-alias-owned",
+            "name": "gateway-alias-owned",
+            "api": "openai-responses",
+            "reasoning": true,
+            "thinking": {
+              "mode": "effort",
+              "efforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultLevel": "medium"
+            },
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 400000,
+            "maxTokens": 100000
+          },
+          "built": {
+            "id": "gateway-alias-owned",
+            "name": "gateway-alias-owned",
+            "api": "openai-responses",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "contextWindow": 400000,
+            "maxTokens": 100000,
+            "thinking": {
+              "mode": "effort",
+              "efforts": [
+                "low",
+                "medium",
+                "high",
+                "xhigh"
+              ],
+              "defaultLevel": "medium"
+            },
+            "compat": {
+              "supportsDeveloperRole": false,
+              "supportsStrictMode": false,
+              "supportsReasoningEffort": true,
+              "supportsLongPromptCacheRetention": false,
+              "supportsPromptCacheBreakpoints": false,
+              "strictResponsesPairing": false,
+              "supportsImageDetailOriginal": false,
+              "supportsReasoningSummary": true,
+              "supportsAllTurnsReasoningContext": false,
+              "supportsConfigurationUpdate": false,
+              "supportsSteering": false,
+              "requiresReasoningOffJuiceInstruction": false,
+              "stripImageInput": false,
+              "reasoningEffortMap": {},
+              "supportsReasoningParams": true,
+              "supportsSamplingParams": true,
+              "supportsPenaltyAndStopParams": true,
+              "thinkingFormat": "openai",
+              "reasoningDisableMode": "lowest-effort",
+              "omitReasoningEffort": false,
+              "includeEncryptedReasoning": true,
+              "filterReasoningHistory": false,
+              "disableReasoningOnForcedToolChoice": false,
+              "disableReasoningOnToolChoice": false,
+              "disableReasoningWithTools": false,
+              "supportsToolChoice": true,
+              "supportsForcedToolChoice": true,
+              "supportsNamedToolChoice": true,
+              "reasoningContentField": "reasoning_content",
+              "requiresReasoningContentForToolCalls": false,
+              "requiresReasoningContentForAllAssistantTurns": false,
+              "allowsSyntheticReasoningContentForToolCalls": true,
+              "replayReasoningContent": false,
+              "qwenPreserveThinking": false,
+              "qwenTemplateReasoningEffort": false,
+              "requiresThinkingAsText": false,
+              "requiresMistralToolIds": false,
+              "requiresToolResultName": false,
+              "requiresAssistantAfterToolResult": false,
+              "requiresAssistantContentForToolCalls": false,
+              "isOpenRouterHost": false,
+              "isVercelGatewayHost": false,
+              "wireModelIdMode": "raw",
+              "alwaysSendMaxTokens": false,
+              "clampOutputToModelMax": false,
+              "supportsObfuscationOptOut": false,
+              "storeResponses": false,
+              "connectionBoundNativeHistory": false,
+              "officialEndpoint": false,
+              "harmonyLeakMitigation": false,
+              "rejectRootObjectUnion": false,
+              "retryWithoutStrictOnGrammarError": false,
+              "stripDeepseekSpecialTokens": false,
+              "streamMarkupHealingPattern": "thinking",
+              "reasoningDeltasMayBeCumulative": false,
+              "emptyLengthFinishIsContextError": false,
+              "usesOpenAIToolCallIdLimit": false
+            }
+          }
         }
       ],
       "requests": [
@@ -2960,6 +3472,15 @@
                 "context_window": 8192
               },
               {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
+              },
+              {
                 "name": "no id"
               },
               "not-an-object"
@@ -2978,7 +3499,7 @@
         }
       ],
       "events": [],
-      "result": 9,
+      "result": 11,
       "requests": [
         {
           "method": "GET",
@@ -3056,6 +3577,15 @@
                 "id": "llama-local",
                 "owned_by": "local",
                 "context_window": 8192
+              },
+              {
+                "id": "gateway-alias-codex",
+                "provider": "codex",
+                "name": "A gateway alias owned by codex"
+              },
+              {
+                "id": "gateway-alias-owned",
+                "owned_by": "codex"
               },
               {
                 "name": "no id"

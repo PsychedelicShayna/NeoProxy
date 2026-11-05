@@ -13,6 +13,8 @@
 //   NEOPI_SOURCE_MODULES=<...>/node_modules/@oh-my-pi \
 //     bun --preserve-symlinks capture_neopi_nous_auth.ts > neopi_nous_auth_capture.json
 import { join } from "node:path";
+import { ensureScratchHome } from "../../marineris/testdata/scratch_home.ts";
+await ensureScratchHome();
 
 const sourceModules = process.env.NEOPI_SOURCE_MODULES;
 if (!sourceModules) throw new Error("NEOPI_SOURCE_MODULES is required");

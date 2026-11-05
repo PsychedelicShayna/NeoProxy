@@ -1964,6 +1964,12 @@
      "api": "openai-responses",
      "reasoning": true,
      "profile": "p6"
+    },
+    {
+     "prefix": "",
+     "api": "openai-responses",
+     "reasoning": true,
+     "profile": "p0"
     }
    ],
    "models": [
@@ -2705,6 +2711,12 @@
      "api": "openai-responses",
      "reasoning": true,
      "profile": "p18"
+    },
+    {
+     "prefix": "",
+     "api": "openai-responses",
+     "reasoning": true,
+     "profile": "p12"
     }
    ],
    "models": [

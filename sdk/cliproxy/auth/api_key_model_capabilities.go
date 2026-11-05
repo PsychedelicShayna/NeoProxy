@@ -205,17 +205,20 @@ func attachResolvedExecutionModelInfo(routing *apiKeyModelRoutingSnapshot, req c
 }
 
 func attachResolvedAPIKeyModelInfo(routing *apiKeyModelRoutingSnapshot, req cliproxyexecutor.Request, auth *Auth, routeModel, upstreamModel string) cliproxyexecutor.Request {
-	modelInfo, ok := lookupAPIKeyModelCapability(routing, auth, routeModel, upstreamModel)
+	// An account whose roster NeoPi's own discovery supplied resolves from that
+	// record first: a configured model list (the dashboard saves one) is only
+	// the validation-time snapshot of the same roster.
+	modelInfo, ok := lookupDiscoveredNeoPiModel(auth, upstreamModel)
+	metadataKey := resolvedOAuthModelInfoMetadataKey
+	if !ok {
+		metadataKey = resolvedAPIKeyModelInfoMetadataKey
+		modelInfo, ok = lookupAPIKeyModelCapability(routing, auth, routeModel, upstreamModel)
+	}
 	if !ok {
 		modelInfo, ok = lookupUnlistedCodexAPIKeyModelCapability(routing, auth, upstreamModel)
 	}
-	metadataKey := resolvedAPIKeyModelInfoMetadataKey
 	if !ok {
 		modelInfo, ok = lookupOAuthModelCapability(auth, upstreamModel)
-		metadataKey = resolvedOAuthModelInfoMetadataKey
-	}
-	if !ok {
-		modelInfo, ok = lookupDiscoveredNeoPiModel(auth, upstreamModel)
 		metadataKey = resolvedOAuthModelInfoMetadataKey
 	}
 	if !ok {
@@ -319,7 +322,9 @@ func lookupDiscoveredNeoPiModel(auth *Auth, upstreamModel string) (*registry.Mod
 	models, _ := registry.GetGlobalRegistry().GetModelsAndEpochForClient(auth.ID)
 	selected := strings.TrimSpace(thinking.ParseSuffix(strings.TrimSpace(upstreamModel)).ModelName)
 	for _, model := range models {
-		if model != nil && model.NeoPi != nil && strings.EqualFold(model.ID, selected) {
+		// A published id may carry a routing prefix; the canonical id is the
+		// record's own.
+		if model != nil && model.NeoPi != nil && (strings.EqualFold(model.ID, selected) || strings.EqualFold(model.MetadataModelID, selected) || strings.EqualFold(model.NeoPi.ID, selected)) {
 			return model, true
 		}
 	}
