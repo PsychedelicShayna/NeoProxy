@@ -83,10 +83,20 @@ func TestV8ExampleLoadsAndRoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(cfg, reloaded) {
+	saved, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.SourceHash != "" || reloaded.SourceHash != ComputeSourceHash(saved) {
+		t.Fatal("file loading did not distinguish the persisted source hash from an in-memory parse")
+	}
+	// SourceHash describes file provenance, not configuration values. The former
+	// serialized-node comparison excluded it through its runtime-only tag.
+	runtimeValues := reloaded.CloneForRuntime()
+	runtimeValues.SourceHash = cfg.SourceHash
+	if !reflect.DeepEqual(cfg, runtimeValues) {
 		t.Fatal("runtime values changed after saving v8 example")
 	}
-	saved, _ := os.ReadFile(path)
 	node := testV8Document(t, saved)
 	groups, _ := testV8Path(node, "api-keys.gemini").([]any)
 	if len(groups) != 2 || testV8Path(groups[0].(map[string]any), "name") != "gemini-1" {

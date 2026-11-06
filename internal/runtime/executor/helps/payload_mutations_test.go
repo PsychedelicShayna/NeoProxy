@@ -288,7 +288,7 @@ func TestConfigExampleDocumentsCodexAdditionalToolsPayloadFilter(t *testing.T) {
 		t.Fatalf("failed to read config.example.toml: %v", err)
 	}
 	content := string(data)
-	const expectedPath = `'input.#(type=="additional_tools")#.tools.#(name=="functions")#.tools.#(name=="apply_patch")#'`
+	const expectedPath = `"input.#(type==\"additional_tools\")#.tools.#(name==\"functions\")#.tools.#(name==\"apply_patch\")#"`
 	if !strings.Contains(content, expectedPath) {
 		t.Fatalf("config.example.toml does not contain expected additional_tools path: %s", expectedPath)
 	}
