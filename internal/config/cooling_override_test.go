@@ -3,35 +3,14 @@ package config
 import "testing"
 
 func TestParseConfigBytesPreservesCoolingOverridePresence(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`
-disable-cooling: true
-gemini-api-key:
-  - api-key: gemini-key
-    disable-cooling: false
-interactions-api-key:
-  - api-key: interactions-key
-    disable-cooling: false
-claude-api-key:
-  - api-key: claude-key
-    disable-cooling: false
-codex-api-key:
-  - api-key: codex-key
-    base-url: https://codex.example.com
-    disable-cooling: false
-xai-api-key:
-  - api-key: xai-key
-    base-url: https://api.x.ai/v1
-    disable-cooling: false
-openai-compatibility:
-  - name: compat
-    base-url: https://compat.example.com
-    disable-cooling: false
-    api-key-entries:
-      - api-key: compat-key
-vertex-api-key:
-  - api-key: vertex-key
-    base-url: https://vertex.example.com
-    disable-cooling: false
+	cfg, errParse := ParseConfigBytes([]byte(`"disable-cooling" = true
+"gemini-api-key" = [{"api-key" = "gemini-key", "disable-cooling" = false}]
+"interactions-api-key" = [{"api-key" = "interactions-key", "disable-cooling" = false}]
+"claude-api-key" = [{"api-key" = "claude-key", "disable-cooling" = false}]
+"codex-api-key" = [{"api-key" = "codex-key", "base-url" = "https://codex.example.com", "disable-cooling" = false}]
+"xai-api-key" = [{"api-key" = "xai-key", "base-url" = "https://api.x.ai/v1", "disable-cooling" = false}]
+"openai-compatibility" = [{"name" = "compat", "base-url" = "https://compat.example.com", "disable-cooling" = false, "api-key-entries" = [{"api-key" = "compat-key"}]}]
+"vertex-api-key" = [{"api-key" = "vertex-key", "base-url" = "https://vertex.example.com", "disable-cooling" = false}]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)

@@ -16,7 +16,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/homeplugins"
 	sdkpluginstore "github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginstore"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 )
 
 const homePluginStatusReportTimeout = 10 * time.Second
@@ -276,8 +275,8 @@ func homePluginSyncKey(cfg *config.Config) string {
 			enabled = *item.Enabled
 		}
 		_, _ = fmt.Fprintf(hash, "plugin=%s\nenabled=%t\npriority=%d\n", strings.TrimSpace(id), enabled, item.Priority)
-		if item.Raw.Kind != 0 {
-			raw, errMarshal := yaml.Marshal(&item.Raw)
+		if len(item.Raw) != 0 {
+			raw, errMarshal := config.MarshalTOML(item.Raw)
 			if errMarshal == nil {
 				_, _ = hash.Write(raw)
 			}

@@ -8,7 +8,7 @@
 // Flags:
 //
 //	--auths-dir       <path>  Directory containing auth JSON files (default: config auth-dir)
-//	--config          <path>  Config file path                 (default: "config.toml", else "config.yaml")
+//	--config          <path>  Config file path                 (default: "config.toml"; legacy YAML imports once)
 //	--output          <path>  Output JSON file path             (default: "codex_client_models.json")
 //	--client-version <ver>   Codex client_version query value  (default: NeoPi's current version)
 //	--pretty                 Pretty-print the output JSON      (default: true)

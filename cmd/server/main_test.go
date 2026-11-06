@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/yaml.v3"
 )
 
 func TestArgvEnablesBoolFlag(t *testing.T) {
@@ -28,7 +28,7 @@ func TestArgvEnablesBoolFlag(t *testing.T) {
 		{name: "bare discover", args: []string{"--discover"}, flag: "discover", want: true},
 		{name: "stops at terminator", args: []string{"--", "--discover-json"}, flag: "discover-json", want: false},
 		{name: "stops at non-flag", args: []string{"foo", "--discover-json"}, flag: "discover-json", want: false},
-		{name: "skips config value", args: []string{"--config", "config.yaml", "--discover-json"}, flag: "discover-json", want: true},
+		{name: "skips config value", args: []string{"--config", "config.toml", "--discover-json"}, flag: "discover-json", want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -124,34 +124,34 @@ func TestShouldEnableExampleAPIKeySafeMode(t *testing.T) {
 func TestHomeConfigPayloadPortApplication(t *testing.T) {
 	tests := []struct {
 		name     string
-		yamlBody string
+		tomlBody string
 		wantPort int
 	}{
 		{
 			name:     "custom port honored",
-			yamlBody: "port: 9090\n",
+			tomlBody: "port = 9090\n",
 			wantPort: 9090,
 		},
 		{
 			name:     "custom port 8327 honored",
-			yamlBody: "port: 8327\n",
+			tomlBody: "port = 8327\n",
 			wantPort: 8327,
 		},
 		{
 			name:     "missing port defaults to 8317",
-			yamlBody: "debug: true\n",
+			tomlBody: "debug = true\n",
 			wantPort: 8317,
 		},
 		{
 			name:     "standard port 8317 preserved",
-			yamlBody: "port: 8317\n",
+			tomlBody: "port = 8317\n",
 			wantPort: 8317,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parsed, errParse := config.ParseConfigBytes([]byte(tt.yamlBody))
+			parsed, errParse := config.ParseConfigBytes([]byte(tt.tomlBody))
 			if errParse != nil {
 				t.Fatalf("ParseConfigBytes() error = %v", errParse)
 			}
@@ -254,8 +254,8 @@ func persistSeededConfigForTest(t *testing.T, configFilePath, content string) ([
 }
 
 func TestPersistSeededConfigHashesSecretBeforePersisting(t *testing.T) {
-	configFilePath := filepath.Join(t.TempDir(), "config", "config.yaml")
-	persisted, errPersist := persistSeededConfigForTest(t, configFilePath, "port: 8317\nremote-management:\n  secret-key: "+seededConfigTestSecret+"\n")
+	configFilePath := filepath.Join(t.TempDir(), "config", "config.toml")
+	persisted, errPersist := persistSeededConfigForTest(t, configFilePath, "port = 8317\n[remote-management]\nsecret-key = '"+seededConfigTestSecret+"'\n")
 	if errPersist != nil {
 		t.Fatalf("persistSeededConfig() error = %v", errPersist)
 	}
@@ -267,10 +267,10 @@ func TestPersistSeededConfigHashesSecretBeforePersisting(t *testing.T) {
 	}
 	var doc struct {
 		RemoteManagement struct {
-			SecretKey string `yaml:"secret-key"`
-		} `yaml:"remote-management"`
+			SecretKey string `toml:"secret-key"`
+		} `toml:"remote-management"`
 	}
-	if errParse := yaml.Unmarshal([]byte(persisted[0]), &doc); errParse != nil {
+	if errParse := toml.Unmarshal([]byte(persisted[0]), &doc); errParse != nil {
 		t.Fatalf("parse persisted config: %v", errParse)
 	}
 	if errCompare := bcrypt.CompareHashAndPassword([]byte(doc.RemoteManagement.SecretKey), []byte(seededConfigTestSecret)); errCompare != nil {
@@ -282,11 +282,11 @@ func TestPersistSeededConfigHashesSecretBeforePersisting(t *testing.T) {
 // again instead of running from a config the repository never received.
 func TestPersistSeededConfigRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range map[string]string{
-		"unparsable":      "remote-management:\n  secret-key: " + seededConfigTestSecret + "\nport: [8317\n",
-		"anchored secret": "defaults: &management\n  secret-key: " + seededConfigTestSecret + "\nmanagement: *management\n",
+		"unparsable":    "port = [8317\n[remote-management]\nsecret-key = '" + seededConfigTestSecret + "'\n",
+		"copied secret": "duplicate = '" + seededConfigTestSecret + "'\n[management]\nsecret-key = '" + seededConfigTestSecret + "'\n",
 	} {
 		t.Run(name, func(t *testing.T) {
-			configFilePath := filepath.Join(t.TempDir(), "config", "config.yaml")
+			configFilePath := filepath.Join(t.TempDir(), "config", "config.toml")
 			persisted, errPersist := persistSeededConfigForTest(t, configFilePath, content)
 			if errPersist == nil {
 				t.Fatal("persistSeededConfig() succeeded, want the seed refused")

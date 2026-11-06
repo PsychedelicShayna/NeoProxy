@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	sdkpluginstore "github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginstore"
-	"gopkg.in/yaml.v3"
 )
 
 type fakePluginRuntime struct {
@@ -172,17 +172,16 @@ func TestSyncResolvedWithReportIncludesUnchangedInstalledPlugins(t *testing.T) {
 			Enabled: true,
 			Dir:     root,
 			Configs: map[string]config.PluginInstanceConfig{
-				"sample": pluginConfigFromYAML(t, `
-enabled: true
-store:
-  id: sample
-  name: Sample
-  description: Adds sample support.
-  author: owner
-  version: 1.0.0
-  release-tag: v1.0.0
-  repository: https://github.com/owner/sample-plugin
-`),
+				"sample": pluginConfigFromTOML(t, `enabled = true
+
+[store]
+id = "sample"
+name = "Sample"
+description = "Adds sample support."
+author = "owner"
+version = "1.0.0"
+release-tag = "v1.0.0"
+repository = "https://github.com/owner/sample-plugin"`),
 			},
 		},
 	}
@@ -228,17 +227,16 @@ func TestSyncResolvedWithReportDoesNotMixInstalledAndConfiguredMetadata(t *testi
 			Enabled: true,
 			Dir:     root,
 			Configs: map[string]config.PluginInstanceConfig{
-				"sample": pluginConfigFromYAML(t, `
-enabled: true
-store:
-  id: sample
-  name: Sample
-  description: Adds sample support.
-  author: owner
-  version: 2.0.0
-  release-tag: v2.0.0
-  repository: https://github.com/owner/sample-plugin-v2
-`),
+				"sample": pluginConfigFromTOML(t, `enabled = true
+
+[store]
+id = "sample"
+name = "Sample"
+description = "Adds sample support."
+author = "owner"
+version = "2.0.0"
+release-tag = "v2.0.0"
+repository = "https://github.com/owner/sample-plugin-v2"`),
 			},
 		},
 	}
@@ -420,7 +418,7 @@ func TestSyncPlatformSkipsConfigWithoutManifest(t *testing.T) {
 			Enabled: true,
 			Dir:     t.TempDir(),
 			Configs: map[string]config.PluginInstanceConfig{
-				"sample": pluginConfigFromYAML(t, `enabled: true`),
+				"sample": pluginConfigFromTOML(t, `enabled = true`),
 			},
 		},
 	}
@@ -436,11 +434,10 @@ func TestSyncPlatformRejectsInvalidManifest(t *testing.T) {
 			Enabled: true,
 			Dir:     t.TempDir(),
 			Configs: map[string]config.PluginInstanceConfig{
-				"sample": pluginConfigFromYAML(t, `
-enabled: true
-store:
-  id: sample
-`),
+				"sample": pluginConfigFromTOML(t, `enabled = true
+
+[store]
+id = "sample"`),
 			},
 		},
 	}
@@ -456,11 +453,10 @@ func TestSyncPlatformWithReportRecordsInvalidManifest(t *testing.T) {
 			Enabled: true,
 			Dir:     t.TempDir(),
 			Configs: map[string]config.PluginInstanceConfig{
-				"sample": pluginConfigFromYAML(t, `
-enabled: true
-store:
-  id: sample
-`),
+				"sample": pluginConfigFromTOML(t, `enabled = true
+
+[store]
+id = "sample"`),
 			},
 		},
 	}
@@ -729,17 +725,16 @@ func syncTestConfig(t *testing.T, root string) *config.Config {
 			Enabled: true,
 			Dir:     root,
 			Configs: map[string]config.PluginInstanceConfig{
-				"sample": pluginConfigFromYAML(t, `
-enabled: true
-store:
-  id: sample
-  name: Sample
-  description: Adds sample support.
-  author: owner
-  version: 0.2.0
-  release-tag: v0.2.0
-  repository: https://github.com/owner/sample-plugin
-`),
+				"sample": pluginConfigFromTOML(t, `enabled = true
+
+[store]
+id = "sample"
+name = "Sample"
+description = "Adds sample support."
+author = "owner"
+version = "0.2.0"
+release-tag = "v0.2.0"
+repository = "https://github.com/owner/sample-plugin"`),
 			},
 		},
 	}
@@ -754,11 +749,18 @@ func pluginTestPath(root string, goos string, goarch string, id string, version 
 	return filepath.Join(root, goos, goarch, name+pluginExtension(goos))
 }
 
-func pluginConfigFromYAML(t *testing.T, text string) config.PluginInstanceConfig {
+func pluginConfigFromTOML(t *testing.T, text string) config.PluginInstanceConfig {
 	t.Helper()
-	var item config.PluginInstanceConfig
-	if errUnmarshal := yaml.Unmarshal([]byte(text), &item); errUnmarshal != nil {
+	var values map[string]any
+	if errUnmarshal := toml.Unmarshal([]byte(text), &values); errUnmarshal != nil {
 		t.Fatalf("unmarshal plugin config: %v", errUnmarshal)
+	}
+	item := config.PluginInstanceConfig{Raw: values}
+	if enabled, ok := values["enabled"].(bool); ok {
+		item.Enabled = &enabled
+	}
+	if priority, ok := values["priority"].(int64); ok {
+		item.Priority = int(priority)
 	}
 	return item
 }

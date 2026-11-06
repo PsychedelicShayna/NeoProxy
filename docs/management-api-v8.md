@@ -1,7 +1,7 @@
 # v8 Management API
 
 The base path is `/v8/management`. Configuration endpoints follow the structure in
-[config.example.yaml](../config.example.yaml); operational endpoints are grouped
+[config.example.toml](../config.example.toml); operational endpoints are grouped
 by function. The existing `/v0/management` API remains supported. Its reference is
 available in the [management API guide](https://help.router-for.me/management/api).
 
@@ -19,34 +19,37 @@ All paths below are relative to `/v8/management`.
 | Path | Methods | Description |
 | --- | --- | --- |
 | `/config` | GET, PUT, PATCH | Read, replace, or merge the complete configuration as JSON. |
-| `/config.yaml` | GET, PUT | Read or replace the complete configuration as YAML. |
 | `/config.toml` | GET, PUT | Read or replace the complete configuration as TOML. |
 | `/config/<section>/<field>` | GET, PUT, PATCH, DELETE | Read or modify a section or field using its path in the v8 tree. |
 
-GET renders the persisted configuration in the v8 layout without migrating the
-file or adding omitted runtime defaults. Successful v8 configuration writes save
-the latest layout; reads and rejected writes leave the file unchanged.
-Historical v8 paths and request bodies remain accepted as aliases.
+GET renders the persisted configuration in the v8 layout without adding omitted
+runtime defaults. Successful v8 configuration writes save the latest layout;
+reads and rejected writes leave the file unchanged after any one-time legacy
+file import performed at startup. Historical v8 paths and JSON request bodies
+remain accepted as aliases.
 
-The configuration file is TOML or YAML; `X-Config-Format: toml|yaml` on every
-configuration response names the format of the running file. `/config.yaml` and
-`/config.toml` work with either: GET converts the file to the requested syntax,
-and PUT decodes the body exactly as the loader decodes a file in that syntax, then
-saves it in the running file's format. Both share the same ETag/If-Match
-handling and error bodies: an unparsable body is `400 {"error": "invalid_body",
-"message": ...}` and a parsable but rejected configuration is
-`{"error": "invalid_config", "message": ...}` (422 when it fails to decode as a
-configuration or cannot be written in the file's format, 400 when it breaks a v8
-layout rule). TOML has no null: a YAML `null` is left out of TOML (absence means
-the default), so saving to a TOML file fails with `422 invalid_config` when that
-would change a setting (a `null` that clears a list or map with a default, a
-`null` plugin setting, or a `null` array element).
+The running configuration is native TOML. `X-Config-Format: toml` names its
+format. `/config.toml` GET returns TOML and PUT accepts TOML, saving it to the
+resolved running TOML path. There is no `/v8/management/config.yaml` endpoint
+and no YAML export. JSON and TOML writes share ETag/If-Match handling. An
+unparsable body is `400 {"error": "invalid_body", "message": ...}` and a parsable
+but rejected configuration is `{"error": "invalid_config", "message": ...}`
+(422 when it fails to decode as configuration or cannot be represented in TOML,
+400 when it breaks a v8 layout rule). TOML has no null: omit a setting to inherit
+its default. A write that would lose configuration meaning is rejected.
+
+An explicitly selected legacy YAML file, or the default `config.yaml`, is
+imported once to a sibling `.toml` file. An existing TOML sibling wins; otherwise
+the sibling is written atomically with the source permissions. The YAML source
+is untouched. API writes and hot reload use the resolved TOML path thereafter.
 
 JSON writes accept the value directly, without a `{ "value": ... }` envelope.
 PUT replaces its target. PATCH merges objects and replaces lists and scalars.
-Scalar field updates retain existing comments; complete replacements use the submitted document.
+Field updates retain key/table comments and document order where the TOML layout
+permits; normalization or moved legacy settings may move comments. Complete
+document replacements use the submitted TOML document.
 DELETE removes a field. Paths identify mapping keys, not array indexes; replace
-an entire list to change its entries. Optional per-key `null` overrides inherit
+an entire list to change its entries. Omit optional per-key overrides to inherit
 the corresponding group value. Legacy field names are rejected by v8 writes.
 
 | Example path | Value or purpose |
@@ -73,7 +76,7 @@ request retries while preserving other settings:
 ```
 
 JSON reads omit TURN usernames and credentials under
-`oauth.providers.codex.live-media-relay.ice-servers`; YAML reads include them.
+`oauth.providers.codex.live-media-relay.ice-servers`; TOML reads include them.
 The Home-owned revision fields
 `credentials.concurrency.lifecycle-config-revision`,
 `credentials.concurrency.observation-barrier-revision`, and `plugins.auth-revision`
@@ -92,8 +95,8 @@ These aliases now have client-wide semantics, not OAuth-only scope. Loading does
 not rewrite legacy-only settings; normalization removes aliases conflicting with
 the client path. A successful v8 write migrates the aliases while preserving their
 comments. Historical API paths remain usable. Home configuration publishers
-need matching client schema support before emitting the new path; older YAML
-payloads remain readable.
+need matching client schema support before emitting the new path; older files
+remain readable through the one-time legacy import.
 
 ## Operational endpoints
 

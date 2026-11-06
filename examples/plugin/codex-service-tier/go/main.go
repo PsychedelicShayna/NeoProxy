@@ -39,10 +39,10 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 	"github.com/tidwall/sjson"
-	"gopkg.in/yaml.v3"
 )
 
 var fastEnabled atomic.Bool
@@ -59,11 +59,11 @@ type envelopeError struct {
 }
 
 type lifecycleRequest struct {
-	ConfigYAML []byte `json:"config_yaml"`
+	ConfigTOML []byte `json:"config_toml"`
 }
 
 type pluginConfig struct {
-	Fast bool `yaml:"fast"`
+	Fast bool `toml:"fast"`
 }
 
 type registration struct {
@@ -146,8 +146,8 @@ func configure(raw []byte) error {
 	}
 
 	cfg := pluginConfig{}
-	if len(req.ConfigYAML) > 0 {
-		fast, errDecodeFast := decodeFastConfig(req.ConfigYAML)
+	if len(req.ConfigTOML) > 0 {
+		fast, errDecodeFast := decodeFastConfig(req.ConfigTOML)
 		if errDecodeFast != nil {
 			return errDecodeFast
 		}
@@ -204,9 +204,9 @@ func shouldSetPriorityServiceTier(req pluginapi.RequestTransformRequest) bool {
 	return req.Model == "gpt-5.5"
 }
 
-func decodeFastConfig(configYAML []byte) (bool, error) {
+func decodeFastConfig(configTOML []byte) (bool, error) {
 	var cfg pluginConfig
-	if errUnmarshal := yaml.Unmarshal(configYAML, &cfg); errUnmarshal != nil {
+	if errUnmarshal := toml.Unmarshal(configTOML, &cfg); errUnmarshal != nil {
 		return false, errUnmarshal
 	}
 	return cfg.Fast, nil

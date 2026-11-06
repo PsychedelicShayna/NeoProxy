@@ -3,7 +3,7 @@ package main
 import "testing"
 
 func TestConfigurePreservesDefaultBooleansWhenConfigIsPartial(t *testing.T) {
-	raw := mustJSON(t, lifecycleRequest{ConfigYAML: []byte("route: codex_web_search\n")})
+	raw := mustJSON(t, lifecycleRequest{ConfigTOML: []byte("route = \"codex_web_search\"\n")})
 
 	if errConfigure := configure(raw); errConfigure != nil {
 		t.Fatalf("configure() error = %v", errConfigure)

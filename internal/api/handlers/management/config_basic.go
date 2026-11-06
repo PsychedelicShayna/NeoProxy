@@ -15,7 +15,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -98,37 +97,37 @@ func (h *Handler) GetLatestVersion(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"latest-version": version})
 }
 
-// WriteConfig writes the YAML document data to the config file at path in that
-// file's format: a TOML config file stays TOML.
+// WriteConfig writes a validated native TOML document to the canonical path.
 func WriteConfig(path string, data []byte) error {
 	encoded, err := EncodeConfig(path, data)
 	if err != nil {
 		return err
 	}
-	return writeConfigBytes(path, encoded)
+	resolved, err := config.ResolveConfigPath(path)
+	if err != nil {
+		return err
+	}
+	return writeConfigBytes(resolved, encoded)
 }
 
-// EncodeConfig returns the bytes WriteConfig stores for the YAML document data:
-// v8 documents in the latest layout, rendered in the format of the config file
-// at path.
-func EncodeConfig(path string, data []byte) ([]byte, error) {
-	var doc yaml.Node
-	if err := yaml.Unmarshal(data, &doc); err != nil {
+// EncodeConfig canonicalizes a native TOML document for management persistence.
+func EncodeConfig(_ string, data []byte) ([]byte, error) {
+	root, err := config.ParseConfigDocument(data)
+	if err != nil {
 		return nil, err
 	}
-	if len(doc.Content) > 0 && config.IsV8ConfigLayout(doc.Content[0]) {
-		var err error
-		data, _, err = config.NormalizeConfigLayout(data, true)
+	if config.IsV8ConfigLayout(root) {
+		normalized, _, errNormalize := config.NormalizeConfigLayout(data, true)
+		if errNormalize != nil {
+			return nil, errNormalize
+		}
+		root, err = config.ParseConfigDocument(normalized)
 		if err != nil {
 			return nil, err
 		}
+		data = normalized
 	}
-	format := config.ConfigFileFormat(path)
-	if format == config.ConfigFormatYAML {
-		return config.NormalizeCommentIndentation(data), nil
-	}
-	// TOML rendering needs the comment indentation to attribute comments to keys.
-	return config.ConfigFromYAML(data, format)
+	return config.RenderConfigDocumentPreserve(root, data)
 }
 
 // writeConfigBytes truncates and rewrites path in place, retaining the inode of
@@ -155,20 +154,26 @@ func (h *Handler) PutConfigYAML(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_yaml", "message": "cannot read request body"})
 		return
 	}
-	var cfg config.Config
-	if err = yaml.Unmarshal(body, &cfg); err != nil {
+	_, err = config.DecodeConfig(body, config.ConfigFormatYAML)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_yaml", "message": err.Error()})
 		return
 	}
-	// Validate config using LoadConfigOptional with optional=false to enforce parsing
+	// The frozen v0 endpoint accepts YAML, but validation and persistence use
+	// the canonical TOML document. The legacy parser is isolated in config.
+	native, err := config.YAMLToTOML(body)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "invalid_config", "message": err.Error()})
+		return
+	}
 	tmpDir := filepath.Dir(h.configFilePath)
-	tmpFile, err := os.CreateTemp(tmpDir, "config-validate-*.yaml")
+	tmpFile, err := os.CreateTemp(tmpDir, "config-validate-*.toml")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "write_failed", "message": err.Error()})
 		return
 	}
 	tempFile := tmpFile.Name()
-	if _, errWrite := tmpFile.Write(body); errWrite != nil {
+	if _, errWrite := tmpFile.Write(native); errWrite != nil {
 		_ = tmpFile.Close()
 		_ = os.Remove(tempFile)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "write_failed", "message": errWrite.Error()})
@@ -189,7 +194,7 @@ func (h *Handler) PutConfigYAML(c *gin.Context) {
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if WriteConfig(h.configFilePath, body) != nil {
+	if WriteConfig(h.configFilePath, native) != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "write_failed", "message": "failed to write config"})
 		return
 	}
@@ -203,11 +208,14 @@ func (h *Handler) PutConfigYAML(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true, "changed": []string{"config"}})
 }
 
-// GetConfigYAML returns the raw config.yaml file bytes without re-encoding.
-// It preserves comments and original formatting/styles. A TOML config file is
-// served as its YAML view, comments included.
+// GetConfigYAML preserves the frozen /v0 YAML document response. The legacy
+// representation is rendered only here; normal management reads use TOML.
 func (h *Handler) GetConfigYAML(c *gin.Context) {
-	data, raw, format, err := config.ReadConfigFile(h.configFilePath)
+	_, raw, format, err := config.ReadConfigFile(h.configFilePath)
+	var data []byte
+	if err == nil {
+		data, err = config.LegacyConfigYAMLView(raw, format)
+	}
 	if err != nil {
 		if os.IsNotExist(err) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not_found", "message": "config file not found"})
@@ -224,7 +232,7 @@ func (h *Handler) GetConfigYAML(c *gin.Context) {
 	c.Header("Cache-Control", "no-store")
 	c.Header("X-Content-Type-Options", "nosniff")
 	c.Header("X-Config-Format", string(format))
-	// Write raw bytes as-is
+	// Return the isolated legacy representation without further re-encoding.
 	_, _ = c.Writer.Write(data)
 }
 

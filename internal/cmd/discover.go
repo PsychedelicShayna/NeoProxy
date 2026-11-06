@@ -12,9 +12,9 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/discovery"
-	"gopkg.in/yaml.v3"
 )
 
 // DiscoverOptions configures a one-shot LAN discovery scan.
@@ -70,7 +70,7 @@ func ResolveDiscoveryInterfaceFilters(cliInclude, cliExclude, cfgInclude, cfgExc
 func defaultDiscoveryConfigPath() string {
 	wd, errGetwd := os.Getwd()
 	if errGetwd != nil {
-		return "config.yaml"
+		return "config.toml"
 	}
 	return config.DefaultConfigFile(wd)
 }
@@ -87,12 +87,12 @@ func LoadDiscoveryScanFilters(configPath string) (include, exclude []string) {
 	var payload struct {
 		Discovery struct {
 			Interfaces struct {
-				Include []string `yaml:"include"`
-				Exclude []string `yaml:"exclude"`
-			} `yaml:"interfaces"`
-		} `yaml:"discovery"`
+				Include []string `toml:"include"`
+				Exclude []string `toml:"exclude"`
+			} `toml:"interfaces"`
+		} `toml:"discovery"`
 	}
-	if errParse := yaml.Unmarshal(raw, &payload); errParse != nil {
+	if errParse := toml.Unmarshal(raw, &payload); errParse != nil {
 		return nil, nil
 	}
 	return ParseInterfaceList(payload.Discovery.Interfaces.Include...), ParseInterfaceList(payload.Discovery.Interfaces.Exclude...)
@@ -184,7 +184,7 @@ func runDiscoverWithOptions(opts DiscoverOptions, stdout, stderr io.Writer, newB
 	if len(gateways) == 0 {
 		fmt.Fprintln(stdout, "\nNo AI gateways found on local network.")
 		fmt.Fprintln(stdout, "Tips:")
-		fmt.Fprintln(stdout, "  1. Ensure the target CPA instance has 'discovery.enabled: true' in its config.yaml.")
+		fmt.Fprintln(stdout, "  1. Ensure the target CPA instance has 'discovery.enabled = true' in its config.toml.")
 		fmt.Fprintln(stdout, "  2. Ensure your device is on the same local Wi-Fi / Ethernet subnet (mDNS does not traverse WAN).")
 		fmt.Fprintln(stdout, "  3. Check that your local firewall allows UDP port 5353 multicast traffic.")
 		return 0

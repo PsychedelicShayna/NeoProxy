@@ -325,7 +325,7 @@ func TestHomeConfigWorkerDoesNotApplyCanceledQueuedConfig(t *testing.T) {
 	baseCfg.Routing.Strategy = "round-robin"
 	service := &Service{cfg: baseCfg}
 	queue := newHomeConfigWorkQueue()
-	queue.enqueue([]byte("routing:\n  strategy: fill-first\n"))
+	queue.enqueue([]byte("[routing]\nstrategy = \"fill-first\"\n"))
 	ready := make(chan struct{})
 	close(ready)
 	lifetimeCtx, cancelLifetime := context.WithCancel(context.Background())
@@ -373,7 +373,7 @@ func TestHomeConfigWorkerSkipsStagedConfigWhenReplacementCancels(t *testing.T) {
 		}, done: workerDone},
 	}
 	queue := newHomeConfigWorkQueue()
-	queue.enqueue([]byte("routing:\n  strategy: fill-first\n"))
+	queue.enqueue([]byte("[routing]\nstrategy = \"fill-first\"\n"))
 	ready := make(chan struct{})
 	close(ready)
 	cancelBound := atomic.Int64{}
@@ -448,7 +448,7 @@ func TestHomeConfigWorkerCommitCompletesBeforeReplacementCancellation(t *testing
 		}, done: workerDone},
 	}
 	queue := newHomeConfigWorkQueue()
-	queue.enqueue([]byte("routing:\n  strategy: fill-first\n"))
+	queue.enqueue([]byte("[routing]\nstrategy = \"fill-first\"\n"))
 	ready := make(chan struct{})
 	close(ready)
 	cancelBound := atomic.Int64{}
@@ -530,7 +530,7 @@ func TestHomeConfigWorkerCancellationAtPostCommitBoundarySkipsRuntimePublish(t *
 				},
 			}
 			queue := newHomeConfigWorkQueue()
-			queue.enqueue([]byte("routing:\n  strategy: fill-first\n"))
+			queue.enqueue([]byte("[routing]\nstrategy = \"fill-first\"\n"))
 			ready := make(chan struct{})
 			close(ready)
 			published := atomic.Bool{}
@@ -609,7 +609,7 @@ func TestHomeConfigWorkerShutdownCancelsBlockedRuntimeUpdatesBeforePublish(t *te
 				return false
 			})
 			queue := newHomeConfigWorkQueue()
-			queue.enqueue([]byte("routing:\n  strategy: fill-first\n"))
+			queue.enqueue([]byte("[routing]\nstrategy = \"fill-first\"\n"))
 			ready := make(chan struct{})
 			close(ready)
 			published := atomic.Bool{}
@@ -689,7 +689,7 @@ func TestHomeConfigWorkerRetriesStageFailureForSameQueuedConfig(t *testing.T) {
 		},
 	}
 	queue := newHomeConfigWorkQueue()
-	queue.enqueue([]byte("plugins:\n  enabled: true\nrouting:\n  strategy: fill-first\n"))
+	queue.enqueue([]byte("[plugins]\nenabled = true\n[routing]\nstrategy = \"fill-first\"\n"))
 	ready := make(chan struct{})
 	close(ready)
 	lifetimeCtx, cancelLifetime := context.WithCancel(context.Background())
@@ -1767,7 +1767,8 @@ func TestServiceHeartbeatLossCancelsBlockedConfigFinalizationWithoutDrainingRegi
 
 	service := newRegistryTestService(t, listener)
 	service.cfg.Home.NodeID = "node-1"
-	service.homePluginSyncKey = homePluginSyncKey(service.cfg)
+	// Allow the initial disabled-plugin status to complete before the helper
+	// blocks the updated enabled-plugin status; do not premark the initial sync.
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	service.startHomeSubscriber(ctx)
@@ -1892,7 +1893,7 @@ func serveBlockedFinalizationConnection(conn net.Conn, configRequests, statusWri
 				_, _ = io.WriteString(conn, "-ERR unavailable\r\n")
 				return
 			}
-			writeRegistryTestConfig(conn, "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\n")
+			writeRegistryTestConfig(conn, "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n")
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "plugin-tasks":
 			_, _ = io.WriteString(conn, "$-1\r\n")
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "plugin-sync":
@@ -1922,7 +1923,7 @@ func serveBlockedFinalizationConnection(conn net.Conn, configRequests, statusWri
 			}
 			select {
 			case <-update:
-				writeRegistryTestMessage(conn, "credential-concurrency:\n  lifecycle-config-revision: 2\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\nplugins:\n  enabled: true\n")
+				writeRegistryTestMessage(conn, "[credential-concurrency]\nlifecycle-config-revision = 2\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n[plugins]\nenabled = true\n")
 			case <-stop:
 				return
 			}
@@ -1948,7 +1949,7 @@ func serveOrderedConfigUpdatesConnection(conn net.Conn, taskRequests *atomic.Int
 		case len(args) > 0 && strings.EqualFold(args[0], "HELLO"):
 			_, _ = io.WriteString(conn, "%6\r\n$6\r\nserver\r\n$5\r\nredis\r\n$5\r\nproto\r\n:3\r\n$2\r\nid\r\n:1\r\n$4\r\nmode\r\n$10\r\nstandalone\r\n$4\r\nrole\r\n$6\r\nmaster\r\n$7\r\nmodules\r\n*0\r\n")
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "config":
-			writeRegistryTestConfig(conn, "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 1s\n  cpa-cancel-bound: 100ms\n")
+			writeRegistryTestConfig(conn, "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"1s\"\ncpa-cancel-bound = \"100ms\"\n")
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "plugin-sync":
 			payload := fmt.Sprintf(`{"schema_version":1,"expires_at":%q,"items":[]}`, time.Now().Add(time.Minute).UTC().Format(time.RFC3339Nano))
 			writeRegistryTestConfig(conn, payload)
@@ -1977,8 +1978,8 @@ func serveOrderedConfigUpdatesConnection(conn net.Conn, taskRequests *atomic.Int
 			}
 			select {
 			case <-updates:
-				writeRegistryTestMessage(conn, "credential-concurrency:\n  lifecycle-config-revision: 2\n  cpa-heartbeat-timeout: 1s\n  cpa-cancel-bound: 100ms\nplugins:\n  enabled: true\n")
-				writeRegistryTestMessage(conn, "credential-concurrency:\n  lifecycle-config-revision: 3\n  cpa-heartbeat-timeout: 1s\n  cpa-cancel-bound: 100ms\n")
+				writeRegistryTestMessage(conn, "[credential-concurrency]\nlifecycle-config-revision = 2\ncpa-heartbeat-timeout = \"1s\"\ncpa-cancel-bound = \"100ms\"\n[plugins]\nenabled = true\n")
+				writeRegistryTestMessage(conn, "[credential-concurrency]\nlifecycle-config-revision = 3\ncpa-heartbeat-timeout = \"1s\"\ncpa-cancel-bound = \"100ms\"\n")
 			case <-stop:
 				return
 			}
@@ -2220,7 +2221,7 @@ func serveHomeLogForwarderReconnectConnection(conn net.Conn, acks chan<- struct{
 				return
 			}
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "config":
-			payload := "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\n"
+			payload := "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n"
 			if _, errWrite := io.WriteString(conn, fmt.Sprintf("$%d\r\n%s\r\n", len(payload), payload)); errWrite != nil {
 				return
 			}
@@ -2298,7 +2299,7 @@ func servePublisherReplacementConnection(conn net.Conn, configRequests *atomic.I
 			if request == 2 {
 				barrierRevision = 22
 			}
-			payload := fmt.Sprintf("credential-concurrency:\n  lifecycle-config-revision: %d\n  observation-barrier-revision: %d\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\ncredential-in-flight:\n  snapshot-interval: 10ms\n", request, barrierRevision)
+			payload := fmt.Sprintf("[credential-concurrency]\nlifecycle-config-revision = %d\nobservation-barrier-revision = %d\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n[credential-in-flight]\nsnapshot-interval = \"10ms\"\n", request, barrierRevision)
 			writeRegistryTestConfig(conn, payload)
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "plugin-tasks":
 			if _, errWrite := io.WriteString(conn, "$2\r\n[]\r\n"); errWrite != nil {
@@ -2362,7 +2363,7 @@ func servePreACKReplacementConnection(conn net.Conn, configRequests *atomic.Int3
 				}
 				close(secondStarted)
 			}
-			payload := "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\n"
+			payload := "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n"
 			if _, errWrite := io.WriteString(conn, fmt.Sprintf("$%d\r\n%s\r\n", len(payload), payload)); errWrite != nil {
 				return
 			}
@@ -2407,7 +2408,7 @@ func serveSuccessChainHomeConnection(conn net.Conn, configMu *sync.Mutex, config
 				_, _ = io.WriteString(conn, "-ERR unavailable\r\n")
 				return
 			}
-			payload := "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\n"
+			payload := "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n"
 			if _, errWrite := io.WriteString(conn, fmt.Sprintf("$%d\r\n%s\r\n", len(payload), payload)); errWrite != nil {
 				return
 			}
@@ -2464,7 +2465,7 @@ func serveStalePreACKPluginConnection(conn net.Conn, subscriptions *atomic.Int32
 				return
 			}
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "config":
-			payload := "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\nplugins:\n  enabled: true\n"
+			payload := "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n[plugins]\nenabled = true\n"
 			if _, errWrite := io.WriteString(conn, fmt.Sprintf("$%d\r\n%s\r\n", len(payload), payload)); errWrite != nil {
 				return
 			}
@@ -2528,7 +2529,7 @@ func serveInitialOverlayPluginConnection(conn net.Conn, pluginSync chan struct{}
 				return
 			}
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "config":
-			payload := "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\nplugins:\n  enabled: true\n"
+			payload := "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n[plugins]\nenabled = true\n"
 			if _, errWrite := io.WriteString(conn, fmt.Sprintf("$%d\r\n%s\r\n", len(payload), payload)); errWrite != nil {
 				return
 			}
@@ -2595,7 +2596,7 @@ func serveRegistryTestHomeConnection(conn net.Conn, subscriptionMu *sync.Mutex, 
 				return
 			}
 		case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == "config":
-			payload := "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 100ms\n  cpa-cancel-bound: 100ms\n"
+			payload := "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"100ms\"\ncpa-cancel-bound = \"100ms\"\n"
 			if _, errWrite := io.WriteString(conn, fmt.Sprintf("$%d\r\n%s\r\n", len(payload), payload)); errWrite != nil {
 				return
 			}
@@ -2757,7 +2758,7 @@ func TestBuilderPreservesInitialSelectorForSameRouting(t *testing.T) {
 	}
 	service, errBuild := NewBuilder().
 		WithConfig(cfg).
-		WithConfigPath(t.TempDir() + "/config.yaml").
+		WithConfigPath(t.TempDir() + "/config.toml").
 		Build()
 	if errBuild != nil {
 		t.Fatalf("Build() error = %v", errBuild)
@@ -2984,7 +2985,7 @@ func TestServiceSerializesHomeAndWatcherConfigRuntimeApply(t *testing.T) {
 	}
 	client, _ := newHomePluginTaskTestClient(t, nil, 0)
 	queue := newHomeConfigWorkQueue()
-	queue.enqueue([]byte("routing:\n  strategy: fill-first\n"))
+	queue.enqueue([]byte("[routing]\nstrategy = \"fill-first\"\n"))
 	ready := make(chan struct{})
 	close(ready)
 	lifetimeCtx, cancelLifetime := context.WithCancel(context.Background())

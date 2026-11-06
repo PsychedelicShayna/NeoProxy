@@ -24,7 +24,7 @@ RUN mkdir /CLIProxyAPI
 
 COPY --from=builder ./app/CLIProxyAPI /CLIProxyAPI/CLIProxyAPI
 
-COPY config.example.yaml /CLIProxyAPI/config.example.yaml
+COPY config.example.toml /CLIProxyAPI/config.example.toml
 
 WORKDIR /CLIProxyAPI
 

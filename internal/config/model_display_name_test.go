@@ -3,41 +3,15 @@ package config
 import (
 	"encoding/json"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestModelDisplayNameConfigDecoding(t *testing.T) {
-	const yamlConfig = `codex-api-key:
-  - models:
-      - name: codex-upstream
-        alias: codex-alias
-        display-name: Codex Name
-xai-api-key:
-  - models:
-      - name: xai-upstream
-        alias: xai-alias
-        display-name: xAI Name
-claude-api-key:
-  - models:
-      - name: claude-upstream
-        alias: claude-alias
-        display-name: Claude Name
-gemini-api-key:
-  - models:
-      - name: gemini-upstream
-        alias: gemini-alias
-        display-name: Gemini Name
-vertex-api-key:
-  - models:
-      - name: vertex-upstream
-        alias: vertex-alias
-        display-name: Vertex Name
-openai-compatibility:
-  - models:
-      - name: compat-upstream
-        alias: compat-alias
-        display-name: Compatibility Name
+	const tomlConfig = `"codex-api-key" = [{"models" = [{"name" = "codex-upstream", "alias" = "codex-alias", "display-name" = "Codex Name"}]}]
+"xai-api-key" = [{"models" = [{"name" = "xai-upstream", "alias" = "xai-alias", "display-name" = "xAI Name"}]}]
+"claude-api-key" = [{"models" = [{"name" = "claude-upstream", "alias" = "claude-alias", "display-name" = "Claude Name"}]}]
+"gemini-api-key" = [{"models" = [{"name" = "gemini-upstream", "alias" = "gemini-alias", "display-name" = "Gemini Name"}]}]
+"vertex-api-key" = [{"models" = [{"name" = "vertex-upstream", "alias" = "vertex-alias", "display-name" = "Vertex Name"}]}]
+"openai-compatibility" = [{"models" = [{"name" = "compat-upstream", "alias" = "compat-alias", "display-name" = "Compatibility Name"}]}]
 `
 	const jsonConfig = `{"codex-api-key":[{"models":[{"name":"codex-upstream","alias":"codex-alias","display-name":"Codex Name"}]}],"xai-api-key":[{"models":[{"name":"xai-upstream","alias":"xai-alias","display-name":"xAI Name"}]}],"claude-api-key":[{"models":[{"name":"claude-upstream","alias":"claude-alias","display-name":"Claude Name"}]}],"gemini-api-key":[{"models":[{"name":"gemini-upstream","alias":"gemini-alias","display-name":"Gemini Name"}]}],"vertex-api-key":[{"models":[{"name":"vertex-upstream","alias":"vertex-alias","display-name":"Vertex Name"}]}],"openai-compatibility":[{"models":[{"name":"compat-upstream","alias":"compat-alias","display-name":"Compatibility Name"}]}]}`
 
@@ -46,9 +20,9 @@ openai-compatibility:
 		decode func(*Config) error
 	}{
 		{
-			name: "YAML",
+			name: "TOML",
 			decode: func(cfg *Config) error {
-				return yaml.Unmarshal([]byte(yamlConfig), cfg)
+				return decodeTOMLTestConfig([]byte(tomlConfig), cfg)
 			},
 		},
 		{

@@ -28,11 +28,11 @@ func (f *fakeZaiOAuthService) MintAPIKey(context.Context, string) (string, error
 	return f.key, f.mintErr
 }
 
-func newZaiTestHandler(t *testing.T, configYAML string) (*Handler, string, string, *[]*coreauth.Auth) {
+func newZaiTestHandler(t *testing.T, configTOML string) (*Handler, string, string, *[]*coreauth.Auth) {
 	t.Helper()
 	dir := t.TempDir()
-	cfgPath := filepath.Join(dir, "config.yaml")
-	if err := os.WriteFile(cfgPath, []byte(configYAML), 0o600); err != nil {
+	cfgPath := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(cfgPath, []byte(configTOML), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := config.LoadConfig(cfgPath)
@@ -66,7 +66,7 @@ func runZaiSignIn(t *testing.T, h *Handler, authDir, state, payload string, svc 
 }
 
 func TestCompleteZaiOAuthAddsCodingPlanKey(t *testing.T) {
-	h, cfgPath, authDir, bound := newZaiTestHandler(t, "port: 8317\n")
+	h, cfgPath, authDir, bound := newZaiTestHandler(t, "port = 8317\n")
 	const state = "zai-success"
 	status, _ := runZaiSignIn(t, h, authDir, state, `{"state":"zai-success","code":"the-code"}`, &fakeZaiOAuthService{key: "fixtureid.fixturesecret"})
 	if status != "" {
@@ -92,7 +92,7 @@ func TestCompleteZaiOAuthAddsCodingPlanKey(t *testing.T) {
 }
 
 func TestCompleteZaiOAuthKeepsPayAsYouGoEntrySeparate(t *testing.T) {
-	h, cfgPath, authDir, _ := newZaiTestHandler(t, "port: 8317\nopenai-compatibility:\n  - name: zai\n    base-url: https://api.z.ai/api/paas/v4\n    api-key-entries:\n      - api-key: oldkey.secret\n")
+	h, cfgPath, authDir, _ := newZaiTestHandler(t, "port = 8317\n[[openai-compatibility]]\nname = 'zai'\nbase-url = 'https://api.z.ai/api/paas/v4'\n[[openai-compatibility.api-key-entries]]\napi-key = 'oldkey.secret'\n")
 	status, _ := runZaiSignIn(t, h, authDir, "zai-second", `{"state":"zai-second","code":"c"}`, &fakeZaiOAuthService{key: "newid.newsecret"})
 	if status != "" {
 		t.Fatalf("session status = %q", status)
@@ -119,7 +119,7 @@ func TestCompleteZaiOAuthFailures(t *testing.T) {
 		{"no plan key", `{"state":"zai-fail","code":"c"}`, &fakeZaiOAuthService{mintErr: errors.New("secret-upstream")}, "GLM Coding Plan"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			h, cfgPath, authDir, bound := newZaiTestHandler(t, "port: 8317\n")
+			h, cfgPath, authDir, bound := newZaiTestHandler(t, "port = 8317\n")
 			status, ok := runZaiSignIn(t, h, authDir, "zai-fail", tc.payload, tc.svc)
 			if !ok || !strings.Contains(status, tc.want) || strings.Contains(status, "secret") {
 				t.Fatalf("status = %q (exists %v), want %q", status, ok, tc.want)

@@ -16,7 +16,7 @@ func TestBuilder_WithResultPolicy(t *testing.T) {
 
 	service, errBuild := NewBuilder().
 		WithConfig(cfg).
-		WithConfigPath(t.TempDir() + "/config.yaml").
+		WithConfigPath(t.TempDir() + "/config.toml").
 		WithResultPolicy(policy).
 		Build()
 	if errBuild != nil {

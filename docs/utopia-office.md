@@ -21,7 +21,7 @@ symlinks pointing to the selected versions:
 ~/.local/lib/neoproxy-office/current
 ~/.local/lib/npi-office/VERSION/npi
 ~/.local/lib/npi-office/current
-~/.config/neoproxy-office/config.yaml
+~/.config/neoproxy-office/config.toml
 ~/.config/neoproxy-office/npi.env
 ~/.local/share/neoproxy-office/pki/ca.crt
 ~/.local/share/neoproxy-office/pki/server.crt
@@ -60,7 +60,7 @@ The server configuration uses canonical v8 fields:
 `auth.dir` is not the credential-directory setting. An omitted effective
 `oauth.auth-dir` falls back to `~/.cli-proxy-api`; that would defeat the intended
 profile separation. Verify the effective path before importing credentials.
-Systemd `%h` and `%S` specifiers belong in unit files, not server YAML.
+Systemd `%h` and `%S` specifiers belong in unit files, not server TOML.
 
 If the certificate uses a private CA, transfer the CA certificate through an
 already authenticated channel. Verify its identity and the certificate's IP or

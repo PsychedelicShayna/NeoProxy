@@ -18,7 +18,7 @@ func TestBuilderBuildRejectsInvalidWithConfigCredentialWeight(t *testing.T) {
 
 	service, errBuild := NewBuilder().
 		WithConfig(cfg).
-		WithConfigPath(t.TempDir() + "/config.yaml").
+		WithConfigPath(t.TempDir() + "/config.toml").
 		Build()
 	if errBuild == nil {
 		t.Fatal("Build() accepted an invalid credential weight")

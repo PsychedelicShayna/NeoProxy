@@ -58,16 +58,16 @@ type Version struct {
 }
 
 type InstallPlan struct {
-	Type      string     `yaml:"type,omitempty" json:"type,omitempty"`
-	Artifacts []Artifact `yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
+	Type      string     `toml:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
+	Artifacts []Artifact `toml:"artifacts,omitempty" yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
 }
 
 type Artifact struct {
-	GOOS   string `yaml:"goos,omitempty" json:"goos,omitempty"`
-	GOARCH string `yaml:"goarch,omitempty" json:"goarch,omitempty"`
-	URL    string `yaml:"url,omitempty" json:"url,omitempty"`
-	SHA256 string `yaml:"sha256,omitempty" json:"sha256,omitempty"`
-	Size   int64  `yaml:"size,omitempty" json:"size,omitempty"`
+	GOOS   string `toml:"goos,omitempty" yaml:"goos,omitempty" json:"goos,omitempty"`
+	GOARCH string `toml:"goarch,omitempty" yaml:"goarch,omitempty" json:"goarch,omitempty"`
+	URL    string `toml:"url,omitempty" yaml:"url,omitempty" json:"url,omitempty"`
+	SHA256 string `toml:"sha256,omitempty" yaml:"sha256,omitempty" json:"sha256,omitempty"`
+	Size   int64  `toml:"size,omitempty" yaml:"size,omitempty" json:"size,omitempty"`
 }
 
 type Platform struct {

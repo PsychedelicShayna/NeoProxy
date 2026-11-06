@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/clienterror"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/htmlsanitize"
@@ -21,7 +22,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 )
 
 type pluginStoreListResponse struct {
@@ -492,14 +492,14 @@ func normalizePluginStoreRequestedVersion(version string) string {
 // preserving the rest of the plugin's raw configuration. Callers must hold h.mu.
 func (h *Handler) enablePluginConfigLocked(id string, storeManifest pluginstore.Manifest) error {
 	ensurePluginConfigMap(h.cfg)
-	node := pluginConfigNode(h.cfg.Plugins.Configs[id])
-	storeNode, errStoreNode := pluginStoreManifestYAMLNode(storeManifest)
+	raw := pluginConfigMap(h.cfg.Plugins.Configs[id])
+	store, errStoreNode := pluginStoreManifestMap(storeManifest)
 	if errStoreNode != nil {
 		return errStoreNode
 	}
-	setYAMLMappingValue(node, "enabled", boolYAMLNode(true))
-	setYAMLMappingValue(node, "store", storeNode)
-	updated, errConfig := pluginInstanceConfigFromNode(node)
+	raw["enabled"] = true
+	raw["store"] = store
+	updated, errConfig := config.PluginInstanceConfigFromMap(raw)
 	if errConfig != nil {
 		return fmt.Errorf("decode plugin config: %w", errConfig)
 	}
@@ -507,12 +507,12 @@ func (h *Handler) enablePluginConfigLocked(id string, storeManifest pluginstore.
 	return nil
 }
 
-func pluginStoreManifestYAMLNode(manifest pluginstore.Manifest) (*yaml.Node, error) {
-	var node yaml.Node
-	if errEncode := node.Encode(manifest); errEncode != nil {
-		return nil, fmt.Errorf("encode store manifest: %w", errEncode)
+func pluginStoreManifestMap(manifest pluginstore.Manifest) (map[string]any, error) {
+	data, err := config.MarshalTOML(manifest)
+	if err != nil {
+		return nil, fmt.Errorf("encode store manifest: %w", err)
 	}
-	return &node, nil
+	return config.ParseConfigDocument(data)
 }
 
 func (h *Handler) pluginStoreSnapshot() (bool, string, string, []string, []pluginstore.AuthConfig, map[string]config.PluginInstanceConfig, *pluginhost.Host) {
@@ -747,8 +747,12 @@ func pluginStoreConfiguredSource(item config.PluginInstanceConfig) (sourceID str
 	if storeNode == nil {
 		return "", "", false
 	}
+	data, err := config.MarshalTOML(storeNode)
+	if err != nil {
+		return "", "", true
+	}
 	var manifest pluginstore.Manifest
-	if errDecode := storeNode.Decode(&manifest); errDecode != nil {
+	if errDecode := toml.Unmarshal(data, &manifest); errDecode != nil {
 		return "", "", true
 	}
 	return strings.TrimSpace(manifest.SourceID), strings.TrimSpace(manifest.SourceURL), true
@@ -855,38 +859,20 @@ func pluginStoreDesiredVersion(item config.PluginInstanceConfig) string {
 	if storeNode == nil {
 		return ""
 	}
-	if version := pluginStoreNormalizeDesiredVersion(pluginStoreYAMLScalar(yamlMappingValue(storeNode, "version"))); version != "" {
+	if version := pluginStoreNormalizeDesiredVersion(pluginStoreScalar(storeNode["version"])); version != "" {
 		return version
 	}
-	return pluginStoreNormalizeDesiredVersion(pluginStoreYAMLScalar(yamlMappingValue(storeNode, "release-tag")))
+	return pluginStoreNormalizeDesiredVersion(pluginStoreScalar(storeNode["release-tag"]))
 }
 
-func pluginStoreConfigNode(item config.PluginInstanceConfig) *yaml.Node {
-	if item.Raw.Kind != yaml.MappingNode {
-		return nil
-	}
-	return yamlMappingValue(&item.Raw, "store")
+func pluginStoreConfigNode(item config.PluginInstanceConfig) map[string]any {
+	store, _ := item.Raw["store"].(map[string]any)
+	return store
 }
 
-func yamlMappingValue(node *yaml.Node, key string) *yaml.Node {
-	if node == nil || node.Kind != yaml.MappingNode {
-		return nil
-	}
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		keyNode := node.Content[i]
-		if keyNode == nil || keyNode.Value != key {
-			continue
-		}
-		return node.Content[i+1]
-	}
-	return nil
-}
-
-func pluginStoreYAMLScalar(node *yaml.Node) string {
-	if node == nil || node.Kind != yaml.ScalarNode {
-		return ""
-	}
-	return strings.TrimSpace(node.Value)
+func pluginStoreScalar(value any) string {
+	text, _ := value.(string)
+	return strings.TrimSpace(text)
 }
 
 func pluginStoreNormalizeDesiredVersion(version string) string {

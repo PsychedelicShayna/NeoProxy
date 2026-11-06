@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
-	"gopkg.in/yaml.v3"
 )
 
 func TestCloneForRuntimeNil(t *testing.T) {
@@ -16,10 +15,8 @@ func TestCloneForRuntimeNil(t *testing.T) {
 }
 
 func TestParseConfigBytes_AntigravitySensitiveWords(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`antigravity:
-  sensitive-words:
-    - "API"
-    - "proxy"
+	cfg, errParse := ParseConfigBytes([]byte(`[antigravity]
+sensitive-words = ["API", "proxy"]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -31,11 +28,10 @@ func TestParseConfigBytes_AntigravitySensitiveWords(t *testing.T) {
 }
 
 func TestParseConfigBytes_AntigravityConnectionPool(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`antigravity:
-  connection-pool:
-    enabled: false
-    idle-conn-timeout: "15s"
-    max-idle-conns-per-host: 4
+	cfg, errParse := ParseConfigBytes([]byte(`[antigravity.connection-pool]
+enabled = false
+idle-conn-timeout = "15s"
+max-idle-conns-per-host = 4
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -158,7 +154,7 @@ func sampleCloneRuntimeConfig() *Config {
 				"sample": {
 					Enabled:  &pluginEnabled,
 					Priority: 10,
-					Raw:      samplePluginRawNode("first"),
+					Raw:      samplePluginRawMap("first"),
 				},
 			},
 		},
@@ -241,46 +237,28 @@ func mutateOriginalConfig(cfg *Config) {
 	cfg.Plugins.Configs["sample"] = plugin
 }
 
-func samplePluginRawNode(mode string) yaml.Node {
-	modeValue := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: mode, Anchor: "modeAnchor"}
-	return yaml.Node{
-		Kind: yaml.MappingNode,
-		Tag:  "!!map",
-		Content: []*yaml.Node{
-			{Kind: yaml.ScalarNode, Tag: "!!str", Value: "enabled"},
-			{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "false"},
-			{Kind: yaml.ScalarNode, Tag: "!!str", Value: "mode"},
-			modeValue,
-			{Kind: yaml.ScalarNode, Tag: "!!str", Value: "mode-alias"},
-			{Kind: yaml.AliasNode, Alias: modeValue},
-		},
+func samplePluginRawMap(mode string) map[string]any {
+	return map[string]any{
+		"enabled": false,
+		"mode":    mode,
+		"nested":  map[string]any{"mode": mode},
 	}
 }
 
-func pluginRawScalar(t *testing.T, node yaml.Node, key string) string {
+func pluginRawScalar(t *testing.T, node map[string]any, key string) string {
 	t.Helper()
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		if node.Content[i] != nil && node.Content[i].Value == key && node.Content[i+1] != nil {
-			return node.Content[i+1].Value
-		}
+	value, ok := node[key].(string)
+	if !ok {
+		t.Fatalf("raw plugin config missing string key %q", key)
 	}
-	t.Fatalf("raw plugin node missing key %q", key)
-	return ""
+	return value
 }
 
-func setPluginRawScalar(t *testing.T, node *yaml.Node, key, value string) {
+func setPluginRawScalar(t *testing.T, node *map[string]any, key, value string) {
 	if t != nil {
 		t.Helper()
 	}
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		if node.Content[i] != nil && node.Content[i].Value == key && node.Content[i+1] != nil {
-			node.Content[i+1].Value = value
-			return
-		}
-	}
-	if t != nil {
-		t.Fatalf("raw plugin node missing key %q", key)
-	}
+	(*node)[key] = value
 }
 
 func assertNoSharedRuntimeReferences(t *testing.T, original, clone reflect.Value, path string) {

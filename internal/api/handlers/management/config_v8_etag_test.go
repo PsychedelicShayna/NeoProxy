@@ -17,8 +17,8 @@ import (
 // resurrect a change another writer already saved (e.g. a revoked API key).
 func TestConfigV8ETagIfMatch(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "config-version: 8\nserver: {port: 8317}\naccess: {api-keys: [revoked-key]}\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := "config-version = 8\nserver = {port = 8317}\naccess = {api-keys = [\"revoked-key\"]}\n"
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 	router := gin.New()
 	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodDelete} {
 		router.Handle(method, "/v8/management/config", h.ConfigV8)
-		router.Handle(method, "/v8/management/config.yaml", h.ConfigV8)
+		router.Handle(method, "/v8/management/config.toml", h.ConfigV8)
 		router.Handle(method, "/v8/management/config/*path", h.ConfigV8)
 	}
 
@@ -79,11 +79,11 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 	}
 
 	// GET responses advertise the on-disk version as a strong ETag.
-	get := do(http.MethodGet, "/v8/management/config.yaml", "", "")
+	get := do(http.MethodGet, "/v8/management/config.toml", "", "")
 	wantStatus(get, http.StatusOK)
 	etag := get.Header().Get("ETag")
 	if etag != fileETag() {
-		t.Fatalf("GET config.yaml ETag=%q want %q", etag, fileETag())
+		t.Fatalf("GET config.toml ETag=%q want %q", etag, fileETag())
 	}
 	subPathGet := do(http.MethodGet, "/v8/management/config/server", "", "")
 	wantStatus(subPathGet, http.StatusOK)
@@ -100,7 +100,7 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 
 	// A whole-document PUT based on the stale read must not resurrect the key.
 	before := string(fileBytes())
-	stale := do(http.MethodPut, "/v8/management/config.yaml", raw, etag)
+	stale := do(http.MethodPut, "/v8/management/config.toml", raw, etag)
 	wantStatus(stale, http.StatusPreconditionFailed)
 	if got := stale.Header().Get("ETag"); got != fileETag() {
 		t.Fatalf("412 response ETag=%q want current %q", got, fileETag())
@@ -128,7 +128,7 @@ func TestConfigV8ETagIfMatch(t *testing.T) {
 	// quoted nor a weakly quoted "stale,*,tag" may be mistaken for the
 	// wildcard, and only the whole field can be the wildcard.
 	for _, ifMatch := range []string{"W/" + fileETag(), "not-an-etag", `"unterminated`, `"a"b"`, `"stale,*,tag"`, `W/"stale,*,tag"`, `"stale", *`} {
-		recorder = do(http.MethodPut, "/v8/management/config.yaml", before, ifMatch)
+		recorder = do(http.MethodPut, "/v8/management/config.toml", before, ifMatch)
 		wantStatus(recorder, http.StatusPreconditionFailed)
 	}
 

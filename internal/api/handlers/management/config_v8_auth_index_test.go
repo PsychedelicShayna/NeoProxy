@@ -20,32 +20,13 @@ import (
 func TestConfigV8APIKeysExposeAuthIndex_Issue6287(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
+	path := filepath.Join(dir, "config.toml")
 
-	rawYAML := `config-version: 8
-port: 8317
-api-keys:
-  codex:
-    - name: codex-group
-      base-url: https://api.openai.invalid
-      keys:
-        - api-key: sk-codex-1
-        - api-key: sk-codex-2
-  claude:
-    - name: claude-group
-      base-url: https://api.anthropic.invalid
-      keys:
-        - api-key: sk-claude-1
-  openai-compatibility:
-    - name: compat-provider
-      base-url: https://api.compat.invalid
-      keys:
-        - api-key: sk-compat-1
-    - name: keyless-provider
-      base-url: https://api.keyless.invalid
-      keys: []
+	rawTOML := `config-version = 8
+port = 8317
+api-keys = {codex = [{name = "codex-group", base-url = "https://api.openai.invalid", keys = [{api-key = "sk-codex-1"}, {api-key = "sk-codex-2"}]}], claude = [{name = "claude-group", base-url = "https://api.anthropic.invalid", keys = [{api-key = "sk-claude-1"}]}], openai-compatibility = [{name = "compat-provider", base-url = "https://api.compat.invalid", keys = [{api-key = "sk-compat-1"}]}, {name = "keyless-provider", base-url = "https://api.keyless.invalid", keys = []}]}
 `
-	if err := os.WriteFile(path, []byte(rawYAML), 0600); err != nil {
+	if err := os.WriteFile(path, []byte(rawTOML), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -91,7 +72,7 @@ api-keys:
 
 	router := gin.New()
 	router.GET("/v8/management/config", h.ConfigV8)
-	router.GET("/v8/management/config.yaml", h.ConfigV8)
+	router.GET("/v8/management/config.toml", h.ConfigV8)
 	router.GET("/v8/management/config/*path", h.ConfigV8)
 	router.PUT("/v8/management/config/*path", h.ConfigV8)
 	router.PATCH("/v8/management/config", h.ConfigV8)
@@ -183,15 +164,15 @@ api-keys:
 		t.Fatalf("root config codex auth_index = %q, want %q", got, expectedIndexes["codex:sk-codex-1"])
 	}
 
-	// 4. GET /v8/management/config.yaml should not contain auth_index
+	// 4. GET /v8/management/config.toml should not contain auth_index
 	rec = httptest.NewRecorder()
-	req = httptest.NewRequest(http.MethodGet, "/v8/management/config.yaml", nil)
+	req = httptest.NewRequest(http.MethodGet, "/v8/management/config.toml", nil)
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("GET /v8/management/config.yaml: status=%d body=%s", rec.Code, rec.Body.String())
+		t.Fatalf("GET /v8/management/config.toml: status=%d body=%s", rec.Code, rec.Body.String())
 	}
 	if strings.Contains(rec.Body.String(), "auth_index") {
-		t.Fatal("config.yaml output must not contain auth_index")
+		t.Fatal("config.toml output must not contain auth_index")
 	}
 
 	// 5. PUT round-trip with payload containing auth_index
@@ -210,7 +191,7 @@ api-keys:
 		t.Fatal(err)
 	}
 	if strings.Contains(string(saved), "auth_index") {
-		t.Fatal("saved config.yaml must not contain auth_index")
+		t.Fatal("saved config.toml must not contain auth_index")
 	}
 
 	// 6. PATCH on root containing auth_index in api-keys
@@ -228,7 +209,7 @@ api-keys:
 		t.Fatal(err)
 	}
 	if strings.Contains(string(saved), "auth_index") {
-		t.Fatal("saved config.yaml after PATCH must not contain auth_index")
+		t.Fatal("saved config.toml after PATCH must not contain auth_index")
 	}
 
 	// 7. Fallback when authManager is nil
@@ -252,15 +233,11 @@ api-keys:
 	}
 
 	// 8. Meta provider with omitted base-url defaults to https://api.meta.ai/v1 matching runtime
-	metaYAML := `config-version: 8
-port: 8317
-api-keys:
-  meta:
-    - name: meta-group
-      keys:
-        - api-key: sk-meta-default-base
+	metaYAML := `config-version = 8
+port = 8317
+api-keys = {meta = [{name = "meta-group", keys = [{api-key = "sk-meta-default-base"}]}]}
 `
-	metaPath := filepath.Join(dir, "meta-config.yaml")
+	metaPath := filepath.Join(dir, "meta-config.toml")
 	if errWrite := os.WriteFile(metaPath, []byte(metaYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -302,19 +279,11 @@ api-keys:
 	}
 
 	// 9. Explicit empty proxy-url on key overrides group proxy-url
-	proxyYAML := `config-version: 8
-port: 8317
-api-keys:
-  vertex:
-    - name: vertex-group
-      base-url: https://api.vertex.invalid
-      proxy-url: http://proxy.group.invalid:8080
-      keys:
-        - api-key: sk-vertex-inherited
-        - api-key: sk-vertex-explicit-empty
-          proxy-url: ""
+	proxyYAML := `config-version = 8
+port = 8317
+api-keys = {vertex = [{name = "vertex-group", base-url = "https://api.vertex.invalid", proxy-url = "http://proxy.group.invalid:8080", keys = [{api-key = "sk-vertex-inherited"}, {api-key = "sk-vertex-explicit-empty", proxy-url = ""}]}]}
 `
-	proxyPath := filepath.Join(dir, "proxy-config.yaml")
+	proxyPath := filepath.Join(dir, "proxy-config.toml")
 	if errWrite := os.WriteFile(proxyPath, []byte(proxyYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -362,26 +331,12 @@ api-keys:
 	}
 
 	// 10. Plugin options and headers retaining auth_index outside of credential level
-	pluginYAML := `config-version: 8
-port: 8317
-plugins:
-  configs:
-    custom-plugin:
-      enabled: true
-      options:
-        auth_index: keep-this-plugin-field
-api-keys:
-  codex:
-    - name: codex-group
-      base-url: https://api.openai.invalid
-      headers:
-        auth_index: keep-group-header
-      keys:
-        - api-key: sk-codex-headers
-          headers:
-            auth_index: keep-key-header
+	pluginYAML := `config-version = 8
+port = 8317
+plugins = {configs = {custom-plugin = {enabled = true, options = {auth_index = "keep-this-plugin-field"}}}}
+api-keys = {codex = [{name = "codex-group", base-url = "https://api.openai.invalid", headers = {auth_index = "keep-group-header"}, keys = [{api-key = "sk-codex-headers", headers = {auth_index = "keep-key-header"}}]}]}
 `
-	pluginPath := filepath.Join(dir, "plugin-config.yaml")
+	pluginPath := filepath.Join(dir, "plugin-config.toml")
 	if errWrite := os.WriteFile(pluginPath, []byte(pluginYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -433,17 +388,11 @@ api-keys:
 	}
 
 	// 11. Duplicate Vertex keys in YAML map to the same deduplicated runtime auth_index
-	dupVertexYAML := `config-version: 8
-port: 8317
-api-keys:
-  vertex:
-    - name: vertex-group
-      base-url: https://api.vertex.invalid
-      keys:
-        - api-key: sk-vertex-shared
-        - api-key: sk-vertex-shared
+	dupVertexYAML := `config-version = 8
+port = 8317
+api-keys = {vertex = [{name = "vertex-group", base-url = "https://api.vertex.invalid", keys = [{api-key = "sk-vertex-shared"}, {api-key = "sk-vertex-shared"}]}]}
 `
-	dupVertexPath := filepath.Join(dir, "dup-vertex-config.yaml")
+	dupVertexPath := filepath.Join(dir, "dup-vertex-config.toml")
 	if errWrite := os.WriteFile(dupVertexPath, []byte(dupVertexYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -492,17 +441,11 @@ api-keys:
 	}
 
 	// 12. Unnormalized prefix (prefix: /team/) matches live credential with normalized prefix
-	unnormalizedPrefixYAML := `config-version: 8
-port: 8317
-api-keys:
-  codex:
-    - name: codex-team
-      prefix: /team/
-      base-url: https://api.openai.invalid
-      keys:
-        - api-key: sk-codex-team
+	unnormalizedPrefixYAML := `config-version = 8
+port = 8317
+api-keys = {codex = [{name = "codex-team", prefix = "/team/", base-url = "https://api.openai.invalid", keys = [{api-key = "sk-codex-team"}]}]}
 `
-	prefixPath := filepath.Join(dir, "prefix-config.yaml")
+	prefixPath := filepath.Join(dir, "prefix-config.toml")
 	if errWrite := os.WriteFile(prefixPath, []byte(unnormalizedPrefixYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -544,18 +487,11 @@ api-keys:
 	}
 
 	// 13. Gemini with duplicate keys [A, A, B]: both A get A's index, B gets B's index
-	geminiDupYAML := `config-version: 8
-port: 8317
-api-keys:
-  gemini:
-    - name: gemini-group
-      base-url: https://api.gemini.invalid
-      keys:
-        - api-key: sk-gemini-a
-        - api-key: sk-gemini-a
-        - api-key: sk-gemini-b
+	geminiDupYAML := `config-version = 8
+port = 8317
+api-keys = {gemini = [{name = "gemini-group", base-url = "https://api.gemini.invalid", keys = [{api-key = "sk-gemini-a"}, {api-key = "sk-gemini-a"}, {api-key = "sk-gemini-b"}]}]}
 `
-	geminiPath := filepath.Join(dir, "gemini-dup-config.yaml")
+	geminiPath := filepath.Join(dir, "gemini-dup-config.toml")
 	if errWrite := os.WriteFile(geminiPath, []byte(geminiDupYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -618,20 +554,11 @@ api-keys:
 	}
 
 	// 14. OpenAI-compatible with [empty_key, B] and invalid group without base-url
-	compatMixedYAML := `config-version: 8
-port: 8317
-api-keys:
-  openai-compatibility:
-    - name: invalid-group-no-base
-      keys:
-        - api-key: sk-invalid
-    - name: mixed-group
-      base-url: https://api.mixed.invalid
-      keys:
-        - api-key: ""
-        - api-key: sk-compat-b
+	compatMixedYAML := `config-version = 8
+port = 8317
+api-keys = {openai-compatibility = [{name = "invalid-group-no-base", keys = [{api-key = "sk-invalid"}]}, {name = "mixed-group", base-url = "https://api.mixed.invalid", keys = [{api-key = ""}, {api-key = "sk-compat-b"}]}]}
 `
-	compatMixedPath := filepath.Join(dir, "compat-mixed-config.yaml")
+	compatMixedPath := filepath.Join(dir, "compat-mixed-config.toml")
 	if errWrite := os.WriteFile(compatMixedPath, []byte(compatMixedYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -693,16 +620,11 @@ api-keys:
 	}
 
 	// 15. Empty API key with valid base-url (Gemini base-url only) produces non-empty auth_index
-	emptyKeyGeminiYAML := `config-version: 8
-port: 8317
-api-keys:
-  gemini:
-    - name: gemini-emulator
-      base-url: http://emulator.invalid:8080
-      keys:
-        - api-key: ""
+	emptyKeyGeminiYAML := `config-version = 8
+port = 8317
+api-keys = {gemini = [{name = "gemini-emulator", base-url = "http://emulator.invalid:8080", keys = [{api-key = ""}]}]}
 `
-	emptyKeyPath := filepath.Join(dir, "gemini-empty-key.yaml")
+	emptyKeyPath := filepath.Join(dir, "gemini-empty-key.toml")
 	if errWrite := os.WriteFile(emptyKeyPath, []byte(emptyKeyGeminiYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -742,19 +664,11 @@ api-keys:
 	}
 
 	// 16. Multiple OpenAI-compatible empty-key entries with different proxy-url
-	compatMultiEmptyYAML := `config-version: 8
-port: 8317
-api-keys:
-  openai-compatibility:
-    - name: multi-empty-group
-      base-url: https://api.multi.invalid
-      keys:
-        - api-key: ""
-          proxy-url: http://proxy1.invalid:8080
-        - api-key: ""
-          proxy-url: http://proxy2.invalid:8080
+	compatMultiEmptyYAML := `config-version = 8
+port = 8317
+api-keys = {openai-compatibility = [{name = "multi-empty-group", base-url = "https://api.multi.invalid", keys = [{api-key = "", proxy-url = "http://proxy1.invalid:8080"}, {api-key = "", proxy-url = "http://proxy2.invalid:8080"}]}]}
 `
-	multiEmptyPath := filepath.Join(dir, "compat-multi-empty.yaml")
+	multiEmptyPath := filepath.Join(dir, "compat-multi-empty.toml")
 	if errWrite := os.WriteFile(multiEmptyPath, []byte(compatMultiEmptyYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -802,21 +716,11 @@ api-keys:
 	}
 
 	// 17. Gemini with empty API keys and proxies [P1, P1, P2]: key 0 and 1 get P1, key 2 gets P2
-	geminiProxyYAML := `config-version: 8
-port: 8317
-api-keys:
-  gemini:
-    - name: gemini-proxy-group
-      base-url: http://emulator.invalid:8080
-      keys:
-        - api-key: ""
-          proxy-url: http://proxy1.invalid:8080
-        - api-key: ""
-          proxy-url: http://proxy1.invalid:8080
-        - api-key: ""
-          proxy-url: http://proxy2.invalid:8080
+	geminiProxyYAML := `config-version = 8
+port = 8317
+api-keys = {gemini = [{name = "gemini-proxy-group", base-url = "http://emulator.invalid:8080", keys = [{api-key = "", proxy-url = "http://proxy1.invalid:8080"}, {api-key = "", proxy-url = "http://proxy1.invalid:8080"}, {api-key = "", proxy-url = "http://proxy2.invalid:8080"}]}]}
 `
-	geminiProxyPath := filepath.Join(dir, "gemini-proxy-dup.yaml")
+	geminiProxyPath := filepath.Join(dir, "gemini-proxy-dup.toml")
 	if errWrite := os.WriteFile(geminiProxyPath, []byte(geminiProxyYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -874,22 +778,11 @@ api-keys:
 	}
 
 	// 18. Two OpenAI-compatible groups with identical name and base-url: no cross-group collision
-	compatDupGroupYAML := `config-version: 8
-port: 8317
-api-keys:
-  openai-compatibility:
-    - name: shared-name
-      base-url: https://api.shared.invalid
-      keys:
-        - api-key: ""
-          proxy-url: http://proxyA.invalid:8080
-    - name: shared-name
-      base-url: https://api.shared.invalid
-      keys:
-        - api-key: ""
-          proxy-url: http://proxyB.invalid:8080
+	compatDupGroupYAML := `config-version = 8
+port = 8317
+api-keys = {openai-compatibility = [{name = "shared-name", base-url = "https://api.shared.invalid", keys = [{api-key = "", proxy-url = "http://proxyA.invalid:8080"}]}, {name = "shared-name", base-url = "https://api.shared.invalid", keys = [{api-key = "", proxy-url = "http://proxyB.invalid:8080"}]}]}
 `
-	compatDupGroupPath := filepath.Join(dir, "compat-dup-group.yaml")
+	compatDupGroupPath := filepath.Join(dir, "compat-dup-group.toml")
 	if errWrite := os.WriteFile(compatDupGroupPath, []byte(compatDupGroupYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -944,21 +837,11 @@ api-keys:
 	}
 
 	// 19. Gemini with empty API keys and different prefixes [A, A, B]: key 0 and 1 get A, key 2 gets B
-	geminiPrefixYAML := `config-version: 8
-port: 8317
-api-keys:
-  gemini:
-    - name: gemini-prefix-group
-      base-url: http://emulator.invalid:8080
-      keys:
-        - api-key: ""
-          prefix: /team-a/
-        - api-key: ""
-          prefix: /team-a/
-        - api-key: ""
-          prefix: /team-b/
+	geminiPrefixYAML := `config-version = 8
+port = 8317
+api-keys = {gemini = [{name = "gemini-prefix-group", base-url = "http://emulator.invalid:8080", keys = [{api-key = "", prefix = "/team-a/"}, {api-key = "", prefix = "/team-a/"}, {api-key = "", prefix = "/team-b/"}]}]}
 `
-	geminiPrefixPath := filepath.Join(dir, "gemini-prefix-dup.yaml")
+	geminiPrefixPath := filepath.Join(dir, "gemini-prefix-dup.toml")
 	if errWrite := os.WriteFile(geminiPrefixPath, []byte(geminiPrefixYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -1015,17 +898,11 @@ api-keys:
 	}
 
 	// 20. Unnamed OpenAI-compatible groups (name omitted) expose correct auth_index
-	unnamedCompatYAML := `config-version: 8
-port: 8317
-api-keys:
-  openai-compatibility:
-    - base-url: https://api.unnamed-keyless.invalid
-      keys: []
-    - base-url: https://api.unnamed-keyed.invalid
-      keys:
-        - api-key: sk-unnamed-key
+	unnamedCompatYAML := `config-version = 8
+port = 8317
+api-keys = {openai-compatibility = [{base-url = "https://api.unnamed-keyless.invalid", keys = []}, {base-url = "https://api.unnamed-keyed.invalid", keys = [{api-key = "sk-unnamed-key"}]}]}
 `
-	unnamedPath := filepath.Join(dir, "unnamed-compat.yaml")
+	unnamedPath := filepath.Join(dir, "unnamed-compat.toml")
 	if errWrite := os.WriteFile(unnamedPath, []byte(unnamedCompatYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -1079,17 +956,11 @@ api-keys:
 	}
 
 	// 21. Claude group with empty key entry [{}, {key-a}, {key-b}]: empty key has no index, A gets A, B gets B
-	claudeEmptyKeyYAML := `config-version: 8
-port: 8317
-api-keys:
-  claude:
-    - name: claude-group
-      keys:
-        - {}
-        - api-key: sk-claude-real-a
-        - api-key: sk-claude-real-b
+	claudeEmptyKeyYAML := `config-version = 8
+port = 8317
+api-keys = {claude = [{name = "claude-group", keys = [{}, {api-key = "sk-claude-real-a"}, {api-key = "sk-claude-real-b"}]}]}
 `
-	claudeEmptyPath := filepath.Join(dir, "claude-empty-key.yaml")
+	claudeEmptyPath := filepath.Join(dir, "claude-empty-key.toml")
 	if errWrite := os.WriteFile(claudeEmptyPath, []byte(claudeEmptyKeyYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -1150,23 +1021,11 @@ api-keys:
 	}
 
 	// 22. Codex with multiple empty API keys in the same group with different models (non-deduplicated)
-	codexEmptyKeysYAML := `config-version: 8
-port: 8317
-api-keys:
-  codex:
-    - name: codex-models-group
-      base-url: https://api.openai.invalid
-      keys:
-        - api-key: ""
-          models:
-            - name: gpt-5
-              alias: gpt-5
-        - api-key: ""
-          models:
-            - name: gpt-6
-              alias: gpt-6
+	codexEmptyKeysYAML := `config-version = 8
+port = 8317
+api-keys = {codex = [{name = "codex-models-group", base-url = "https://api.openai.invalid", keys = [{api-key = "", models = [{name = "gpt-5", alias = "gpt-5"}]}, {api-key = "", models = [{name = "gpt-6", alias = "gpt-6"}]}]}]}
 `
-	codexEmptyPath := filepath.Join(dir, "codex-empty-keys.yaml")
+	codexEmptyPath := filepath.Join(dir, "codex-empty-keys.toml")
 	if errWrite := os.WriteFile(codexEmptyPath, []byte(codexEmptyKeysYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -1214,18 +1073,11 @@ api-keys:
 	}
 
 	// 23. Meta with [empty key, dca key, valid A, valid B]: empty and dca skipped, A gets A, B gets B
-	metaFilteredYAML := `config-version: 8
-port: 8317
-api-keys:
-  meta:
-    - name: meta-filtered-group
-      keys:
-        - api-key: ""
-        - api-key: dca:some-oauth-token
-        - api-key: sk-meta-real-a
-        - api-key: sk-meta-real-b
+	metaFilteredYAML := `config-version = 8
+port = 8317
+api-keys = {meta = [{name = "meta-filtered-group", keys = [{api-key = ""}, {api-key = "dca:some-oauth-token"}, {api-key = "sk-meta-real-a"}, {api-key = "sk-meta-real-b"}]}]}
 `
-	metaFilteredPath := filepath.Join(dir, "meta-filtered.yaml")
+	metaFilteredPath := filepath.Join(dir, "meta-filtered.toml")
 	if errWrite := os.WriteFile(metaFilteredPath, []byte(metaFilteredYAML), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}

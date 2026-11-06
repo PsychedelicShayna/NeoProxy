@@ -15,13 +15,13 @@ import (
 
 func TestConfigV8ClientMultiAgentMigration(t *testing.T) {
 	for _, raw := range []string{
-		"codex: {optimize-multi-agent-v2: true}\n",
-		"providers: {codex: {optimize-multi-agent-v2: true}}\n",
-		"oauth: {providers: {codex: {optimize-multi-agent-v2: true}}}\n",
+		"codex = {optimize-multi-agent-v2 = true}\n",
+		"providers = {codex = {optimize-multi-agent-v2 = true}}\n",
+		"oauth = {providers = {codex = {optimize-multi-agent-v2 = true}}}\n",
 	} {
 		t.Run(raw, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "config.yaml")
-			raw += "client: {codex: {enable-apply-patch: true}}\n"
+			path := filepath.Join(t.TempDir(), "config.toml")
+			raw += "client = {codex = {enable-apply-patch = true}}\n"
 			if errWrite := os.WriteFile(path, []byte(raw), 0600); errWrite != nil {
 				t.Fatalf("write: %v", errWrite)
 			}

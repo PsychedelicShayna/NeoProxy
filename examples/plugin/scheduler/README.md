@@ -14,15 +14,18 @@ The plugin can select a configured auth ID, delegate routing to a built-in sched
 
 Add the plugin under `plugins.configs`:
 
-```yaml
-plugins:
-  configs:
-    scheduler:
-      enabled: true
-      priority: 1
-      auth_id: ""
-      delegate: ""
-      deny: false
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.scheduler]
+enabled = true
+priority = 1
+auth_id = ""
+delegate = ""
+deny = false
 ```
 
 Fields:

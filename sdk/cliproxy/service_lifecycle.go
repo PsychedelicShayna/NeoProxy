@@ -34,6 +34,13 @@ func (s *Service) Run(ctx context.Context) error {
 	if s == nil {
 		return fmt.Errorf("cliproxy: service is nil")
 	}
+	if s.configPath != "" {
+		configPath, errResolve := config.ResolveConfigPath(s.configPath)
+		if errResolve != nil {
+			return fmt.Errorf("cliproxy: resolve configuration path: %w", errResolve)
+		}
+		s.configPath = configPath
+	}
 	if ctx == nil {
 		ctx = context.Background()
 	}

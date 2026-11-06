@@ -1,16 +1,15 @@
 package pluginhost
 
 import (
-	"bytes"
+	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"gopkg.in/yaml.v3"
 )
 
-var defaultRuntimeConfigYAML = []byte("enabled: false\npriority: 0\n")
+var defaultRuntimeConfigTOML = []byte("enabled = false\npriority = 0\n")
 
 type runtimeConfig struct {
 	Enabled bool
@@ -23,7 +22,7 @@ type runtimeItemConfig struct {
 	Enabled    bool
 	Priority   int
 	Version    string
-	ConfigYAML []byte
+	ConfigTOML []byte
 }
 
 func runtimeConfigFromConfig(cfg *config.Config) (runtimeConfig, error) {
@@ -57,13 +56,17 @@ func runtimeConfigFromConfig(cfg *config.Config) (runtimeConfig, error) {
 		if item.Enabled != nil {
 			enabled = *item.Enabled
 		}
+		raw, errEncode := runtimeConfigTOML(item, enabled)
+		if errEncode != nil {
+			return runtimeConfig{}, fmt.Errorf("pluginhost: encode config for %s: %w", id, errEncode)
+		}
 
 		out.Items[id] = runtimeItemConfig{
 			ID:         id,
 			Enabled:    enabled,
 			Priority:   item.Priority,
 			Version:    pluginConfigDesiredVersion(item),
-			ConfigYAML: runtimeConfigYAML(item, enabled),
+			ConfigTOML: raw,
 		}
 	}
 	return out, nil
@@ -74,17 +77,22 @@ func defaultRuntimeItemConfig(id string) runtimeItemConfig {
 		ID:         id,
 		Enabled:    false,
 		Priority:   0,
-		ConfigYAML: append([]byte(nil), defaultRuntimeConfigYAML...),
+		ConfigTOML: append([]byte(nil), defaultRuntimeConfigTOML...),
 	}
 }
 
-func runtimeConfigYAML(item config.PluginInstanceConfig, enabled bool) []byte {
-	rawNode := normalizedConfigNode(item, enabled)
-	rawYAML := bytes.TrimSpace(mustMarshalYAML(rawNode))
-	if len(rawYAML) == 0 {
-		return append([]byte(nil), defaultRuntimeConfigYAML...)
+func runtimeConfigTOML(item config.PluginInstanceConfig, enabled bool) ([]byte, error) {
+	values := make(map[string]any, len(item.Raw)+2)
+	for key, value := range item.Raw {
+		values[key] = value
 	}
-	return append(append([]byte(nil), rawYAML...), '\n')
+	if _, ok := values["enabled"]; !ok {
+		values["enabled"] = enabled
+	}
+	if _, ok := values["priority"]; !ok {
+		values["priority"] = item.Priority
+	}
+	return toml.Marshal(values)
 }
 
 func desiredPluginVersions(items map[string]runtimeItemConfig) map[string]string {
@@ -107,14 +115,16 @@ func desiredPluginVersions(items map[string]runtimeItemConfig) map[string]string
 }
 
 func pluginConfigDesiredVersion(item config.PluginInstanceConfig) string {
-	storeNode := yamlMappingValue(&item.Raw, "store")
-	if storeNode == nil {
+	store, ok := item.Raw["store"].(map[string]any)
+	if !ok {
 		return ""
 	}
-	if version := normalizePluginDesiredVersion(yamlScalarString(yamlMappingValue(storeNode, "version"))); version != "" {
+	version, _ := store["version"].(string)
+	if version = normalizePluginDesiredVersion(version); version != "" {
 		return version
 	}
-	return normalizePluginDesiredVersion(yamlScalarString(yamlMappingValue(storeNode, "release-tag")))
+	releaseTag, _ := store["release-tag"].(string)
+	return normalizePluginDesiredVersion(releaseTag)
 }
 
 func normalizePluginDesiredVersion(version string) string {
@@ -126,104 +136,4 @@ func normalizePluginDesiredVersion(version string) string {
 		return ""
 	}
 	return version
-}
-
-func yamlScalarString(node *yaml.Node) string {
-	if node == nil || node.Kind == 0 {
-		return ""
-	}
-	if node.Kind == yaml.ScalarNode {
-		return strings.TrimSpace(node.Value)
-	}
-	var value string
-	if errDecode := node.Decode(&value); errDecode != nil {
-		return ""
-	}
-	return strings.TrimSpace(value)
-}
-
-func yamlMappingValue(node *yaml.Node, key string) *yaml.Node {
-	if node == nil || node.Kind != yaml.MappingNode {
-		return nil
-	}
-	for index := 0; index+1 < len(node.Content); index += 2 {
-		if node.Content[index] != nil && node.Content[index].Value == key {
-			return node.Content[index+1]
-		}
-	}
-	return nil
-}
-
-func normalizedConfigNode(item config.PluginInstanceConfig, enabled bool) *yaml.Node {
-	if item.Raw.Kind == 0 {
-		return defaultRuntimeConfigNode(enabled, item.Priority)
-	}
-	node := deepCopyYAMLNode(&item.Raw)
-	if node.Kind != yaml.MappingNode {
-		return node
-	}
-	ensureMappingScalar(node, "enabled", boolYAMLValue(enabled), "!!bool")
-	ensureMappingScalar(node, "priority", intYAMLValue(item.Priority), "!!int")
-	return node
-}
-
-func defaultRuntimeConfigNode(enabled bool, priority int) *yaml.Node {
-	return &yaml.Node{
-		Kind: yaml.MappingNode,
-		Tag:  "!!map",
-		Content: []*yaml.Node{
-			{Kind: yaml.ScalarNode, Tag: "!!str", Value: "enabled"},
-			{Kind: yaml.ScalarNode, Tag: "!!bool", Value: boolYAMLValue(enabled)},
-			{Kind: yaml.ScalarNode, Tag: "!!str", Value: "priority"},
-			{Kind: yaml.ScalarNode, Tag: "!!int", Value: intYAMLValue(priority)},
-		},
-	}
-}
-
-func ensureMappingScalar(node *yaml.Node, key, value, tag string) {
-	if node == nil || node.Kind != yaml.MappingNode {
-		return
-	}
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		if node.Content[i] != nil && node.Content[i].Value == key {
-			return
-		}
-	}
-	node.Content = append(node.Content,
-		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: key},
-		&yaml.Node{Kind: yaml.ScalarNode, Tag: tag, Value: value},
-	)
-}
-
-func boolYAMLValue(v bool) string {
-	if v {
-		return "true"
-	}
-	return "false"
-}
-
-func intYAMLValue(v int) string {
-	return strconv.Itoa(v)
-}
-
-func deepCopyYAMLNode(node *yaml.Node) *yaml.Node {
-	if node == nil {
-		return nil
-	}
-	copyNode := *node
-	if len(node.Content) > 0 {
-		copyNode.Content = make([]*yaml.Node, 0, len(node.Content))
-		for _, child := range node.Content {
-			copyNode.Content = append(copyNode.Content, deepCopyYAMLNode(child))
-		}
-	}
-	return &copyNode
-}
-
-func mustMarshalYAML(v any) []byte {
-	raw, errMarshal := yaml.Marshal(v)
-	if errMarshal != nil {
-		return append([]byte(nil), defaultRuntimeConfigYAML...)
-	}
-	return raw
 }

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"gopkg.in/yaml.v3"
 )
 
 func TestEffectiveSDKConfigCopiesClientCodexEnableApplyPatch(t *testing.T) {
@@ -55,19 +54,19 @@ func TestEffectiveSDKConfigCopiesCodexResponseSteering(t *testing.T) {
 	}
 }
 
-func TestCodexResponseSteeringYAMLUnmarshal(t *testing.T) {
-	yamlContent := []byte(`
-codex:
-  response-steering: true
+func TestCodexResponseSteeringTOMLDecode(t *testing.T) {
+	tomlContent := []byte(`
+[codex]
+response-steering = true
 `)
-	var cfg config.Config
-	if err := yaml.Unmarshal(yamlContent, &cfg); err != nil {
-		t.Fatalf("unmarshal error: %v", err)
+	cfg, err := config.DecodeConfig(tomlContent, config.ConfigFormatTOML)
+	if err != nil {
+		t.Fatalf("decode error: %v", err)
 	}
 	if !cfg.Codex.ResponseSteering {
 		t.Fatalf("cfg.Codex.ResponseSteering = false, want true")
 	}
-	sdkCfg := effectiveSDKConfig(&cfg)
+	sdkCfg := effectiveSDKConfig(cfg)
 	if sdkCfg == nil || !sdkCfg.CodexResponseSteering {
 		t.Fatalf("sdkCfg.CodexResponseSteering = false, want true")
 	}

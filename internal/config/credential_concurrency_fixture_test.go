@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 type credentialConcurrencyFixtureWireConfig struct {
@@ -15,28 +13,35 @@ type credentialConcurrencyFixtureWireConfig struct {
 	CPACancelBound             time.Duration
 	ReclaimGrace               time.Duration
 	CleanupInterval            time.Duration
-	ReleaseFlushInterval       string `yaml:"release-flush-interval"`
-	ReleaseMaxBackoff          string `yaml:"release-max-backoff"`
-	BusyRetryMin               string `yaml:"busy-retry-min"`
-	BusyRetryMax               string `yaml:"busy-retry-max"`
+	ReleaseFlushInterval       string
+	ReleaseMaxBackoff          string
+	BusyRetryMin               string
+	BusyRetryMax               string
 	MaxLimit                   int64
 }
 
-type credentialConcurrencyFixtureHotDurations struct {
-	ReleaseFlushInterval time.Duration `yaml:"release-flush-interval"`
-	ReleaseMaxBackoff    time.Duration `yaml:"release-max-backoff"`
-	BusyRetryMin         time.Duration `yaml:"busy-retry-min"`
-	BusyRetryMax         time.Duration `yaml:"busy-retry-max"`
-}
-
 func (c credentialConcurrencyFixtureWireConfig) config() (CredentialConcurrencyConfig, error) {
-	raw, errMarshal := yaml.Marshal(c)
-	if errMarshal != nil {
-		return CredentialConcurrencyConfig{}, fmt.Errorf("marshal fixture hot durations as YAML: %w", errMarshal)
+	var hot struct {
+		ReleaseFlushInterval time.Duration
+		ReleaseMaxBackoff    time.Duration
+		BusyRetryMin         time.Duration
+		BusyRetryMax         time.Duration
 	}
-	var hot credentialConcurrencyFixtureHotDurations
-	if errUnmarshal := yaml.Unmarshal(raw, &hot); errUnmarshal != nil {
-		return CredentialConcurrencyConfig{}, fmt.Errorf("parse fixture hot durations as YAML: %w", errUnmarshal)
+	for _, field := range []struct {
+		name  string
+		raw   string
+		value *time.Duration
+	}{
+		{"release-flush-interval", c.ReleaseFlushInterval, &hot.ReleaseFlushInterval},
+		{"release-max-backoff", c.ReleaseMaxBackoff, &hot.ReleaseMaxBackoff},
+		{"busy-retry-min", c.BusyRetryMin, &hot.BusyRetryMin},
+		{"busy-retry-max", c.BusyRetryMax, &hot.BusyRetryMax},
+	} {
+		duration, err := time.ParseDuration(field.raw)
+		if err != nil {
+			return CredentialConcurrencyConfig{}, fmt.Errorf("parse fixture %s: %w", field.name, err)
+		}
+		*field.value = duration
 	}
 	return CredentialConcurrencyConfig{
 		LifecycleConfigRevision:    c.LifecycleConfigRevision,

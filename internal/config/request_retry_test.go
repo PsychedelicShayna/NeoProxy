@@ -3,34 +3,13 @@ package config
 import "testing"
 
 func TestParseConfigBytesRequestRetry(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`
-gemini-api-key:
-  - api-key: "gemini-zero"
-    request-retry: 0
-  - api-key: "gemini-unset"
-interactions-api-key:
-  - api-key: "interactions-two"
-    request-retry: 2
-codex-api-key:
-  - api-key: "codex-neg"
-    base-url: "https://codex.example.com"
-    request-retry: -1
-xai-api-key:
-  - api-key: "xai-zero"
-    base-url: "https://api.x.ai/v1"
-    request-retry: 0
-claude-api-key:
-  - api-key: "claude-three"
-    request-retry: 3
-openai-compatibility:
-  - name: "compat"
-    base-url: "https://compat.example.com/v1"
-    request-retry: 0
-    api-key-entries:
-      - api-key: "compat-key"
-vertex-api-key:
-  - api-key: "vertex-four"
-    request-retry: 4
+	cfg, errParse := ParseConfigBytes([]byte(`"gemini-api-key" = [{"api-key" = "gemini-zero", "request-retry" = 0}, {"api-key" = "gemini-unset"}]
+"interactions-api-key" = [{"api-key" = "interactions-two", "request-retry" = 2}]
+"codex-api-key" = [{"api-key" = "codex-neg", "base-url" = "https://codex.example.com", "request-retry" = -1}]
+"xai-api-key" = [{"api-key" = "xai-zero", "base-url" = "https://api.x.ai/v1", "request-retry" = 0}]
+"claude-api-key" = [{"api-key" = "claude-three", "request-retry" = 3}]
+"openai-compatibility" = [{"name" = "compat", "base-url" = "https://compat.example.com/v1", "request-retry" = 0, "api-key-entries" = [{"api-key" = "compat-key"}]}]
+"vertex-api-key" = [{"api-key" = "vertex-four", "request-retry" = 4}]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)

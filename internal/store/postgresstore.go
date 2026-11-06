@@ -15,7 +15,6 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"github.com/router-for-me/CLIProxyAPI/v8/internal/misc"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	log "github.com/sirupsen/logrus"
 )
@@ -24,7 +23,8 @@ const (
 	defaultConfigTable   = "config_store"
 	defaultAuthTable     = "auth_store"
 	defaultCooldownTable = "cooldown_store"
-	defaultConfigKey     = "config"
+	defaultConfigKey     = "config.toml"
+	legacyConfigKey      = "config"
 )
 
 // PostgresStoreConfig captures configuration required to initialize a Postgres-backed store.
@@ -101,7 +101,7 @@ func NewPostgresStore(ctx context.Context, cfg PostgresStoreConfig) (*PostgresSt
 		db:         db,
 		cfg:        cfg,
 		spoolRoot:  absSpool,
-		configPath: filepath.Join(configDir, "config.yaml"),
+		configPath: filepath.Join(configDir, "config.toml"),
 		authDir:    authDir,
 	}
 	store.cooldownStore = &postgresCooldownStateStore{store: store}
@@ -455,18 +455,33 @@ func (s *PostgresStore) syncConfigFromDatabase(ctx context.Context, exampleConfi
 	query := fmt.Sprintf("SELECT content FROM %s WHERE id = $1", s.fullTableName(s.cfg.ConfigTable))
 	var content string
 	err := s.db.QueryRowContext(ctx, query, defaultConfigKey).Scan(&content)
+	legacy := false
+	if errors.Is(err, sql.ErrNoRows) {
+		err = s.db.QueryRowContext(ctx, query, legacyConfigKey).Scan(&content)
+		legacy = err == nil
+	} else if err == nil {
+		var oldContent string
+		if errLegacy := s.db.QueryRowContext(ctx, query, legacyConfigKey).Scan(&oldContent); errLegacy == nil {
+			log.Warn("postgres store: both TOML and legacy config records exist; using TOML")
+		} else if !errors.Is(errLegacy, sql.ErrNoRows) {
+			return fmt.Errorf("postgres store: inspect legacy config: %w", errLegacy)
+		}
+	}
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
+		if _, errResolve := config.ResolveConfigPath(s.configPath); errResolve != nil {
+			return fmt.Errorf("postgres store: import local config: %w", errResolve)
+		}
 		if _, errStat := os.Stat(s.configPath); errors.Is(errStat, fs.ErrNotExist) {
 			if exampleConfigPath != "" {
-				if errCopy := misc.CopyConfigTemplate(exampleConfigPath, s.configPath); errCopy != nil {
+				if errCopy := config.CopyConfigTemplate(exampleConfigPath, s.configPath); errCopy != nil {
 					return fmt.Errorf("postgres store: copy example config: %w", errCopy)
 				}
 			} else {
 				if errCreate := os.MkdirAll(filepath.Dir(s.configPath), 0o700); errCreate != nil {
 					return fmt.Errorf("postgres store: prepare config directory: %w", errCreate)
 				}
-				if errWrite := os.WriteFile(s.configPath, []byte{}, 0o600); errWrite != nil {
+				if errWrite := config.WriteConfigFile(s.configPath, []byte{}, 0o600); errWrite != nil {
 					return fmt.Errorf("postgres store: create empty config: %w", errWrite)
 				}
 			}
@@ -487,11 +502,33 @@ func (s *PostgresStore) syncConfigFromDatabase(ctx context.Context, exampleConfi
 	case err != nil:
 		return fmt.Errorf("postgres store: load config from database: %w", err)
 	default:
-		if err = os.MkdirAll(filepath.Dir(s.configPath), 0o700); err != nil {
-			return fmt.Errorf("postgres store: prepare config directory: %w", err)
+		data := []byte(normalizeLineEndings(content))
+		if legacy {
+			// Import once into a separate canonical record; never rewrite the legacy row.
+			if _, errStat := os.Stat(s.configPath); errors.Is(errStat, fs.ErrNotExist) {
+				var errConvert error
+				data, errConvert = config.YAMLToTOML(data)
+				if errConvert != nil {
+					return fmt.Errorf("postgres store: import legacy config: %w", errConvert)
+				}
+				if errWrite := config.WriteConfigFile(s.configPath, data, 0o600); errWrite != nil {
+					return fmt.Errorf("postgres store: write imported config: %w", errWrite)
+				}
+			} else if errStat != nil {
+				return fmt.Errorf("postgres store: stat local config: %w", errStat)
+			} else {
+				log.Warn("postgres store: local TOML config exists; ignoring legacy config record")
+			}
+			if errPrepare := config.PrepareConfigFileForUpload(s.configPath); errPrepare != nil {
+				return fmt.Errorf("postgres store: prepare imported config: %w", errPrepare)
+			}
+			data, err = os.ReadFile(s.configPath)
+			if err != nil {
+				return fmt.Errorf("postgres store: read imported config: %w", err)
+			}
+			return s.persistConfig(ctx, data)
 		}
-		normalized := normalizeLineEndings(content)
-		if err = os.WriteFile(s.configPath, []byte(normalized), 0o600); err != nil {
+		if err = config.WriteConfigFile(s.configPath, data, 0o600); err != nil {
 			return fmt.Errorf("postgres store: write config to spool: %w", err)
 		}
 	}

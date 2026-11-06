@@ -22,6 +22,7 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/transport"
 	"github.com/go-git/go-git/v6/plumbing/transport/http"
 	"github.com/go-git/go-git/v6/storage/filesystem/dotgit"
+	appconfig "github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	log "github.com/sirupsen/logrus"
 )
@@ -107,7 +108,7 @@ func (s *GitTokenStore) ConfigPath() string {
 	if s.configDir == "" {
 		return ""
 	}
-	return filepath.Join(s.configDir, "config.yaml")
+	return filepath.Join(s.configDir, "config.toml")
 }
 
 // EnsureRepository prepares the local git working tree by cloning or opening the repository.
@@ -413,6 +414,9 @@ func (s *GitTokenStore) ensureRepositoryContextLocked(ctx context.Context) (errR
 		return fmt.Errorf("git token store: create config dir: %w", err)
 	}
 	s.dirLock.Unlock()
+	if _, errResolve := appconfig.ResolveConfigPath(s.ConfigPath()); errResolve != nil {
+		return fmt.Errorf("git token store: import legacy config: %w", errResolve)
+	}
 	if len(initPaths) > 0 {
 		if errCommit := s.commitAndPushWithOptionsLocked(ctx, "Initialize git token store", true, initPaths...); errCommit != nil {
 			return errCommit

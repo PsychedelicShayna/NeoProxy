@@ -107,21 +107,30 @@ CGO_ENABLED=1 go build -o neoproxy ./cmd/server
 
 `CGO_ENABLED=0` can compile a binary with a nonfunctional SQLite stub; do not ship
 or use it as an office backend. The portable Linux release keeps CGO enabled and
-links musl statically instead. Configuration follows `config.example.toml`
-(the same template as `config.example.yaml`);
+links musl statically instead. Configuration follows `config.example.toml`;
 [the setup instructions](docs/downloads.md) create a minimal private local instance
 without shipping placeholder client keys.
 
-TOML is the preferred configuration format. YAML still loads unchanged: the format
-follows the file extension (`.toml`, `.yaml`/`.yml`; other names are sniffed), and
-without `--config` the engine uses `config.toml` from the working directory, falling
-back to `config.yaml`. Saves from the dashboard, the management API and hot reload
-keep the file in the format it was loaded from. Convert an existing file with
-`neoproxy config convert --to toml config.yaml` (writes `config.toml` beside it,
-with a header naming the source; `--to yaml` converts back), then start with
-`--config config.toml`. TOML has no `null`, so a YAML `null` becomes an omitted key
-that takes its default; the converter refuses a file where that would change a
-setting.
+Configuration is native TOML, with the same kebab-case setting names. Without
+`--config`, the engine uses `config.toml` in the working directory. On first use,
+an explicitly selected `.yaml`/`.yml` file, or the default `config.yaml`, is
+imported to a sibling `.toml` file only if that sibling does not already exist.
+The TOML sibling always wins. Import writes the sibling atomically with the
+source file's permissions and leaves the YAML source untouched; subsequent loads,
+dashboard/API saves, and hot reload use the resolved TOML path.
+
+Dashboard saves write native TOML, not YAML wrapped in another format. Existing
+key/table comments and document order are retained where the TOML layout permits;
+normalizing or moving legacy settings may move their comments. Legacy import
+retains representable comments, but the untouched YAML remains the original
+reference. TOML has no `null`: omit a setting to use its default or inherit a group
+value. An import that cannot represent the configuration without changing its
+meaning fails rather than silently changing a setting.
+
+For an explicit conversion, use `neoproxy config convert --to toml config.yaml`.
+YAML export is not supported. The deprecated `/v0/management` interface retains
+its legacy compatibility contract; new integrations should use
+[`/v8/management`](docs/management-api-v8.md).
 
 The dashboard's identity state uses SQLite in the engine data directory
 (`NEOPROXY_DATA_DIR` overrides it). Native Windows drive paths and directory names

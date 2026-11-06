@@ -77,12 +77,12 @@ func TestTokenPlanKeyFindsItsRegionAndSkipsNonChatModels(t *testing.T) {
 	}
 	// NeoPi's sign-in keeps no model list with the key; the account serves
 	// NeoPi's catalog and discovery.
-	for _, want := range []string{"name: alibaba-token-plan", "base-url: " + china.URL + "/v1"} {
+	for _, want := range []string{"name = 'alibaba-token-plan'", "base-url = '" + china.URL + "/v1'"} {
 		if !strings.Contains(string(cfg), want) {
 			t.Fatalf("engine config lacks %q:\n%s", want, cfg)
 		}
 	}
-	for _, unwanted := range []string{"wan2.7-image", "qwen-image", "qwen-audio", "name: qwen3.7-plus", "base-url: " + intl.URL} {
+	for _, unwanted := range []string{"wan2.7-image", "qwen-image", "qwen-audio", "name = 'qwen3.7-plus'", "base-url = '" + intl.URL} {
 		if strings.Contains(string(cfg), unwanted) {
 			t.Fatalf("engine config has %q:\n%s", unwanted, cfg)
 		}
@@ -148,7 +148,7 @@ func TestTokenPlanImportFromNeoPiBundle(t *testing.T) {
 	}
 	// The bare token is the inference key; the console cookie is stored beside
 	// it for quota reporting, as in NeoPi's credential bundle.
-	if !strings.Contains(string(cfg), "api-key: "+tokenPlanChinaKey) || !strings.Contains(string(cfg), "console-cookie: "+tokenPlanCookieRaw) || strings.Contains(string(cfg), `"token"`) {
+	if !strings.Contains(string(cfg), "api-key = '"+tokenPlanChinaKey+"'") || !strings.Contains(string(cfg), "console-cookie = '"+tokenPlanCookieRaw+"'") || strings.Contains(string(cfg), `"token"`) {
 		t.Fatalf("engine config does not hold the bare token:\n%s", cfg)
 	}
 }

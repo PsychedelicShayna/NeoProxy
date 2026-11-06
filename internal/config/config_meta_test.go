@@ -3,13 +3,14 @@ package config
 import "testing"
 
 func TestMetaConfigDropsUnusableKeys(t *testing.T) {
-	cfg, err := ParseConfigBytes([]byte(`meta-api-key:
-  - {}
-  - api-key: "   "
-  - base-url: "https://api.meta.ai/v1"
-  - headers: {X-Trace: placeholder}
-  - api-key: " LLM|valid "
-  - api-key: "dca:requires-oauth-storage"
+	cfg, err := ParseConfigBytes([]byte(`meta-api-key = [
+  {},
+  {api-key = "   "},
+  {base-url = "https://api.meta.ai/v1"},
+  {headers = {X-Trace = "placeholder"}},
+  {api-key = " LLM|valid "},
+  {api-key = "dca:requires-oauth-storage"},
+]
 `))
 	if err != nil {
 		t.Fatal(err)

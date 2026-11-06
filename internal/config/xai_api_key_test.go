@@ -3,7 +3,8 @@ package config
 import "testing"
 
 func TestParseConfigBytesXAIConfig(t *testing.T) {
-	defaultCfg, errDefault := ParseConfigBytes([]byte(`{}`))
+	defaultCfg, errDefault := ParseConfigBytes([]byte(`
+`))
 	if errDefault != nil {
 		t.Fatalf("ParseConfigBytes(default) error = %v", errDefault)
 	}
@@ -11,8 +12,7 @@ func TestParseConfigBytesXAIConfig(t *testing.T) {
 		t.Fatal("xai.inject-x-search = true by default, want false")
 	}
 
-	enabledCfg, errEnabled := ParseConfigBytes([]byte(`xai:
-  inject-x-search: true
+	enabledCfg, errEnabled := ParseConfigBytes([]byte(`"xai" = {"inject-x-search" = true}
 `))
 	if errEnabled != nil {
 		t.Fatalf("ParseConfigBytes(enabled) error = %v", errEnabled)
@@ -23,27 +23,7 @@ func TestParseConfigBytesXAIConfig(t *testing.T) {
 }
 
 func TestParseConfigBytesXAIAPIKeyMatchesCodexShape(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`xai-api-key:
-  - api-key: " xai-key "
-    priority: 3
-    weight: 5
-    prefix: " team-xai "
-    base-url: " https://api.x.ai/v1 "
-    websockets: true
-    proxy-url: " http://proxy.local "
-    headers:
-      X-Custom: value
-    models:
-      - name: grok-4.5
-        alias: grok-latest
-        display-name: Grok Latest
-        force-mapping: true
-    excluded-models:
-      - " grok-3-* "
-    disable-cooling: true
-    request-retry: 0
-  - api-key: dropped
-    base-url: " "
+	cfg, errParse := ParseConfigBytes([]byte(`"xai-api-key" = [{"api-key" = " xai-key ", "priority" = 3, "weight" = 5, "prefix" = " team-xai ", "base-url" = " https://api.x.ai/v1 ", "websockets" = true, "proxy-url" = " http://proxy.local ", "headers" = {"X-Custom" = "value"}, "models" = [{"name" = "grok-4.5", "alias" = "grok-latest", "display-name" = "Grok Latest", "force-mapping" = true}], "excluded-models" = [" grok-3-* "], "disable-cooling" = true, "request-retry" = 0}, {"api-key" = "dropped", "base-url" = " "}]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)

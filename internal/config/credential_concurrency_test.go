@@ -43,21 +43,21 @@ func TestCredentialConcurrencyConfigDefaultsOnlyMissingFields(t *testing.T) {
 	}{
 		{
 			name: "explicit zero revision",
-			payload: "credential-concurrency:\n" +
-				"  lifecycle-config-revision: 0\n" +
-				"  cpa-heartbeat-timeout: 3s\n" +
-				"  cpa-cancel-bound: 5s\n" +
-				"  reclaim-grace: 5s\n" +
-				"  cleanup-interval: 5s\n",
+			payload: "[credential-concurrency]\n" +
+				"\"lifecycle-config-revision\" = 0\n" +
+				"\"cpa-heartbeat-timeout\" = \"3s\"\n" +
+				"\"cpa-cancel-bound\" = \"5s\"\n" +
+				"\"reclaim-grace\" = \"5s\"\n" +
+				"\"cleanup-interval\" = \"5s\"\n",
 		},
 		{
 			name: "explicit zero duration",
-			payload: "credential-concurrency:\n" +
-				"  lifecycle-config-revision: 1\n" +
-				"  cpa-heartbeat-timeout: 0s\n" +
-				"  cpa-cancel-bound: 5s\n" +
-				"  reclaim-grace: 5s\n" +
-				"  cleanup-interval: 5s\n",
+			payload: "[credential-concurrency]\n" +
+				"\"lifecycle-config-revision\" = 1\n" +
+				"\"cpa-heartbeat-timeout\" = \"0s\"\n" +
+				"\"cpa-cancel-bound\" = \"5s\"\n" +
+				"\"reclaim-grace\" = \"5s\"\n" +
+				"\"cleanup-interval\" = \"5s\"\n",
 		},
 		{
 			name: "explicit null duration",
@@ -70,19 +70,25 @@ func TestCredentialConcurrencyConfigDefaultsOnlyMissingFields(t *testing.T) {
 		},
 		{
 			name: "negative observation barrier",
-			payload: "credential-concurrency:\n" +
-				"  lifecycle-config-revision: 1\n" +
-				"  observation-barrier-revision: -1\n" +
-				"  cpa-heartbeat-timeout: 3s\n" +
-				"  cpa-cancel-bound: 5s\n" +
-				"  reclaim-grace: 5s\n" +
-				"  cleanup-interval: 5s\n",
+			payload: "[credential-concurrency]\n" +
+				"\"lifecycle-config-revision\" = 1\n" +
+				"\"observation-barrier-revision\" = -1\n" +
+				"\"cpa-heartbeat-timeout\" = \"3s\"\n" +
+				"\"cpa-cancel-bound\" = \"5s\"\n" +
+				"\"reclaim-grace\" = \"5s\"\n" +
+				"\"cleanup-interval\" = \"5s\"\n",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			parsed, errParse := ParseConfigBytes([]byte(test.payload))
+			var parsed *Config
+			var errParse error
+			if test.name == "explicit null duration" {
+				parsed, errParse = DecodeConfig([]byte(test.payload), ConfigFormatYAML)
+			} else {
+				parsed, errParse = ParseConfigBytes([]byte(test.payload))
+			}
 			if errParse != nil {
 				t.Fatalf("ParseConfigBytes() error = %v", errParse)
 			}

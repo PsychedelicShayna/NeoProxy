@@ -12,7 +12,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/watcher/synthesizer"
-	"gopkg.in/yaml.v3"
 
 	sdkAuth "github.com/router-for-me/CLIProxyAPI/v8/sdk/auth"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
@@ -66,7 +65,7 @@ type Watcher struct {
 	storePersister             storePersister
 	pluginAuthParser           synthesizer.PluginAuthParser
 	mirroredAuthDir            string
-	oldConfigYaml              []byte
+	oldConfigTOML              []byte
 }
 
 // AuthUpdateAction represents the type of change detected in auth sources.
@@ -122,12 +121,16 @@ const (
 
 // NewWatcher creates a new file watcher instance
 func NewWatcher(configPath, authDir string, reloadCallback func(*config.Config)) (*Watcher, error) {
+	resolvedPath, errResolve := config.ResolveConfigPath(configPath)
+	if errResolve != nil {
+		return nil, errResolve
+	}
 	watcher, errNewWatcher := fsnotify.NewWatcher()
 	if errNewWatcher != nil {
 		return nil, errNewWatcher
 	}
 	w := &Watcher{
-		configPath:      configPath,
+		configPath:      resolvedPath,
 		authDir:         authDir,
 		reloadCallback:  reloadCallback,
 		watcher:         watcher,
@@ -170,7 +173,7 @@ func (w *Watcher) SetConfig(cfg *config.Config) {
 	w.clientsMutex.Lock()
 	defer w.clientsMutex.Unlock()
 	w.config = cloned
-	w.oldConfigYaml, _ = yaml.Marshal(cloned)
+	w.oldConfigTOML, _ = config.EncodeConfig(cloned)
 }
 
 // SetPluginAuthParser updates the plugin auth parser used for file auth synthesis.

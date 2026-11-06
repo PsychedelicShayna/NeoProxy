@@ -57,16 +57,15 @@ Each `Result` includes the provider identifier, the resolved principal, and opti
 
 The proxy includes one built-in access provider:
 
-- `config-api-key`: Validates API keys declared under top-level `api-keys`.
+- `config-api-key`: Validates API keys declared under `access.api-keys` in `config.toml`.
   - Credential sources: `Authorization: Bearer`, `X-Goog-Api-Key`, `X-Api-Key`, `?key=`, `?auth_token=`
   - Metadata: `Result.Metadata["source"]` is set to the matched source label.
 
 In the CLI server and `sdk/cliproxy`, this provider is registered automatically based on the loaded configuration.
 
-```yaml
-api-keys:
-  - sk-test-123
-  - sk-prod-456
+```toml
+[access]
+api-keys = ["sk-test-123", "sk-prod-456"]
 ```
 
 ## Loading Providers from External Go Modules
@@ -129,12 +128,12 @@ Errors propagate immediately to the caller unless they are classified as `not_ha
 `sdk/cliproxy` wires `@sdk/access` automatically when you build a CLI service via `cliproxy.NewBuilder`. Supplying a manager lets you reuse the same instance in your host process:
 
 ```go
-coreCfg, _ := config.LoadConfig("config.yaml")
+coreCfg, _ := config.LoadConfig("config.toml")
 accessManager := sdkaccess.NewManager()
 
 svc, _ := cliproxy.NewBuilder().
   WithConfig(coreCfg).
-  WithConfigPath("config.yaml").
+  WithConfigPath("config.toml").
   WithRequestAccessManager(accessManager).
   Build()
 ```

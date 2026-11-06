@@ -379,7 +379,7 @@ func TestGetConfigContinuesAfterClusterDiscoveryResponseError(t *testing.T) {
 				case len(args) >= 2 && strings.EqualFold(args[0], "CLUSTER") && strings.EqualFold(args[1], "NODES"):
 					return testCase.response
 				case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == redisKeyConfig:
-					payload := "host: 127.0.0.1\n"
+					payload := "host = \"127.0.0.1\"\n"
 					return fmt.Sprintf("$%d\r\n%s\r\n", len(payload), payload)
 				default:
 					return "-ERR unexpected command\r\n"
@@ -393,7 +393,7 @@ func TestGetConfigContinuesAfterClusterDiscoveryResponseError(t *testing.T) {
 			if errGet != nil {
 				t.Fatalf("GetConfig() error = %v", errGet)
 			}
-			if string(raw) != "host: 127.0.0.1\n" {
+			if string(raw) != "host = \"127.0.0.1\"\n" {
 				t.Fatalf("GetConfig() = %q", raw)
 			}
 			if count := commands.CountCommandKey("CLUSTER", "NODES"); count != 1 {
@@ -1666,7 +1666,7 @@ func TestConfigSubscriberUsesAppliedLifecycleRevisionAndRebuildsCommands(t *test
 }
 
 func TestRunConfigSubscriberLifetimeReturnsAfterHeartbeatLoss(t *testing.T) {
-	configPayload := "credential-concurrency:\n  lifecycle-config-revision: 1\n  cpa-heartbeat-timeout: 20ms\n"
+	configPayload := "[credential-concurrency]\nlifecycle-config-revision = 1\ncpa-heartbeat-timeout = \"20ms\"\n"
 	listener, errListen := net.Listen("tcp", "127.0.0.1:0")
 	if errListen != nil {
 		t.Fatalf("listen: %v", errListen)
@@ -1792,7 +1792,8 @@ func TestRunConfigSubscriberLifetimeRejectsInvalidSubscriptionACK(t *testing.T) 
 				case len(args) >= 2 && strings.EqualFold(args[0], "CLUSTER") && strings.EqualFold(args[1], "NODES"):
 					return "-ERR unknown command 'CLUSTER'\r\n"
 				case len(args) >= 2 && strings.EqualFold(args[0], "GET") && args[1] == redisKeyConfig:
-					return "$15\r\nhost: 127.0.0.1\r\n"
+					payload := "host = \"127.0.0.1\"\n"
+					return fmt.Sprintf("$%d\r\n%s\r\n", len(payload), payload)
 				case len(args) >= 2 && strings.EqualFold(args[0], "SUBSCRIBE") && args[1] == redisChannelConfig:
 					return ack
 				default:
@@ -1860,12 +1861,12 @@ func TestReceiveSubscriptionACKsForMultipleChannels(t *testing.T) {
 }
 
 func TestRunConfigSubscriberLifetimeRejectsNonPositiveLifecycleDuration(t *testing.T) {
-	configPayload := "credential-concurrency:\n" +
-		"  lifecycle-config-revision: 1\n" +
-		"  cpa-heartbeat-timeout: 0s\n" +
-		"  cpa-cancel-bound: 5s\n" +
-		"  reclaim-grace: 5s\n" +
-		"  cleanup-interval: 5s\n"
+	configPayload := "[credential-concurrency]\n" +
+		"lifecycle-config-revision = 1\n" +
+		"cpa-heartbeat-timeout = \"0s\"\n" +
+		"cpa-cancel-bound = \"5s\"\n" +
+		"reclaim-grace = \"5s\"\n" +
+		"cleanup-interval = \"5s\"\n"
 	client, commands := newRedisCommandTestClient(t, func(args []string) string {
 		switch {
 		case len(args) >= 1 && strings.EqualFold(args[0], "HELLO"):
@@ -1895,12 +1896,12 @@ func TestRunConfigSubscriberLifetimeRejectsNonPositiveLifecycleDuration(t *testi
 }
 
 func TestRunConfigSubscriberLifetimeRejectsExplicitInvalidLifecycleConfig(t *testing.T) {
-	configPayload := "credential-concurrency:\n" +
-		"  lifecycle-config-revision: 0\n" +
-		"  cpa-heartbeat-timeout: 20ms\n" +
-		"  cpa-cancel-bound: 5s\n" +
-		"  reclaim-grace: 5s\n" +
-		"  cleanup-interval: 5s\n"
+	configPayload := "[credential-concurrency]\n" +
+		"lifecycle-config-revision = 0\n" +
+		"cpa-heartbeat-timeout = \"20ms\"\n" +
+		"cpa-cancel-bound = \"5s\"\n" +
+		"reclaim-grace = \"5s\"\n" +
+		"cleanup-interval = \"5s\"\n"
 	client, commands := newRedisCommandTestClient(t, func(args []string) string {
 		switch {
 		case len(args) >= 1 && strings.EqualFold(args[0], "HELLO"):
@@ -1972,7 +1973,7 @@ func TestEndConfigSubscriberLifetimeClearsHeartbeatBeforeCloseBlocks(t *testing.
 }
 
 func TestRunConfigSubscriberLifetimeUsesLegacySubscribeWithoutLifecycleConfig(t *testing.T) {
-	configPayload := "host: 127.0.0.1\n"
+	configPayload := "host = \"127.0.0.1\"\n"
 	client, commands := newRedisCommandTestClient(t, func(args []string) string {
 		switch {
 		case len(args) >= 1 && strings.EqualFold(args[0], "HELLO"):
@@ -2312,7 +2313,7 @@ func TestAbortAmbiguousDispatchFencesConcurrentRPop(t *testing.T) {
 }
 
 func TestRunConfigSubscriberLifetimeRebuildsFreshCommandPoolBeforeReady(t *testing.T) {
-	configPayload := "host: 127.0.0.1\n"
+	configPayload := "host = \"127.0.0.1\"\n"
 	client, commands := newRedisCommandTestClient(t, func(args []string) string {
 		switch {
 		case len(args) >= 1 && strings.EqualFold(args[0], "HELLO"):
@@ -2358,7 +2359,7 @@ func TestRunConfigSubscriberLifetimeRebuildsFreshCommandPoolBeforeReady(t *testi
 }
 
 func TestRunConfigSubscriberLifetimePreservesTakeoverWhenFreshCommandProbeFails(t *testing.T) {
-	configPayload := "host: 127.0.0.1\n"
+	configPayload := "host = \"127.0.0.1\"\n"
 	client, commands := newRedisCommandTestClient(t, func(args []string) string {
 		switch {
 		case len(args) >= 1 && strings.EqualFold(args[0], "HELLO"):

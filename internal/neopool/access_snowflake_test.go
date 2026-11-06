@@ -26,7 +26,7 @@ func TestSnowflakeKeyIsBoundToItsAccount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `api-key: '{"enterpriseUrl":"https://myorg-my-account.snowflakecomputing.com","token":"pat-0123456789abcd"}'`
+	want := `api-key = '{"enterpriseUrl":"https://myorg-my-account.snowflakecomputing.com","token":"pat-0123456789abcd"}'`
 	if !strings.Contains(string(cfg), want) {
 		t.Fatalf("engine config lacks %s:\n%s", want, cfg)
 	}
@@ -68,7 +68,7 @@ func TestSnowflakeImportCarriesKeyAccount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := `api-key: '{"enterpriseUrl":"https://org-acct.snowflakecomputing.com","token":"pat-imported-wxyz"}'`; !strings.Contains(string(cfg), want) {
+	if want := `api-key = '{"enterpriseUrl":"https://org-acct.snowflakecomputing.com","token":"pat-imported-wxyz"}'`; !strings.Contains(string(cfg), want) {
 		t.Fatalf("engine config lacks %s:\n%s", want, cfg)
 	}
 }

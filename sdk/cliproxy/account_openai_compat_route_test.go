@@ -43,8 +43,8 @@ func TestAccountOpenAICompatibilityKeyListsModelsAndRoutes(t *testing.T) {
 	defer upstream.Close()
 
 	dir := t.TempDir()
-	cfgPath := filepath.Join(dir, "config.yaml")
-	if err := os.WriteFile(cfgPath, []byte("port: 8317\n"), 0o600); err != nil {
+	cfgPath := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(cfgPath, []byte("port = 8317\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	manager := coreauth.NewManager(nil, nil, nil)
@@ -60,6 +60,17 @@ func TestAccountOpenAICompatibilityKeyListsModelsAndRoutes(t *testing.T) {
 	}
 	if reloaded == nil {
 		t.Fatal("engine config was not reloaded")
+	}
+	saved, errRead := os.ReadFile(cfgPath)
+	if errRead != nil {
+		t.Fatal(errRead)
+	}
+	persisted, errDecode := config.DecodeConfig(saved, config.ConfigFormatTOML)
+	if errDecode != nil {
+		t.Fatalf("account creation did not persist native TOML: %v", errDecode)
+	}
+	if len(persisted.OpenAICompatibility) != 1 || persisted.OpenAICompatibility[0].Name != "custom-fake" {
+		t.Fatalf("persisted compatibility config = %+v", persisted.OpenAICompatibility)
 	}
 	auths, err := synthesizer.NewConfigSynthesizer().Synthesize(&synthesizer.SynthesisContext{Config: reloaded, Now: time.Now(), IDGenerator: synthesizer.NewStableIDGenerator()})
 	if err != nil || len(auths) != 1 || auths[0].ID != record.ID {

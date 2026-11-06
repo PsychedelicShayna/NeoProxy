@@ -8,7 +8,7 @@ import (
 )
 
 // registerManagementV8Routes defines the v8 contract independently of v0.
-// Configuration paths mirror the v8 YAML tree; operational routes use its groups.
+// Configuration paths mirror the v8 TOML tree; operational routes use its groups.
 func (s *Server) registerManagementV8Routes() {
 	const prefix = "/v8/management"
 	s.engine.GET(prefix+"/oauth/callback", s.managementAvailabilityMiddleware(), s.mgmt.GetOAuthCallback)
@@ -21,8 +21,6 @@ func (s *Server) registerManagementV8Routes() {
 	v8.GET("/config", s.mgmt.ConfigV8)
 	v8.PUT("/config", s.mgmt.ConfigV8)
 	v8.PATCH("/config", s.mgmt.ConfigV8)
-	v8.GET("/config.yaml", s.mgmt.ConfigV8)
-	v8.PUT("/config.yaml", s.mgmt.ConfigV8)
 	v8.GET("/config.toml", s.mgmt.ConfigV8)
 	v8.PUT("/config.toml", s.mgmt.ConfigV8)
 	for _, method := range []string{http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodDelete} {

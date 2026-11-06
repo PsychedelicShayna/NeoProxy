@@ -9,7 +9,7 @@
 // Flags:
 //
 //	--auths-dir <path>  Directory containing auth JSON files (default: config auth-dir)
-//	--config    <path>  Config file path                 (default: "config.toml", else "config.yaml")
+//	--config    <path>  Config file path                 (default: "config.toml"; legacy YAML imports once)
 //	--output    <path>  Output JSON file path             (default: "antigravity_models.json")
 //	--pretty            Pretty-print the output JSON      (default: true)
 package main

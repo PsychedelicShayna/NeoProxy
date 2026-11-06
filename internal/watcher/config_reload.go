@@ -12,7 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/watcher/diff"
-	"gopkg.in/yaml.v3"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -114,8 +113,10 @@ func (w *Watcher) reloadConfig() bool {
 
 	w.clientsMutex.Lock()
 	var oldConfig *config.Config
-	_ = yaml.Unmarshal(w.oldConfigYaml, &oldConfig)
-	w.oldConfigYaml, _ = yaml.Marshal(newConfig)
+	if len(w.oldConfigTOML) > 0 {
+		oldConfig, _ = config.DecodeConfig(w.oldConfigTOML, config.ConfigFormatTOML)
+	}
+	w.oldConfigTOML, _ = config.EncodeConfig(newConfig)
 	w.config = newConfig
 	w.clientsMutex.Unlock()
 

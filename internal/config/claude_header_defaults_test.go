@@ -9,19 +9,10 @@ import (
 
 func TestLoadConfigOptional_ClaudeHeaderDefaults(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, "config.yaml")
-	configYAML := []byte(`
-claude-header-defaults:
-  user-agent: "  claude-cli/2.1.70 (external, cli)  "
-  package-version: "  0.80.0  "
-  runtime-version: "  v24.5.0  "
-  os: "  MacOS  "
-  arch: "  arm64  "
-  timeout: "  900  "
-  timezone: "  Pacific/Honolulu  "
-  stabilize-device-profile: false
+	configPath := filepath.Join(dir, "config.toml")
+	configTOML := []byte(`"claude-header-defaults" = {"user-agent" = "  claude-cli/2.1.70 (external, cli)  ", "package-version" = "  0.80.0  ", "runtime-version" = "  v24.5.0  ", "os" = "  MacOS  ", "arch" = "  arm64  ", "timeout" = "  900  ", "timezone" = "  Pacific/Honolulu  ", "stabilize-device-profile" = false}
 `)
-	if err := os.WriteFile(configPath, configYAML, 0o600); err != nil {
+	if err := os.WriteFile(configPath, configTOML, 0o600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -60,13 +51,7 @@ claude-header-defaults:
 }
 
 func TestParseConfigBytes_ClaudeHeaderDefaultsOperatorOverrides(t *testing.T) {
-	cfg, err := ParseConfigBytes([]byte(`upstream:
-  claude:
-    header-defaults:
-      anthropic-beta-strip: [" cache-diagnosis-2026-04-07 ", "", "cache-diagnosis-2026-04-07"]
-      anthropic-beta-append: ["context-1m-2025-08-07", " context-1m-2025-08-07 ", "advisor-tool-2026-03-01"]
-      inject-diagnostics: false
-      client-request-id: " PassThrough "
+	cfg, err := ParseConfigBytes([]byte(`"upstream" = {"claude" = {"header-defaults" = {"anthropic-beta-strip" = [" cache-diagnosis-2026-04-07 ", "", "cache-diagnosis-2026-04-07"], "anthropic-beta-append" = ["context-1m-2025-08-07", " context-1m-2025-08-07 ", "advisor-tool-2026-03-01"], "inject-diagnostics" = false, "client-request-id" = " PassThrough "}}}
 `))
 	if err != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", err)
@@ -85,7 +70,7 @@ func TestParseConfigBytes_ClaudeHeaderDefaultsOperatorOverrides(t *testing.T) {
 		t.Fatalf("ClientRequestID = %q, want %q", hd.ClientRequestID, ClaudeClientRequestIDPassthrough)
 	}
 
-	cfg, err = ParseConfigBytes([]byte("claude-header-defaults: {client-request-id: sometimes}\n"))
+	cfg, err = ParseConfigBytes([]byte("\"claude-header-defaults\" = {\"client-request-id\" = \"sometimes\"}\n"))
 	if err != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", err)
 	}

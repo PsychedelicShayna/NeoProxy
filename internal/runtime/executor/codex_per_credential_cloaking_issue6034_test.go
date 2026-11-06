@@ -18,12 +18,12 @@ func TestCodexV8HistoricalCloakingAliasAffectsBothAuthKinds(t *testing.T) {
 		name, settings, keyOption string
 		wantAPI                   bool
 	}{
-		{"legacy global", "codex: {disable-codex-cloaking: true}\n", "", true},
-		{"historical alias", "oauth: {providers: {codex: {disable-codex-cloaking: true}}}\n", "", true},
-		{"explicit key override", "oauth: {providers: {codex: {disable-codex-cloaking: true}}}\n", ", disable-codex-cloaking: false", false},
+		{"legacy global", "[codex]\ndisable-codex-cloaking = true\n", "", true},
+		{"historical alias", "[oauth.providers.codex]\ndisable-codex-cloaking = true\n", "", true},
+		{"explicit key override", "[oauth.providers.codex]\ndisable-codex-cloaking = true\n", "\ndisable-codex-cloaking = false", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			raw := tc.settings + "api-keys: {codex: [{name: independent, base-url: 'https://example.invalid/v1', keys: [{api-key: test-key" + tc.keyOption + "}]}]}\n"
+			raw := tc.settings + "[[api-keys.codex]]\nname = 'independent'\nbase-url = 'https://example.invalid/v1'\n[[api-keys.codex.keys]]\napi-key = 'test-key'" + tc.keyOption + "\n"
 			cfg, err := config.ParseConfigBytes([]byte(raw))
 			if err != nil {
 				t.Fatal(err)

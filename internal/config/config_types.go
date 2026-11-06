@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -9,123 +8,58 @@ import (
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	sdkpluginstore "github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginstore"
-	"gopkg.in/yaml.v3"
 )
 
 // RequestScopedErrorRule configures custom classification and handling for upstream errors.
 type RequestScopedErrorRule struct {
 	// Status matches the HTTP status code of the upstream response (e.g. 400).
-	Status int `yaml:"status,omitempty" json:"status,omitempty"`
+	Status int `yaml:"status,omitempty" toml:"status,omitempty" json:"status,omitempty"`
 	// Match matches substrings in the upstream error body.
-	Match []string `yaml:"match,omitempty" json:"match,omitempty"`
+	Match []string `yaml:"match,omitempty" toml:"match,omitempty" json:"match,omitempty"`
 	// MatchRegexr matches regular expressions in the upstream error body.
-	MatchRegexr []string `yaml:"match-regexr,omitempty" json:"match-regexr,omitempty"`
+	MatchRegexr []string `yaml:"match-regexr,omitempty" toml:"match-regexr,omitempty" json:"match-regexr,omitempty"`
 	// Action specifies the handling behavior: "stop", "stop-and-cooldown", "continue", "continue-and-cooldown".
-	Action string `yaml:"action,omitempty" json:"action,omitempty"`
+	Action string `yaml:"action,omitempty" toml:"action,omitempty" json:"action,omitempty"`
 }
 
 // PluginsConfig holds dynamic plugin system settings.
 type PluginsConfig struct {
 	// Enabled toggles dynamic plugin loading.
-	Enabled bool `yaml:"enabled" json:"enabled"`
+	Enabled bool `yaml:"enabled" toml:"enabled" json:"enabled"`
 	// Dir is the plugin discovery directory.
-	Dir string `yaml:"dir" json:"dir"`
+	Dir string `yaml:"dir" toml:"dir" json:"dir"`
 	// StoreSources appends third-party plugin store registries to the built-in official source.
-	StoreSources []string `yaml:"store-sources,omitempty" json:"store-sources,omitempty"`
+	StoreSources []string `yaml:"store-sources,omitempty" toml:"store-sources,omitempty" json:"store-sources,omitempty"`
 	// StoreAuth defines optional auth rules for plugin store registry, metadata, and artifact requests.
-	StoreAuth []sdkpluginstore.AuthConfig `yaml:"store-auth,omitempty" json:"store-auth,omitempty"`
+	StoreAuth []sdkpluginstore.AuthConfig `yaml:"store-auth,omitempty" toml:"store-auth,omitempty" json:"store-auth,omitempty"`
 	// AuthRevision changes when Home-managed plugin credentials change.
-	AuthRevision int64 `yaml:"auth-revision,omitempty" json:"auth-revision,omitempty"`
+	AuthRevision int64 `yaml:"auth-revision,omitempty" toml:"auth-revision,omitempty" json:"auth-revision,omitempty"`
 	// Configs stores per-plugin instance configuration by plugin ID.
-	Configs map[string]PluginInstanceConfig `yaml:"configs" json:"configs"`
+	Configs map[string]PluginInstanceConfig `yaml:"configs" toml:"configs" json:"configs"`
 }
 
-// PluginInstanceConfig stores host-owned plugin settings and the original plugin YAML subtree.
+// PluginInstanceConfig stores host-owned settings and the complete native plugin map.
 type PluginInstanceConfig struct {
-	// Enabled toggles this plugin instance. Nil is normalized to false during YAML parsing.
-	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
-	// Priority controls plugin startup and routing order.
-	Priority int `yaml:"priority,omitempty" json:"priority,omitempty"`
-	// Raw preserves the full original plugin configuration YAML subtree.
-	Raw yaml.Node `yaml:"-" json:"-"`
-}
-
-// UnmarshalYAML extracts host-owned fields while preserving the full original YAML node.
-func (c *PluginInstanceConfig) UnmarshalYAML(value *yaml.Node) error {
-	if c == nil {
-		return nil
-	}
-
-	c.Priority = 0
-	defaultEnabled := false
-	c.Enabled = &defaultEnabled
-
-	if value == nil || value.Kind == 0 {
-		c.Raw = *defaultPluginInstanceConfigNode()
-		return nil
-	}
-
-	c.Raw = *deepCopyNode(value)
-	if value.Kind != yaml.MappingNode {
-		return nil
-	}
-
-	for i := 0; i+1 < len(value.Content); i += 2 {
-		key := value.Content[i]
-		node := value.Content[i+1]
-		if key == nil {
-			continue
-		}
-		switch key.Value {
-		case "enabled":
-			var enabled bool
-			if errDecodeEnabled := node.Decode(&enabled); errDecodeEnabled != nil {
-				return fmt.Errorf("parse plugin enabled: %w", errDecodeEnabled)
-			}
-			c.Enabled = &enabled
-		case "priority":
-			var priority int
-			if errDecodePriority := node.Decode(&priority); errDecodePriority != nil {
-				return fmt.Errorf("parse plugin priority: %w", errDecodePriority)
-			}
-			c.Priority = priority
-		}
-	}
-
-	return nil
-}
-
-// MarshalYAML returns the preserved raw plugin YAML subtree for lossless config output.
-func (c PluginInstanceConfig) MarshalYAML() (any, error) {
-	if c.Raw.Kind == 0 {
-		return defaultPluginInstanceConfigNode(), nil
-	}
-	return deepCopyNode(&c.Raw), nil
-}
-
-func defaultPluginInstanceConfigNode() *yaml.Node {
-	return &yaml.Node{
-		Kind:    yaml.MappingNode,
-		Tag:     "!!map",
-		Content: []*yaml.Node{},
-	}
+	Enabled  *bool          `yaml:"enabled,omitempty" toml:"enabled,omitempty" json:"enabled,omitempty"`
+	Priority int            `yaml:"priority,omitempty" toml:"priority,omitempty" json:"priority,omitempty"`
+	Raw      map[string]any `yaml:"-" toml:"-" json:"-"`
 }
 
 // ClaudeConfig configures provider-wide Claude request behavior.
 type ClaudeConfig struct {
 	// ModelLevelCooling scopes Claude quota cooldowns to the requested model
 	// rather than cooling down the entire credential across all sibling models.
-	ModelLevelCooling bool `yaml:"model-level-cooling" json:"model-level-cooling"`
+	ModelLevelCooling bool `yaml:"model-level-cooling" toml:"model-level-cooling" json:"model-level-cooling"`
 	// ToolSearch enables Codex client tool_search on Claude Responses routes:
 	// Anthropic native tool search where the credential supports it, a pre-tool_search
 	// translation elsewhere, and per-credential search advertising in the Codex
 	// catalog. Default false keeps the translation that predates tool_search support.
-	ToolSearch bool `yaml:"tool-search" json:"tool-search"`
+	ToolSearch bool `yaml:"tool-search" toml:"tool-search" json:"tool-search"`
 	// SessionDatePinDays retains the cloaked currentDate pin per session for
 	// this many days, independently of continuity expiry and credential
 	// switches. A nil value (unset) defaults to 7 days; an explicit 0 keeps
 	// the continuity-scoped pin (1h lifetime).
-	SessionDatePinDays *int `yaml:"session-date-pin-days" json:"session-date-pin-days"`
+	SessionDatePinDays *int `yaml:"session-date-pin-days" toml:"session-date-pin-days" json:"session-date-pin-days"`
 }
 
 // DefaultClaudeSessionDatePinDays is the session date pin retention applied
@@ -160,18 +94,18 @@ func (c ClaudeConfig) SessionDatePinRetention() time.Duration {
 // to the final Anthropic-Beta set; InjectDiagnostics and ClientRequestID tune the
 // first-party Claude Code CLI request shape.
 type ClaudeHeaderDefaults struct {
-	UserAgent              string   `yaml:"user-agent" json:"user-agent"`
-	PackageVersion         string   `yaml:"package-version" json:"package-version"`
-	RuntimeVersion         string   `yaml:"runtime-version" json:"runtime-version"`
-	OS                     string   `yaml:"os" json:"os"`
-	Arch                   string   `yaml:"arch" json:"arch"`
-	Timeout                string   `yaml:"timeout" json:"timeout"`
-	Timezone               string   `yaml:"timezone" json:"timezone"`
-	StabilizeDeviceProfile *bool    `yaml:"stabilize-device-profile,omitempty" json:"stabilize-device-profile,omitempty"`
-	AnthropicBetaStrip     []string `yaml:"anthropic-beta-strip,omitempty" json:"anthropic-beta-strip,omitempty"`
-	AnthropicBetaAppend    []string `yaml:"anthropic-beta-append,omitempty" json:"anthropic-beta-append,omitempty"`
-	InjectDiagnostics      *bool    `yaml:"inject-diagnostics,omitempty" json:"inject-diagnostics,omitempty"`
-	ClientRequestID        string   `yaml:"client-request-id,omitempty" json:"client-request-id,omitempty"`
+	UserAgent              string   `yaml:"user-agent" toml:"user-agent" json:"user-agent"`
+	PackageVersion         string   `yaml:"package-version" toml:"package-version" json:"package-version"`
+	RuntimeVersion         string   `yaml:"runtime-version" toml:"runtime-version" json:"runtime-version"`
+	OS                     string   `yaml:"os" toml:"os" json:"os"`
+	Arch                   string   `yaml:"arch" toml:"arch" json:"arch"`
+	Timeout                string   `yaml:"timeout" toml:"timeout" json:"timeout"`
+	Timezone               string   `yaml:"timezone" toml:"timezone" json:"timezone"`
+	StabilizeDeviceProfile *bool    `yaml:"stabilize-device-profile,omitempty" toml:"stabilize-device-profile,omitempty" json:"stabilize-device-profile,omitempty"`
+	AnthropicBetaStrip     []string `yaml:"anthropic-beta-strip,omitempty" toml:"anthropic-beta-strip,omitempty" json:"anthropic-beta-strip,omitempty"`
+	AnthropicBetaAppend    []string `yaml:"anthropic-beta-append,omitempty" toml:"anthropic-beta-append,omitempty" json:"anthropic-beta-append,omitempty"`
+	InjectDiagnostics      *bool    `yaml:"inject-diagnostics,omitempty" toml:"inject-diagnostics,omitempty" json:"inject-diagnostics,omitempty"`
+	ClientRequestID        string   `yaml:"client-request-id,omitempty" toml:"client-request-id,omitempty" json:"client-request-id,omitempty"`
 }
 
 // Supported ClaudeHeaderDefaults.ClientRequestID values. An empty value means
@@ -185,37 +119,37 @@ const (
 // XAIConfig configures provider-wide xAI request behavior.
 type XAIConfig struct {
 	// InjectXSearch injects xAI's native x_search tool when the request does not declare it.
-	InjectXSearch bool `yaml:"inject-x-search" json:"inject-x-search"`
+	InjectXSearch bool `yaml:"inject-x-search" toml:"inject-x-search" json:"inject-x-search"`
 }
 
 // AntigravityConfig configures provider-wide Antigravity request behavior.
 type AntigravityConfig struct {
 	// SensitiveWords is a list of words to obfuscate with zero-width characters in system instructions.
-	SensitiveWords []string `yaml:"sensitive-words,omitempty" json:"sensitive-words,omitempty"`
+	SensitiveWords []string `yaml:"sensitive-words,omitempty" toml:"sensitive-words,omitempty" json:"sensitive-words,omitempty"`
 
 	// ConnectionPool configures upstream HTTP connection pooling behavior for Antigravity.
-	ConnectionPool AntigravityConnectionPoolConfig `yaml:"connection-pool,omitempty" json:"connection-pool,omitempty"`
+	ConnectionPool AntigravityConnectionPoolConfig `yaml:"connection-pool,omitempty" toml:"connection-pool,omitempty" json:"connection-pool,omitempty"`
 }
 
 // AntigravityConnectionPoolConfig controls upstream HTTP/1.1 connection pooling behavior for Antigravity.
 type AntigravityConnectionPoolConfig struct {
 	// Enabled controls whether upstream connection pooling is enabled.
 	// Defaults to false (short-lived connection mode). Set to true to enable connection pooling.
-	Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	Enabled *bool `yaml:"enabled,omitempty" toml:"enabled,omitempty" json:"enabled,omitempty"`
 
 	// IdleConnTimeout specifies how long an idle connection stays in the pool before expiring.
 	// Defaults to "30s". Capped at 210s to prevent exceeding Google Frontend (GFE) 240s cutoff.
-	IdleConnTimeout string `yaml:"idle-conn-timeout,omitempty" json:"idle-conn-timeout,omitempty"`
+	IdleConnTimeout string `yaml:"idle-conn-timeout,omitempty" toml:"idle-conn-timeout,omitempty" json:"idle-conn-timeout,omitempty"`
 
 	// MaxIdleConnsPerHost specifies the maximum number of idle connections to retain per host per credential.
 	// Defaults to 2.
-	MaxIdleConnsPerHost *int `yaml:"max-idle-conns-per-host,omitempty" json:"max-idle-conns-per-host,omitempty"`
+	MaxIdleConnsPerHost *int `yaml:"max-idle-conns-per-host,omitempty" toml:"max-idle-conns-per-host,omitempty" json:"max-idle-conns-per-host,omitempty"`
 }
 
 // CodexConfig configures provider-wide Codex request behavior.
 type CodexConfig struct {
 	// DisableCodexCloaking disables forcing the official Codex identity headers on HTTP/SSE and WebSocket requests.
-	DisableCodexCloaking bool `yaml:"disable-codex-cloaking" json:"disable-codex-cloaking"`
+	DisableCodexCloaking bool `yaml:"disable-codex-cloaking" toml:"disable-codex-cloaking" json:"disable-codex-cloaking"`
 	// StreamBootstrapBuffering holds back the frames that arrive before generation starts, none of
 	// which the client has seen anything from - the handshake (response.created, response.in_progress,
 	// the websocket metadata frames), keepalive heartbeats, and the *.added announcements of an item
@@ -234,23 +168,23 @@ type CodexConfig struct {
 	// is request-scoped on SSE and stops there, while a websocket close or a transport error on
 	// either transport is not, so the request may be retried on another credential.
 	// Default is false.
-	StreamBootstrapBuffering bool `yaml:"stream-bootstrap-buffering" json:"stream-bootstrap-buffering"`
+	StreamBootstrapBuffering bool `yaml:"stream-bootstrap-buffering" toml:"stream-bootstrap-buffering" json:"stream-bootstrap-buffering"`
 	// StreamBootstrapTimeout specifies an optional maximum duration to hold back uncommitted response
 	// headers during bootstrap buffering before releasing the stream to the client.
 	// Defaults to "0" (unlimited time, relying purely on the 48-frame and 1MB byte bounds).
 	// When set (e.g. "20s"), the stream is released once the time ceiling is reached, avoiding
 	// reverse-proxy timeouts (e.g. Nginx 60s proxy_read_timeout).
-	StreamBootstrapTimeout string `yaml:"stream-bootstrap-timeout,omitempty" json:"stream-bootstrap-timeout,omitempty"`
+	StreamBootstrapTimeout string `yaml:"stream-bootstrap-timeout,omitempty" toml:"stream-bootstrap-timeout,omitempty" json:"stream-bootstrap-timeout,omitempty"`
 	// OrphanDelegationCompatibility enables opt-in compatibility for orphan Codex delegation outputs.
-	OrphanDelegationCompatibility bool `yaml:"orphan-delegation-compatibility" json:"orphan-delegation-compatibility"`
+	OrphanDelegationCompatibility bool `yaml:"orphan-delegation-compatibility" toml:"orphan-delegation-compatibility" json:"orphan-delegation-compatibility"`
 	// ModelLevelCooling scopes Codex usage_limit_reached quota cooldowns to the requested model
 	// rather than cooling down the entire credential across all sibling models.
-	ModelLevelCooling bool `yaml:"model-level-cooling" json:"model-level-cooling"`
+	ModelLevelCooling bool `yaml:"model-level-cooling" toml:"model-level-cooling" json:"model-level-cooling"`
 	// LiveMediaRelay terminates and relays Codex Live WebRTC media in this process.
-	LiveMediaRelay CodexLiveMediaRelayConfig `yaml:"live-media-relay" json:"live-media-relay"`
+	LiveMediaRelay CodexLiveMediaRelayConfig `yaml:"live-media-relay" toml:"live-media-relay" json:"live-media-relay"`
 	// ResponseSteering enables full-duplex Codex WebSockets, bound to one
 	// upstream model/account/socket for their entire lifetime. Default is false.
-	ResponseSteering bool `yaml:"response-steering" json:"response-steering"`
+	ResponseSteering bool `yaml:"response-steering" toml:"response-steering" json:"response-steering"`
 }
 
 // DefaultCodexStreamBootstrapTimeout is the default maximum duration to buffer bootstrap events.
@@ -285,126 +219,126 @@ func (c *CodexConfig) StreamBootstrapTimeoutDuration() time.Duration {
 
 // CodexLiveMediaRelayConfig configures the in-process Codex Live WebRTC gateway.
 type CodexLiveMediaRelayConfig struct {
-	Enabled                 bool                 `yaml:"enabled" json:"enabled"`
-	MaxSessions             int                  `yaml:"max-sessions" json:"max-sessions"`
-	DisablePrivateRemoteIPs bool                 `yaml:"disable-private-remote-ips" json:"disable-private-remote-ips"`
-	PublicIP                string               `yaml:"public-ip" json:"public-ip"`
-	UDPPortMin              uint16               `yaml:"udp-port-min" json:"udp-port-min"`
-	UDPPortMax              uint16               `yaml:"udp-port-max" json:"udp-port-max"`
-	ICEServers              []CodexLiveICEServer `yaml:"ice-servers" json:"ice-servers"`
+	Enabled                 bool                 `yaml:"enabled" toml:"enabled" json:"enabled"`
+	MaxSessions             int                  `yaml:"max-sessions" toml:"max-sessions" json:"max-sessions"`
+	DisablePrivateRemoteIPs bool                 `yaml:"disable-private-remote-ips" toml:"disable-private-remote-ips" json:"disable-private-remote-ips"`
+	PublicIP                string               `yaml:"public-ip" toml:"public-ip" json:"public-ip"`
+	UDPPortMin              uint16               `yaml:"udp-port-min" toml:"udp-port-min" json:"udp-port-min"`
+	UDPPortMax              uint16               `yaml:"udp-port-max" toml:"udp-port-max" json:"udp-port-max"`
+	ICEServers              []CodexLiveICEServer `yaml:"ice-servers" toml:"ice-servers" json:"ice-servers"`
 }
 
 // CodexLiveICEServer configures a STUN or TURN server for the media relay.
 type CodexLiveICEServer struct {
-	URLs       []string `yaml:"urls" json:"urls"`
-	Username   string   `yaml:"username" json:"-"`
-	Credential string   `yaml:"credential" json:"-"`
+	URLs       []string `yaml:"urls" toml:"urls" json:"urls"`
+	Username   string   `yaml:"username" toml:"username" json:"-"`
+	Credential string   `yaml:"credential" toml:"credential" json:"-"`
 }
 
 // TLSConfig holds HTTPS server settings.
 type TLSConfig struct {
 	// Enable toggles HTTPS server mode.
-	Enable bool `yaml:"enable" json:"enable"`
+	Enable bool `yaml:"enable" toml:"enable" json:"enable"`
 	// Cert is the path to the TLS certificate file.
-	Cert string `yaml:"cert" json:"cert"`
+	Cert string `yaml:"cert" toml:"cert" json:"cert"`
 	// Key is the path to the TLS private key file.
-	Key string `yaml:"key" json:"key"`
+	Key string `yaml:"key" toml:"key" json:"key"`
 }
 
 // PprofConfig holds pprof HTTP server settings.
 type PprofConfig struct {
 	// Enable toggles the pprof HTTP debug server.
-	Enable bool `yaml:"enable" json:"enable"`
+	Enable bool `yaml:"enable" toml:"enable" json:"enable"`
 	// Addr is the host:port address for the pprof HTTP server.
-	Addr string `yaml:"addr" json:"addr"`
+	Addr string `yaml:"addr" toml:"addr" json:"addr"`
 }
 
 // DiscoveryInterfacesConfig specifies interface inclusion and exclusion rules.
 type DiscoveryInterfacesConfig struct {
-	Include []string `yaml:"include" json:"include"`
-	Exclude []string `yaml:"exclude" json:"exclude"`
+	Include []string `yaml:"include" toml:"include" json:"include"`
+	Exclude []string `yaml:"exclude" toml:"exclude" json:"exclude"`
 }
 
 // DiscoveryConfig controls local network mDNS / DNS-SD service advertising.
 type DiscoveryConfig struct {
 	// Enabled toggles mDNS service advertising on the local network (default: false).
-	Enabled bool `yaml:"enabled" json:"enabled"`
+	Enabled bool `yaml:"enabled" toml:"enabled" json:"enabled"`
 
 	// ServiceName is the optional custom instance name. When empty, defaults to CPA-<ShortID>.
-	ServiceName string `yaml:"service-name" json:"service-name"`
+	ServiceName string `yaml:"service-name" toml:"service-name" json:"service-name"`
 
 	// ServiceType is the DNS-SD service type (default: _ai-gateway._tcp).
-	ServiceType string `yaml:"service-type" json:"service-type"`
+	ServiceType string `yaml:"service-type" toml:"service-type" json:"service-type"`
 
 	// Subtypes specifies DNS-SD API protocol subtypes to advertise (e.g. _responses, _messages, _generate-content).
-	Subtypes []string `yaml:"subtypes" json:"subtypes"`
+	Subtypes []string `yaml:"subtypes" toml:"subtypes" json:"subtypes"`
 
 	// Interfaces specifies network interface filtering rules.
-	Interfaces DiscoveryInterfacesConfig `yaml:"interfaces" json:"interfaces"`
+	Interfaces DiscoveryInterfacesConfig `yaml:"interfaces" toml:"interfaces" json:"interfaces"`
 
 	// AuthRequired indicates whether authentication is required for client calls (default: true).
-	AuthRequired *bool `yaml:"auth-required" json:"auth-required"`
+	AuthRequired *bool `yaml:"auth-required" toml:"auth-required" json:"auth-required"`
 
 	// AdvertiseManagement explicitly controls whether management endpoints are exposed (default: false).
-	AdvertiseManagement bool `yaml:"advertise-management" json:"advertise-management"`
+	AdvertiseManagement bool `yaml:"advertise-management" toml:"advertise-management" json:"advertise-management"`
 }
 
 // RemoteManagement holds management API configuration under 'remote-management'.
 type RemoteManagement struct {
 	// AllowRemote toggles remote (non-localhost) access to management API.
-	AllowRemote bool `yaml:"allow-remote"`
+	AllowRemote bool `yaml:"allow-remote" toml:"allow-remote"`
 	// SecretKey is the management key (plaintext or bcrypt hashed). YAML key intentionally 'secret-key'.
-	SecretKey string `yaml:"secret-key"`
+	SecretKey string `yaml:"secret-key" toml:"secret-key"`
 	// DisableControlPanel skips serving and syncing the bundled management UI when true.
-	DisableControlPanel bool `yaml:"disable-control-panel"`
+	DisableControlPanel bool `yaml:"disable-control-panel" toml:"disable-control-panel"`
 	// DisableAutoUpdatePanel disables automatic periodic background updates of the management panel asset from GitHub.
 	// When false (the default), the background updater remains enabled; when true, the panel is only downloaded on first access if missing.
-	DisableAutoUpdatePanel bool `yaml:"disable-auto-update-panel"`
+	DisableAutoUpdatePanel bool `yaml:"disable-auto-update-panel" toml:"disable-auto-update-panel"`
 	// PanelGitHubRepository overrides the GitHub repository used to fetch the management panel asset.
 	// Accepts either a repository URL (https://github.com/org/repo) or an API releases endpoint.
-	PanelGitHubRepository string `yaml:"panel-github-repository"`
+	PanelGitHubRepository string `yaml:"panel-github-repository" toml:"panel-github-repository"`
 	// BaseURL specifies the base URL of the remote management API for TUI client mode (e.g. "https://proxy.example.com").
-	BaseURL string `yaml:"base-url,omitempty" json:"base-url,omitempty"`
+	BaseURL string `yaml:"base-url,omitempty" toml:"base-url,omitempty" json:"base-url,omitempty"`
 }
 
 // QuotaExceeded defines the behavior when API quota limits are exceeded.
 // It provides configuration options for automatic failover mechanisms.
 type QuotaExceeded struct {
 	// SwitchProject indicates whether to automatically switch to another project when a quota is exceeded.
-	SwitchProject bool `yaml:"switch-project" json:"switch-project"`
+	SwitchProject bool `yaml:"switch-project" toml:"switch-project" json:"switch-project"`
 
 	// SwitchPreviewModel indicates whether to automatically switch to a preview model when a quota is exceeded.
-	SwitchPreviewModel bool `yaml:"switch-preview-model" json:"switch-preview-model"`
+	SwitchPreviewModel bool `yaml:"switch-preview-model" toml:"switch-preview-model" json:"switch-preview-model"`
 
 	// AntigravityCredits enables credits-based last-resort fallback for Claude models.
 	// When all free-tier auths are exhausted (429/503), the conductor retries with
 	// an auth that has available Google One AI credits.
-	AntigravityCredits bool `yaml:"antigravity-credits" json:"antigravity-credits"`
+	AntigravityCredits bool `yaml:"antigravity-credits" toml:"antigravity-credits" json:"antigravity-credits"`
 }
 
 // RoutingConfig configures how credentials are selected for requests.
 type RoutingConfig struct {
 	// Strategy selects the credential selection strategy.
 	// Supported values: "round-robin" (default), "weighted-round-robin", "fill-first".
-	Strategy string `yaml:"strategy,omitempty" json:"strategy,omitempty"`
+	Strategy string `yaml:"strategy,omitempty" toml:"strategy,omitempty" json:"strategy,omitempty"`
 
 	// SessionAffinity enables universal session-sticky routing for all clients.
 	// Explicit Claude Code, Codex, OpenCode, and pi session headers are preferred,
 	// followed by prompt_cache_key, Responses conversation IDs, legacy body IDs,
 	// execution or derived session identity, and the existing message-content hash fallback.
 	// Automatic failover is always enabled when bound auth becomes unavailable.
-	SessionAffinity bool `yaml:"session-affinity,omitempty" json:"session-affinity,omitempty"`
+	SessionAffinity bool `yaml:"session-affinity,omitempty" toml:"session-affinity,omitempty" json:"session-affinity,omitempty"`
 
 	// SessionAffinityTTL specifies how long session-to-auth bindings are retained.
 	// Default: 1h. Accepts duration strings like "30m", "1h", "2h30m".
-	SessionAffinityTTL string `yaml:"session-affinity-ttl,omitempty" json:"session-affinity-ttl,omitempty"`
+	SessionAffinityTTL string `yaml:"session-affinity-ttl,omitempty" toml:"session-affinity-ttl,omitempty" json:"session-affinity-ttl,omitempty"`
 
 	// SessionAffinitySubagents controls whether subagents (child sessions with parent references)
 	// inherit and bind to the parent's upstream credential across all providers (Claude, Codex,
 	// Antigravity, Gemini), maximizing prompt and KV cache reuse.
 	// When false, subagents are distributed across the credential pool via the fallback selector.
 	// Default: true. Ignored when SessionAffinity is false.
-	SessionAffinitySubagents *bool `yaml:"session-affinity-subagents,omitempty" json:"session-affinity-subagents,omitempty"`
+	SessionAffinitySubagents *bool `yaml:"session-affinity-subagents,omitempty" toml:"session-affinity-subagents,omitempty" json:"session-affinity-subagents,omitempty"`
 
 	// SessionAffinityRebindOn controls which credential failures rebind an established session
 	// to the failover credential.
@@ -414,7 +348,7 @@ type RoutingConfig struct {
 	//     request only while keeping the session bound to its original credential; quota and
 	//     auth errors (429, 401/402/403, 404/model support, invalid_grant) rebind as normal.
 	// Ignored when SessionAffinity is false.
-	SessionAffinityRebindOn string `yaml:"session-affinity-rebind-on,omitempty" json:"session-affinity-rebind-on,omitempty"`
+	SessionAffinityRebindOn string `toml:"session-affinity-rebind-on,omitempty" yaml:"session-affinity-rebind-on,omitempty" json:"session-affinity-rebind-on,omitempty"`
 }
 
 // OAuthModelAlias defines a model ID alias for a specific channel.
@@ -422,23 +356,23 @@ type RoutingConfig struct {
 // When Fork is true, the alias is added as an additional model in listings while
 // keeping the original model ID available.
 type OAuthModelAlias struct {
-	Name  string `yaml:"name" json:"name"`
-	Alias string `yaml:"alias" json:"alias"`
-	Fork  bool   `yaml:"fork,omitempty" json:"fork,omitempty"`
+	Name  string `toml:"name" yaml:"name" json:"name"`
+	Alias string `toml:"alias" yaml:"alias" json:"alias"`
+	Fork  bool   `toml:"fork,omitempty" yaml:"fork,omitempty" json:"fork,omitempty"`
 
 	// DisplayName is the optional human-readable name shown in model catalogs.
-	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+	DisplayName string `toml:"display-name,omitempty" yaml:"display-name,omitempty" json:"display-name,omitempty"`
 
-	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
+	ForceMapping bool `toml:"force-mapping,omitempty" yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 }
 
 // OAuthModelSetting defines provider/channel model settings (such as context window overrides) for OAuth credentials.
 type OAuthModelSetting struct {
-	Name  string `yaml:"name" json:"name"`
-	Alias string `yaml:"alias,omitempty" json:"alias,omitempty"`
+	Name  string `toml:"name" yaml:"name" json:"name"`
+	Alias string `toml:"alias,omitempty" yaml:"alias,omitempty" json:"alias,omitempty"`
 
 	// MaxContextLength overrides the context window advertised to Codex clients.
-	MaxContextLength int `yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
+	MaxContextLength int `toml:"max-context-length,omitempty" yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
 }
 
 // GetMaxContextLength returns the configured maximum context length override.
@@ -482,52 +416,52 @@ func ResolveOAuthModelSetting(settings []OAuthModelSetting, modelID, metadataMod
 // PayloadConfig defines default and override parameter rules applied to provider payloads.
 type PayloadConfig struct {
 	// Default defines rules that only set parameters when they are missing in the payload.
-	Default []PayloadRule `yaml:"default" json:"default"`
+	Default []PayloadRule `toml:"default" yaml:"default" json:"default"`
 	// DefaultRaw defines rules that set raw JSON values only when they are missing.
-	DefaultRaw []PayloadRule `yaml:"default-raw" json:"default-raw"`
+	DefaultRaw []PayloadRule `toml:"default-raw" yaml:"default-raw" json:"default-raw"`
 	// Override defines rules that always set parameters, overwriting any existing values.
-	Override []PayloadRule `yaml:"override" json:"override"`
+	Override []PayloadRule `toml:"override" yaml:"override" json:"override"`
 	// OverrideRaw defines rules that always set raw JSON values, overwriting any existing values.
-	OverrideRaw []PayloadRule `yaml:"override-raw" json:"override-raw"`
+	OverrideRaw []PayloadRule `toml:"override-raw" yaml:"override-raw" json:"override-raw"`
 	// Filter defines rules that remove parameters from the payload by JSON path.
-	Filter []PayloadFilterRule `yaml:"filter" json:"filter"`
+	Filter []PayloadFilterRule `toml:"filter" yaml:"filter" json:"filter"`
 }
 
 // PayloadFilterRule describes a rule to remove specific JSON paths from matching model payloads.
 type PayloadFilterRule struct {
 	// Models lists model entries with name pattern and protocol constraint.
-	Models []PayloadModelRule `yaml:"models" json:"models"`
+	Models []PayloadModelRule `toml:"models" yaml:"models" json:"models"`
 	// Params lists JSON paths (gjson/sjson syntax) to remove from the payload.
-	Params []string `yaml:"params" json:"params"`
+	Params []string `toml:"params" yaml:"params" json:"params"`
 }
 
 // PayloadRule describes a single rule targeting a list of models with parameter updates.
 type PayloadRule struct {
 	// Models lists model entries with name pattern and protocol constraint.
-	Models []PayloadModelRule `yaml:"models" json:"models"`
+	Models []PayloadModelRule `toml:"models" yaml:"models" json:"models"`
 	// Params maps JSON paths (gjson/sjson syntax) to values written into the payload.
 	// For *-raw rules, values are treated as raw JSON fragments (strings are used as-is).
-	Params map[string]any `yaml:"params" json:"params"`
+	Params map[string]any `toml:"params" yaml:"params" json:"params"`
 }
 
 // PayloadModelRule ties a model name pattern to a specific translator protocol.
 type PayloadModelRule struct {
 	// Name is the model name or wildcard pattern (e.g., "gpt-*", "*-5", "gemini-*-pro").
-	Name string `yaml:"name" json:"name"`
+	Name string `toml:"name" yaml:"name" json:"name"`
 	// Protocol restricts the rule to a specific translator format (e.g., "gemini", "responses").
-	Protocol string `yaml:"protocol" json:"protocol"`
+	Protocol string `toml:"protocol" yaml:"protocol" json:"protocol"`
 	// Headers restricts the rule to requests whose headers match all configured wildcard patterns.
-	Headers map[string]string `yaml:"headers" json:"headers"`
+	Headers map[string]string `toml:"headers" yaml:"headers" json:"headers"`
 	// FromProtocol restricts the rule to a specific source protocol (e.g., "gemini", "responses").
-	FromProtocol string `yaml:"from-protocol" json:"from-protocol"`
+	FromProtocol string `toml:"from-protocol" yaml:"from-protocol" json:"from-protocol"`
 	// Match requires payload JSON paths to equal the configured values.
-	Match []map[string]any `yaml:"match" json:"match"`
+	Match []map[string]any `toml:"match" yaml:"match" json:"match"`
 	// NotMatch requires payload JSON paths to not equal the configured values.
-	NotMatch []map[string]any `yaml:"not-match" json:"not-match"`
+	NotMatch []map[string]any `toml:"not-match" yaml:"not-match" json:"not-match"`
 	// Exist requires payload JSON paths to exist and not be null.
-	Exist []string `yaml:"exist" json:"exist"`
+	Exist []string `toml:"exist" yaml:"exist" json:"exist"`
 	// NotExist requires payload JSON paths to be missing or null.
-	NotExist []string `yaml:"not-exist" json:"not-exist"`
+	NotExist []string `toml:"not-exist" yaml:"not-exist" json:"not-exist"`
 }
 
 // CloakConfig configures request cloaking for non-Claude-Code clients.
@@ -538,76 +472,76 @@ type CloakConfig struct {
 	// - "auto": cloak unless strong request signals identify a verified native entrypoint
 	// - "always": cloak every unconfirmed client; confirmed native Claude Code remains passthrough
 	// - "never" / "uncloak": never apply cloaking; on non-CLI API keys, also strip incoming Claude Code identity and billing attribution
-	Mode string `yaml:"mode,omitempty" json:"mode,omitempty"`
+	Mode string `toml:"mode,omitempty" yaml:"mode,omitempty" json:"mode,omitempty"`
 
 	// StrictMode controls how caller system prompts are handled when cloaking.
 	// - false (default): legacy-model whitelist uses a user reminder; all other models use a mid-conversation system message
 	// - true: strip caller system prompts and keep only the Claude Code billing and identity blocks
-	StrictMode bool `yaml:"strict-mode,omitempty" json:"strict-mode,omitempty"`
+	StrictMode bool `toml:"strict-mode,omitempty" yaml:"strict-mode,omitempty" json:"strict-mode,omitempty"`
 
 	// SensitiveWords is a list of words to obfuscate with zero-width characters.
 	// This can help bypass certain content filters.
-	SensitiveWords []string `yaml:"sensitive-words,omitempty" json:"sensitive-words,omitempty"`
+	SensitiveWords []string `toml:"sensitive-words,omitempty" yaml:"sensitive-words,omitempty" json:"sensitive-words,omitempty"`
 
 	// CacheUserID controls whether Claude user_id values are cached per API key.
 	// When false, a fresh random user_id is generated for every request.
-	CacheUserID *bool `yaml:"cache-user-id,omitempty" json:"cache-user-id,omitempty"`
+	CacheUserID *bool `toml:"cache-user-id,omitempty" yaml:"cache-user-id,omitempty" json:"cache-user-id,omitempty"`
 }
 
 // ClaudeKey represents the configuration for a Claude API key,
 // including the API key itself and an optional base URL for the API endpoint.
 type ClaudeKey struct {
 	// APIKey is the authentication key for accessing Claude API services.
-	APIKey string `yaml:"api-key" json:"api-key"`
+	APIKey string `toml:"api-key" yaml:"api-key" json:"api-key"`
 
 	// Priority controls selection preference when multiple credentials match.
 	// Higher values are preferred; defaults to 0.
-	Priority int `yaml:"priority,omitempty" json:"priority,omitempty"`
+	Priority int `toml:"priority,omitempty" yaml:"priority,omitempty" json:"priority,omitempty"`
 
 	// Weight controls proportional selection under weighted-round-robin.
 	// An omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000.
-	Weight *int `yaml:"weight,omitempty" json:"weight,omitempty"`
+	Weight *int `toml:"weight,omitempty" yaml:"weight,omitempty" json:"weight,omitempty"`
 
 	// Prefix optionally namespaces models for this credential (e.g., "teamA/claude-sonnet-4").
-	Prefix string `yaml:"prefix,omitempty" json:"prefix,omitempty"`
+	Prefix string `toml:"prefix,omitempty" yaml:"prefix,omitempty" json:"prefix,omitempty"`
 
 	// BaseURL is the base URL for the Claude API endpoint.
 	// If empty, the default Claude API URL will be used.
-	BaseURL string `yaml:"base-url" json:"base-url"`
+	BaseURL string `toml:"base-url" yaml:"base-url" json:"base-url"`
 
 	// ProxyURL overrides the global proxy setting for this API key if provided.
-	ProxyURL string `yaml:"proxy-url" json:"proxy-url"`
+	ProxyURL string `toml:"proxy-url" yaml:"proxy-url" json:"proxy-url"`
 
 	// Models defines upstream model names and aliases for request routing.
-	Models []ClaudeModel `yaml:"models" json:"models"`
+	Models []ClaudeModel `toml:"models" yaml:"models" json:"models"`
 
 	// Headers optionally adds extra HTTP headers for requests sent with this key.
-	Headers map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+	Headers map[string]string `toml:"headers,omitempty" yaml:"headers,omitempty" json:"headers,omitempty"`
 
 	// ExcludedModels lists model IDs that should be excluded for this provider.
-	ExcludedModels []string `yaml:"excluded-models,omitempty" json:"excluded-models,omitempty"`
+	ExcludedModels []string `toml:"excluded-models,omitempty" yaml:"excluded-models,omitempty" json:"excluded-models,omitempty"`
 
 	// RebuildMidSystemMessage moves Claude messages with role "system" into the top-level system field.
-	RebuildMidSystemMessage bool `yaml:"rebuild-mid-system-message,omitempty" json:"rebuild-mid-system-message,omitempty"`
+	RebuildMidSystemMessage bool `toml:"rebuild-mid-system-message,omitempty" yaml:"rebuild-mid-system-message,omitempty" json:"rebuild-mid-system-message,omitempty"`
 
 	// NativeToolSearch trusts a custom base URL with Anthropic native tool search
 	// (defer_loading tools and tool_reference results) for Codex tool_search.
 	// Official api.anthropic.com credentials use native tool search without it.
-	NativeToolSearch bool `yaml:"native-tool-search,omitempty" json:"native-tool-search,omitempty"`
+	NativeToolSearch bool `toml:"native-tool-search,omitempty" yaml:"native-tool-search,omitempty" json:"native-tool-search,omitempty"`
 
 	// DisableCooling overrides the global cooling policy for this credential when set.
 	// True disables auth/model cooldowns; false explicitly enables them.
-	DisableCooling *bool `yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
+	DisableCooling *bool `toml:"disable-cooling,omitempty" yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
 
 	// RequestRetry optionally overrides the global request-retry for this credential.
 	// Nil or a negative value means "use the global request-retry". 0 disables additional retry rounds.
-	RequestRetry *int `yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
+	RequestRetry *int `toml:"request-retry,omitempty" yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
 
 	// RequestScopedErrors configures custom classification rules for upstream errors.
-	RequestScopedErrors []RequestScopedErrorRule `yaml:"request-scoped-errors,omitempty" json:"request-scoped-errors,omitempty"`
+	RequestScopedErrors []RequestScopedErrorRule `toml:"request-scoped-errors,omitempty" yaml:"request-scoped-errors,omitempty" json:"request-scoped-errors,omitempty"`
 
 	// Cloak configures request cloaking for non-Claude-Code clients.
-	Cloak *CloakConfig `yaml:"cloak,omitempty" json:"cloak,omitempty"`
+	Cloak *CloakConfig `toml:"cloak,omitempty" yaml:"cloak,omitempty" json:"cloak,omitempty"`
 
 	// FingerprintProfile selects the Claude Code request fingerprint for this
 	// credential on Anthropic Messages. Empty/default keeps the caller request
@@ -622,11 +556,11 @@ type ClaudeKey struct {
 	// strips the attribution entirely by default and keeps it, unsigned, after an
 	// explicit opt-in. count_tokens keeps the native model/messages/tools shape.
 	// Recognized values are defined by NormalizeClaudeFingerprintProfile.
-	FingerprintProfile string `yaml:"fingerprint-profile,omitempty" json:"fingerprint-profile,omitempty"`
+	FingerprintProfile string `toml:"fingerprint-profile,omitempty" yaml:"fingerprint-profile,omitempty" json:"fingerprint-profile,omitempty"`
 
 	// ExperimentalCCHSigning is retained for configuration compatibility.
 	// CCH signing is automatic for Claude OAuth and supported direct upstreams.
-	ExperimentalCCHSigning bool `yaml:"experimental-cch-signing,omitempty" json:"experimental-cch-signing,omitempty"`
+	ExperimentalCCHSigning bool `toml:"experimental-cch-signing,omitempty" yaml:"experimental-cch-signing,omitempty" json:"experimental-cch-signing,omitempty"`
 }
 
 func (k ClaudeKey) GetAPIKey() string { return k.APIKey }
@@ -640,27 +574,27 @@ func (k ClaudeKey) GetProxyURL() string { return k.ProxyURL }
 // ClaudeModel describes a mapping between an alias and the actual upstream model name.
 type ClaudeModel struct {
 	// Name is the upstream model identifier used when issuing requests.
-	Name string `yaml:"name" json:"name"`
+	Name string `toml:"name" yaml:"name" json:"name"`
 
 	// Alias is the client-facing model name that maps to Name.
-	Alias string `yaml:"alias" json:"alias"`
+	Alias string `toml:"alias" yaml:"alias" json:"alias"`
 
 	// DisplayName is the optional human-readable name shown in model catalogs.
-	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+	DisplayName string `toml:"display-name,omitempty" yaml:"display-name,omitempty" json:"display-name,omitempty"`
 
 	// MaxContextLength overrides the context window advertised to Codex clients.
-	MaxContextLength int `yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
+	MaxContextLength int `toml:"max-context-length,omitempty" yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
 
 	// ForceMapping rewrites upstream response model fields back to Alias.
-	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
+	ForceMapping bool `toml:"force-mapping,omitempty" yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 
 	// IsCompat preserves thinking blocks with empty signatures for compatible upstreams
 	// and enables provider-aware signed-thinking replay for Claude-compatible API-key models.
 	// Default false keeps the normal signature validation behavior.
-	IsCompat bool `yaml:"is-compat,omitempty" json:"is-compat,omitempty"`
+	IsCompat bool `toml:"is-compat,omitempty" yaml:"is-compat,omitempty" json:"is-compat,omitempty"`
 
 	// Thinking configures the thinking/reasoning capability for this model.
-	Thinking *registry.ThinkingSupport `yaml:"thinking,omitempty" json:"thinking,omitempty"`
+	Thinking *registry.ThinkingSupport `toml:"thinking,omitempty" yaml:"thinking,omitempty" json:"thinking,omitempty"`
 }
 
 func (m ClaudeModel) GetName() string { return m.Name }
@@ -678,55 +612,55 @@ func (m ClaudeModel) GetThinking() *registry.ThinkingSupport { return m.Thinking
 // including the API key itself and an optional base URL for the API endpoint.
 type CodexKey struct {
 	// APIKey is the authentication key for accessing Codex API services.
-	APIKey string `yaml:"api-key" json:"api-key"`
+	APIKey string `toml:"api-key" yaml:"api-key" json:"api-key"`
 
 	// Priority controls selection preference when multiple credentials match.
 	// Higher values are preferred; defaults to 0.
-	Priority int `yaml:"priority,omitempty" json:"priority,omitempty"`
+	Priority int `toml:"priority,omitempty" yaml:"priority,omitempty" json:"priority,omitempty"`
 
 	// Weight controls proportional selection under weighted-round-robin.
 	// An omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000.
-	Weight *int `yaml:"weight,omitempty" json:"weight,omitempty"`
+	Weight *int `toml:"weight,omitempty" yaml:"weight,omitempty" json:"weight,omitempty"`
 
 	// Prefix optionally namespaces models for this credential (e.g., "teamA/gpt-5-codex").
-	Prefix string `yaml:"prefix,omitempty" json:"prefix,omitempty"`
+	Prefix string `toml:"prefix,omitempty" yaml:"prefix,omitempty" json:"prefix,omitempty"`
 
 	// BaseURL is the base URL for the Codex API endpoint.
 	// If empty, the default Codex API URL will be used.
-	BaseURL string `yaml:"base-url" json:"base-url"`
+	BaseURL string `toml:"base-url" yaml:"base-url" json:"base-url"`
 
 	// Websockets enables the Responses API websocket transport for this credential.
-	Websockets bool `yaml:"websockets,omitempty" json:"websockets,omitempty"`
+	Websockets bool `toml:"websockets,omitempty" yaml:"websockets,omitempty" json:"websockets,omitempty"`
 
 	// AlphaSearch allows this Codex API key to serve the Alpha Search endpoint.
-	AlphaSearch bool `yaml:"alpha-search,omitempty" json:"alpha-search,omitempty"`
+	AlphaSearch bool `toml:"alpha-search,omitempty" yaml:"alpha-search,omitempty" json:"alpha-search,omitempty"`
 
 	// ProxyURL overrides the global proxy setting for this API key if provided.
-	ProxyURL string `yaml:"proxy-url" json:"proxy-url"`
+	ProxyURL string `toml:"proxy-url" yaml:"proxy-url" json:"proxy-url"`
 
 	// Models defines upstream model names and aliases for request routing.
-	Models []CodexModel `yaml:"models" json:"models"`
+	Models []CodexModel `toml:"models" yaml:"models" json:"models"`
 
 	// Headers optionally adds extra HTTP headers for requests sent with this key.
-	Headers map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+	Headers map[string]string `toml:"headers,omitempty" yaml:"headers,omitempty" json:"headers,omitempty"`
 
 	// ExcludedModels lists model IDs that should be excluded for this provider.
-	ExcludedModels []string `yaml:"excluded-models,omitempty" json:"excluded-models,omitempty"`
+	ExcludedModels []string `toml:"excluded-models,omitempty" yaml:"excluded-models,omitempty" json:"excluded-models,omitempty"`
 
 	// DisableCooling overrides the global cooling policy for this credential when set.
 	// True disables auth/model cooldowns; false explicitly enables them.
-	DisableCooling *bool `yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
+	DisableCooling *bool `toml:"disable-cooling,omitempty" yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
 
 	// DisableCodexCloaking optionally overrides the global codex.disable-codex-cloaking for this credential.
 	// True disables cloaking; false explicitly enables cloaking; omitted inherits global codex.disable-codex-cloaking.
-	DisableCodexCloaking *bool `yaml:"disable-codex-cloaking,omitempty" json:"disable-codex-cloaking,omitempty"`
+	DisableCodexCloaking *bool `toml:"disable-codex-cloaking,omitempty" yaml:"disable-codex-cloaking,omitempty" json:"disable-codex-cloaking,omitempty"`
 
 	// RequestRetry optionally overrides the global request-retry for this credential.
 	// Nil or a negative value means "use the global request-retry". 0 disables additional retry rounds.
-	RequestRetry *int `yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
+	RequestRetry *int `toml:"request-retry,omitempty" yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
 
 	// RequestScopedErrors configures custom classification rules for upstream errors.
-	RequestScopedErrors []RequestScopedErrorRule `yaml:"request-scoped-errors,omitempty" json:"request-scoped-errors,omitempty"`
+	RequestScopedErrors []RequestScopedErrorRule `toml:"request-scoped-errors,omitempty" yaml:"request-scoped-errors,omitempty" json:"request-scoped-errors,omitempty"`
 }
 
 func (k CodexKey) GetAPIKey() string { return k.APIKey }
@@ -740,33 +674,33 @@ func (k CodexKey) GetProxyURL() string { return k.ProxyURL }
 // CodexModel describes a mapping between an alias and the actual upstream model name.
 type CodexModel struct {
 	// Name is the upstream model identifier used when issuing requests.
-	Name string `yaml:"name" json:"name"`
+	Name string `toml:"name" yaml:"name" json:"name"`
 
 	// Alias is the client-facing model name that maps to Name.
-	Alias string `yaml:"alias" json:"alias"`
+	Alias string `toml:"alias" yaml:"alias" json:"alias"`
 
 	// DisplayName is the optional human-readable name shown in model catalogs.
-	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+	DisplayName string `toml:"display-name,omitempty" yaml:"display-name,omitempty" json:"display-name,omitempty"`
 
 	// MaxContextLength overrides the context window advertised to Codex clients.
-	MaxContextLength int `yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
+	MaxContextLength int `toml:"max-context-length,omitempty" yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
 
 	// ForceMapping rewrites upstream response model fields back to Alias.
-	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
+	ForceMapping bool `toml:"force-mapping,omitempty" yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 
 	// IsCompat converts Codex MultiAgentV2 agent_message items into portable
 	// Responses message/user input when client.codex.optimize-multi-agent-v2 is also true.
 	// Use this for third-party Responses-compatible endpoints that do not accept
 	// native agent_message items or empty-signature thinking blocks. Default false
 	// keeps the native behavior unchanged.
-	IsCompat bool `yaml:"is-compat,omitempty" json:"is-compat,omitempty"`
+	IsCompat bool `toml:"is-compat,omitempty" yaml:"is-compat,omitempty" json:"is-compat,omitempty"`
 
 	// SupportConfigurationUpdate enables configuration_update for this API-key model.
 	// It defaults to false, independently of the built-in OAuth model catalog.
-	SupportConfigurationUpdate bool `yaml:"support-configuration-update,omitempty" json:"support-configuration-update,omitempty"`
+	SupportConfigurationUpdate bool `toml:"support-configuration-update,omitempty" yaml:"support-configuration-update,omitempty" json:"support-configuration-update,omitempty"`
 
 	// Thinking configures the thinking/reasoning capability for this model.
-	Thinking *registry.ThinkingSupport `yaml:"thinking,omitempty" json:"thinking,omitempty"`
+	Thinking *registry.ThinkingSupport `toml:"thinking,omitempty" yaml:"thinking,omitempty" json:"thinking,omitempty"`
 }
 
 func (m CodexModel) GetName() string { return m.Name }
@@ -800,44 +734,44 @@ type MetaModel = CodexModel
 // including optional overrides for upstream base URL, proxy routing, and headers.
 type GeminiKey struct {
 	// APIKey is the authentication key for accessing Gemini API services.
-	APIKey string `yaml:"api-key" json:"api-key"`
+	APIKey string `toml:"api-key" yaml:"api-key" json:"api-key"`
 
 	// Priority controls selection preference when multiple credentials match.
 	// Higher values are preferred; defaults to 0.
-	Priority int `yaml:"priority,omitempty" json:"priority,omitempty"`
+	Priority int `toml:"priority,omitempty" yaml:"priority,omitempty" json:"priority,omitempty"`
 
 	// Weight controls proportional selection under weighted-round-robin.
 	// An omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000.
-	Weight *int `yaml:"weight,omitempty" json:"weight,omitempty"`
+	Weight *int `toml:"weight,omitempty" yaml:"weight,omitempty" json:"weight,omitempty"`
 
 	// Prefix optionally namespaces models for this credential (e.g., "teamA/gemini-3-pro-preview").
-	Prefix string `yaml:"prefix,omitempty" json:"prefix,omitempty"`
+	Prefix string `toml:"prefix,omitempty" yaml:"prefix,omitempty" json:"prefix,omitempty"`
 
 	// BaseURL optionally overrides the Gemini API endpoint.
-	BaseURL string `yaml:"base-url,omitempty" json:"base-url,omitempty"`
+	BaseURL string `toml:"base-url,omitempty" yaml:"base-url,omitempty" json:"base-url,omitempty"`
 
 	// ProxyURL optionally overrides the global proxy for this API key.
-	ProxyURL string `yaml:"proxy-url,omitempty" json:"proxy-url,omitempty"`
+	ProxyURL string `toml:"proxy-url,omitempty" yaml:"proxy-url,omitempty" json:"proxy-url,omitempty"`
 
 	// Models defines upstream model names and aliases for request routing.
-	Models []GeminiModel `yaml:"models,omitempty" json:"models,omitempty"`
+	Models []GeminiModel `toml:"models,omitempty" yaml:"models,omitempty" json:"models,omitempty"`
 
 	// Headers optionally adds extra HTTP headers for requests sent with this key.
-	Headers map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+	Headers map[string]string `toml:"headers,omitempty" yaml:"headers,omitempty" json:"headers,omitempty"`
 
 	// ExcludedModels lists model IDs that should be excluded for this provider.
-	ExcludedModels []string `yaml:"excluded-models,omitempty" json:"excluded-models,omitempty"`
+	ExcludedModels []string `toml:"excluded-models,omitempty" yaml:"excluded-models,omitempty" json:"excluded-models,omitempty"`
 
 	// DisableCooling overrides the global cooling policy for this credential when set.
 	// True disables auth/model cooldowns; false explicitly enables them.
-	DisableCooling *bool `yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
+	DisableCooling *bool `toml:"disable-cooling,omitempty" yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
 
 	// RequestRetry optionally overrides the global request-retry for this credential.
 	// Nil or a negative value means "use the global request-retry". 0 disables additional retry rounds.
-	RequestRetry *int `yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
+	RequestRetry *int `toml:"request-retry,omitempty" yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
 
 	// RequestScopedErrors configures custom classification rules for upstream errors.
-	RequestScopedErrors []RequestScopedErrorRule `yaml:"request-scoped-errors,omitempty" json:"request-scoped-errors,omitempty"`
+	RequestScopedErrors []RequestScopedErrorRule `toml:"request-scoped-errors,omitempty" yaml:"request-scoped-errors,omitempty" json:"request-scoped-errors,omitempty"`
 }
 
 func (k GeminiKey) GetAPIKey() string { return k.APIKey }
@@ -851,26 +785,26 @@ func (k GeminiKey) GetProxyURL() string { return k.ProxyURL }
 // GeminiModel describes a mapping between an alias and the actual upstream model name.
 type GeminiModel struct {
 	// Name is the upstream model identifier used when issuing requests.
-	Name string `yaml:"name" json:"name"`
+	Name string `toml:"name" yaml:"name" json:"name"`
 
 	// Alias is the client-facing model name that maps to Name.
-	Alias string `yaml:"alias" json:"alias"`
+	Alias string `toml:"alias" yaml:"alias" json:"alias"`
 
 	// DisplayName is the optional human-readable name shown in model catalogs.
-	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+	DisplayName string `toml:"display-name,omitempty" yaml:"display-name,omitempty" json:"display-name,omitempty"`
 
 	// MaxContextLength overrides the context window advertised to Codex clients.
-	MaxContextLength int `yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
+	MaxContextLength int `toml:"max-context-length,omitempty" yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
 
 	// ForceMapping rewrites upstream response model fields back to Alias.
-	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
+	ForceMapping bool `toml:"force-mapping,omitempty" yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 
 	// IsCompat preserves thinking blocks with empty signatures for compatible upstreams.
 	// Default false keeps the normal signature validation behavior.
-	IsCompat bool `yaml:"is-compat,omitempty" json:"is-compat,omitempty"`
+	IsCompat bool `toml:"is-compat,omitempty" yaml:"is-compat,omitempty" json:"is-compat,omitempty"`
 
 	// Thinking configures the thinking/reasoning capability for this model.
-	Thinking *registry.ThinkingSupport `yaml:"thinking,omitempty" json:"thinking,omitempty"`
+	Thinking *registry.ThinkingSupport `toml:"thinking,omitempty" yaml:"thinking,omitempty" json:"thinking,omitempty"`
 }
 
 func (m GeminiModel) GetName() string { return m.Name }
@@ -888,122 +822,122 @@ func (m GeminiModel) GetThinking() *registry.ThinkingSupport { return m.Thinking
 // with external providers, allowing model aliases to be routed through OpenAI API format.
 type OpenAICompatibility struct {
 	// Name is the identifier for this OpenAI compatibility configuration.
-	Name string `yaml:"name" json:"name"`
+	Name string `toml:"name" yaml:"name" json:"name"`
 
 	// Priority controls selection preference when multiple providers or credentials match.
 	// Higher values are preferred; defaults to 0.
-	Priority int `yaml:"priority,omitempty" json:"priority,omitempty"`
+	Priority int `toml:"priority,omitempty" yaml:"priority,omitempty" json:"priority,omitempty"`
 
 	// Disabled prevents this provider from being used for routing.
-	Disabled bool `yaml:"disabled,omitempty" json:"disabled,omitempty"`
+	Disabled bool `toml:"disabled,omitempty" yaml:"disabled,omitempty" json:"disabled,omitempty"`
 
 	// Prefix optionally namespaces model aliases for this provider (e.g., "teamA/kimi-k2").
-	Prefix string `yaml:"prefix,omitempty" json:"prefix,omitempty"`
+	Prefix string `toml:"prefix,omitempty" yaml:"prefix,omitempty" json:"prefix,omitempty"`
 
 	// BaseURL is the base URL for the external OpenAI-compatible API endpoint.
-	BaseURL string `yaml:"base-url" json:"base-url"`
+	BaseURL string `toml:"base-url" yaml:"base-url" json:"base-url"`
 
 	// APIKeyEntries defines API keys with optional per-key proxy configuration.
-	APIKeyEntries []OpenAICompatibilityAPIKey `yaml:"api-key-entries,omitempty" json:"api-key-entries,omitempty"`
+	APIKeyEntries []OpenAICompatibilityAPIKey `toml:"api-key-entries,omitempty" yaml:"api-key-entries,omitempty" json:"api-key-entries,omitempty"`
 
 	// Models defines the model configurations including aliases for routing.
-	Models []OpenAICompatibilityModel `yaml:"models" json:"models"`
+	Models []OpenAICompatibilityModel `toml:"models" yaml:"models" json:"models"`
 
 	// Dialect is the upstream API every model of this entry speaks unless the
 	// model sets its own: chat-completions (default), responses, messages or
 	// generate-content. See ResolveModelDialect.
-	Dialect string `yaml:"dialect,omitempty" json:"dialect,omitempty"`
+	Dialect string `toml:"dialect,omitempty" yaml:"dialect,omitempty" json:"dialect,omitempty"`
 
 	// SessionHeader names a request header that carries the conversation's
 	// session id upstream (for example x-opencode-session). Requests without a
 	// session send a stable id derived from the credential instead.
-	SessionHeader string `yaml:"session-header,omitempty" json:"session-header,omitempty"`
+	SessionHeader string `toml:"session-header,omitempty" yaml:"session-header,omitempty" json:"session-header,omitempty"`
 
 	// Headers optionally adds extra HTTP headers for requests sent to this provider.
-	Headers map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+	Headers map[string]string `toml:"headers,omitempty" yaml:"headers,omitempty" json:"headers,omitempty"`
 
 	// SupportPromptCacheKey enables derived prompt_cache_key injection for supported requests.
-	SupportPromptCacheKey bool `yaml:"support-prompt-cache-key,omitempty" json:"support-prompt-cache-key,omitempty"`
+	SupportPromptCacheKey bool `toml:"support-prompt-cache-key,omitempty" yaml:"support-prompt-cache-key,omitempty" json:"support-prompt-cache-key,omitempty"`
 
 	// DisableCooling overrides the global cooling policy for this provider when set.
 	// True disables auth/model cooldowns; false explicitly enables them.
-	DisableCooling *bool `yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
+	DisableCooling *bool `toml:"disable-cooling,omitempty" yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
 
 	// RequestRetry optionally overrides the global request-retry for this provider.
 	// Nil or a negative value means "use the global request-retry". 0 disables additional retry rounds.
-	RequestRetry *int `yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
+	RequestRetry *int `toml:"request-retry,omitempty" yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
 
 	// RequestScopedErrors configures custom classification rules for upstream errors.
-	RequestScopedErrors []RequestScopedErrorRule `yaml:"request-scoped-errors,omitempty" json:"request-scoped-errors,omitempty"`
+	RequestScopedErrors []RequestScopedErrorRule `toml:"request-scoped-errors,omitempty" yaml:"request-scoped-errors,omitempty" json:"request-scoped-errors,omitempty"`
 }
 
 // OpenAICompatibilityAPIKey represents an API key configuration with optional proxy setting.
 type OpenAICompatibilityAPIKey struct {
 	// APIKey is the authentication key for accessing the external API services.
-	APIKey string `yaml:"api-key" json:"api-key"`
+	APIKey string `toml:"api-key" yaml:"api-key" json:"api-key"`
 
 	// Weight controls proportional selection under weighted-round-robin.
 	// An omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000.
-	Weight *int `yaml:"weight,omitempty" json:"weight,omitempty"`
+	Weight *int `toml:"weight,omitempty" yaml:"weight,omitempty" json:"weight,omitempty"`
 
 	// ProxyURL overrides the global proxy setting for this API key if provided.
-	ProxyURL string `yaml:"proxy-url,omitempty" json:"proxy-url,omitempty"`
+	ProxyURL string `toml:"proxy-url,omitempty" yaml:"proxy-url,omitempty" json:"proxy-url,omitempty"`
 
 	// Disabled keeps this key configured but excludes it from routing.
-	Disabled bool `yaml:"disabled,omitempty" json:"disabled,omitempty"`
+	Disabled bool `toml:"disabled,omitempty" yaml:"disabled,omitempty" json:"disabled,omitempty"`
 
 	// ConsoleCookie is the provider console's Cookie header, which only
 	// QwenCloud Token Plan quota reporting reads (NeoPi's credential bundle
 	// `cookie`). It is never sent with inference requests.
-	ConsoleCookie string `yaml:"console-cookie,omitempty" json:"console-cookie,omitempty"`
+	ConsoleCookie string `toml:"console-cookie,omitempty" yaml:"console-cookie,omitempty" json:"console-cookie,omitempty"`
 }
 
 // OpenAICompatibilityModel represents a model configuration for OpenAI compatibility,
 // including the actual model name and its alias for API routing.
 type OpenAICompatibilityModel struct {
 	// Name is the actual model name used by the external provider.
-	Name string `yaml:"name" json:"name"`
+	Name string `toml:"name" yaml:"name" json:"name"`
 
 	// Alias is the model name alias that clients will use to reference this model.
-	Alias string `yaml:"alias" json:"alias"`
+	Alias string `toml:"alias" yaml:"alias" json:"alias"`
 
 	// DisplayName is the optional human-readable name shown in model catalogs.
-	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+	DisplayName string `toml:"display-name,omitempty" yaml:"display-name,omitempty" json:"display-name,omitempty"`
 
 	// MaxContextLength overrides the context window advertised to Codex clients.
-	MaxContextLength int `yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
+	MaxContextLength int `toml:"max-context-length,omitempty" yaml:"max-context-length,omitempty" json:"max-context-length,omitempty"`
 
 	// ForceMapping rewrites upstream response model fields back to Alias.
-	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
+	ForceMapping bool `toml:"force-mapping,omitempty" yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 
 	// Image marks this model as callable through /v1/images/generations and /v1/images/edits.
-	Image bool `yaml:"image,omitempty" json:"image,omitempty"`
+	Image bool `toml:"image,omitempty" yaml:"image,omitempty" json:"image,omitempty"`
 
 	// InputModalities declares chat/responses input capabilities (e.g. text, image) for Codex and other clients.
 	// This is separate from Image, which only enables /v1/images/* endpoints.
-	InputModalities []string `yaml:"input-modalities,omitempty" json:"input-modalities,omitempty"`
+	InputModalities []string `toml:"input-modalities,omitempty" yaml:"input-modalities,omitempty" json:"input-modalities,omitempty"`
 
 	// OutputModalities declares supported output modalities when known (e.g. text, image).
-	OutputModalities []string `yaml:"output-modalities,omitempty" json:"output-modalities,omitempty"`
+	OutputModalities []string `toml:"output-modalities,omitempty" yaml:"output-modalities,omitempty" json:"output-modalities,omitempty"`
 
 	// IsCompat preserves Claude thinking blocks for compatible upstreams.
 	// Default false keeps the normal signature validation behavior.
-	IsCompat bool `yaml:"is-compat,omitempty" json:"is-compat,omitempty"`
+	IsCompat bool `toml:"is-compat,omitempty" yaml:"is-compat,omitempty" json:"is-compat,omitempty"`
 
 	// UseMaxCompletionTokens emits max_completion_tokens instead of legacy max_tokens for this model.
 	// Default false preserves max_tokens for older compatible upstreams.
-	UseMaxCompletionTokens bool `yaml:"use-max-completion-tokens,omitempty" json:"use-max-completion-tokens,omitempty"`
+	UseMaxCompletionTokens bool `toml:"use-max-completion-tokens,omitempty" yaml:"use-max-completion-tokens,omitempty" json:"use-max-completion-tokens,omitempty"`
 
 	// Dialect overrides the entry's upstream API for this model.
-	Dialect string `yaml:"dialect,omitempty" json:"dialect,omitempty"`
+	Dialect string `toml:"dialect,omitempty" yaml:"dialect,omitempty" json:"dialect,omitempty"`
 
 	// BaseURL overrides the entry's base URL for this model, for gateways that
 	// serve each dialect under its own path. It must share the entry's host.
-	BaseURL string `yaml:"base-url,omitempty" json:"base-url,omitempty"`
+	BaseURL string `toml:"base-url,omitempty" yaml:"base-url,omitempty" json:"base-url,omitempty"`
 
 	// Thinking configures the thinking/reasoning capability for this model.
 	// If nil, the model defaults to level-based reasoning with levels ["low", "medium", "high"].
-	Thinking *registry.ThinkingSupport `yaml:"thinking,omitempty" json:"thinking,omitempty"`
+	Thinking *registry.ThinkingSupport `toml:"thinking,omitempty" yaml:"thinking,omitempty" json:"thinking,omitempty"`
 }
 
 func (m OpenAICompatibilityModel) GetName() string { return m.Name }

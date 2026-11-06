@@ -20,7 +20,7 @@ func TestLocalServerKeyUsesNeoPiPlaceholder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"name: vllm", "base-url: http://gpu-box.lan:8000/v1", "api-key: vllm-local"} {
+	for _, want := range []string{"name = 'vllm'", "base-url = 'http://gpu-box.lan:8000/v1'", "api-key = 'vllm-local'"} {
 		if !strings.Contains(string(cfg), want) {
 			t.Fatalf("engine config lacks %q:\n%s", want, cfg)
 		}

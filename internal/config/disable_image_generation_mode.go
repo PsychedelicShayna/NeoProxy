@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 // DisableImageGenerationMode is a four-state config value for disable-image-generation.
@@ -41,28 +39,6 @@ func (m DisableImageGenerationMode) String() string {
 	}
 }
 
-func (m DisableImageGenerationMode) MarshalYAML() (any, error) {
-	switch m {
-	case DisableImageGenerationAll:
-		return true, nil
-	case DisableImageGenerationChat:
-		return "chat", nil
-	case DisableImageGenerationPassthrough:
-		return "passthrough", nil
-	default:
-		return false, nil
-	}
-}
-
-func (m *DisableImageGenerationMode) UnmarshalYAML(value *yaml.Node) error {
-	mode, err := parseDisableImageGenerationNode(value)
-	if err != nil {
-		return err
-	}
-	*m = mode
-	return nil
-}
-
 func (m DisableImageGenerationMode) MarshalJSON() ([]byte, error) {
 	switch m {
 	case DisableImageGenerationAll:
@@ -83,28 +59,6 @@ func (m *DisableImageGenerationMode) UnmarshalJSON(data []byte) error {
 	}
 	*m = mode
 	return nil
-}
-
-func parseDisableImageGenerationNode(value *yaml.Node) (DisableImageGenerationMode, error) {
-	if value == nil {
-		return DisableImageGenerationOff, nil
-	}
-
-	// First try a typed bool decode (covers unquoted true/false and YAML 1.1 bools).
-	var b bool
-	if err := value.Decode(&b); err == nil && value.Kind == yaml.ScalarNode && value.ShortTag() == "!!bool" {
-		if b {
-			return DisableImageGenerationAll, nil
-		}
-		return DisableImageGenerationOff, nil
-	}
-
-	// Fall back to string decoding (covers quoted "true"/"false" and "chat").
-	var s string
-	if err := value.Decode(&s); err != nil {
-		return DisableImageGenerationOff, fmt.Errorf("invalid disable-image-generation value")
-	}
-	return parseDisableImageGenerationString(s)
 }
 
 func parseDisableImageGenerationJSON(data []byte) (DisableImageGenerationMode, error) {

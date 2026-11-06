@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +14,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/htmlsanitize"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginhost"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
-	"gopkg.in/yaml.v3"
 )
 
 type pluginListResponse struct {
@@ -231,9 +229,9 @@ func (h *Handler) PatchPluginEnabled(c *gin.Context) {
 	h.mu.Lock()
 	ensurePluginConfigMap(h.cfg)
 	item := h.cfg.Plugins.Configs[id]
-	node := pluginConfigNode(item)
-	setYAMLMappingValue(node, "enabled", boolYAMLNode(*body.Enabled))
-	updated, errConfig := pluginInstanceConfigFromNode(node)
+	raw := pluginConfigMap(item)
+	raw["enabled"] = *body.Enabled
+	updated, errConfig := config.PluginInstanceConfigFromMap(raw)
 	if errConfig != nil {
 		h.mu.Unlock()
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_config", "message": errConfig.Error()})
@@ -260,12 +258,12 @@ func (h *Handler) PutPluginConfig(c *gin.Context) {
 	if !okBody {
 		return
 	}
-	node, errNode := yamlNodeFromJSONObject(body)
+	rawValue, errNode := normalizePluginJSONValue(body)
 	if errNode != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body", "message": errNode.Error()})
 		return
 	}
-	updated, errConfig := pluginInstanceConfigFromNode(node)
+	updated, errConfig := config.PluginInstanceConfigFromMap(rawValue.(map[string]any))
 	if errConfig != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_config", "message": errConfig.Error()})
 		return
@@ -292,26 +290,20 @@ func (h *Handler) PatchPluginConfig(c *gin.Context) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	ensurePluginConfigMap(h.cfg)
-	node := pluginConfigNode(h.cfg.Plugins.Configs[id])
-	keys := make([]string, 0, len(body))
-	for key := range body {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		value := body[key]
+	raw := pluginConfigMap(h.cfg.Plugins.Configs[id])
+	for key, value := range body {
 		if value == nil {
-			deleteYAMLMappingKey(node, key)
+			delete(raw, key)
 			continue
 		}
-		valueNode, errNode := yamlNodeFromJSONValue(value)
-		if errNode != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body", "message": errNode.Error()})
+		normalized, errValue := normalizePluginJSONValue(value)
+		if errValue != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body", "message": errValue.Error()})
 			return
 		}
-		setYAMLMappingValue(node, key, valueNode)
+		raw[key] = normalized
 	}
-	updated, errConfig := pluginInstanceConfigFromNode(node)
+	updated, errConfig := config.PluginInstanceConfigFromMap(raw)
 	if errConfig != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_config", "message": errConfig.Error()})
 		return
@@ -532,188 +524,59 @@ func ensurePluginConfigMap(cfg *config.Config) {
 	cfg.NormalizePluginsConfig()
 }
 
-func pluginConfigNode(item config.PluginInstanceConfig) *yaml.Node {
-	if item.Raw.Kind == yaml.MappingNode {
-		return cloneYAMLNode(&item.Raw)
+func pluginConfigMap(item config.PluginInstanceConfig) map[string]any {
+	raw := cloneConfigV8Value(item.Raw)
+	object, _ := raw.(map[string]any)
+	if object == nil {
+		object = map[string]any{}
 	}
-	node := emptyYAMLMappingNode()
 	if item.Enabled != nil {
-		setYAMLMappingValue(node, "enabled", boolYAMLNode(*item.Enabled))
+		object["enabled"] = *item.Enabled
 	}
 	if item.Priority != 0 {
-		setYAMLMappingValue(node, "priority", intYAMLNode(item.Priority))
+		object["priority"] = item.Priority
 	}
-	return node
+	return object
 }
 
 func pluginConfigJSONObject(item config.PluginInstanceConfig) (map[string]any, error) {
-	value, errValue := yamlNodeToJSONValue(pluginConfigNode(item))
-	if errValue != nil {
-		return nil, errValue
-	}
-	body, ok := value.(map[string]any)
-	if !ok || body == nil {
-		return map[string]any{}, nil
-	}
-	return body, nil
+	return pluginConfigMap(item), nil
 }
 
-func pluginInstanceConfigFromNode(node *yaml.Node) (config.PluginInstanceConfig, error) {
-	if node == nil {
-		node = emptyYAMLMappingNode()
-	}
-	var item config.PluginInstanceConfig
-	if errDecode := node.Decode(&item); errDecode != nil {
-		return config.PluginInstanceConfig{}, errDecode
-	}
-	return item, nil
-}
-
-func yamlNodeFromJSONObject(body map[string]any) (*yaml.Node, error) {
-	node := emptyYAMLMappingNode()
-	keys := make([]string, 0, len(body))
-	for key := range body {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		valueNode, errNode := yamlNodeFromJSONValue(body[key])
-		if errNode != nil {
-			return nil, fmt.Errorf("%s: %w", key, errNode)
-		}
-		setYAMLMappingValue(node, key, valueNode)
-	}
-	return node, nil
-}
-
-func yamlNodeFromJSONValue(value any) (*yaml.Node, error) {
-	switch typed := value.(type) {
-	case nil:
-		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!null", Value: "null"}, nil
-	case string:
-		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: typed}, nil
-	case bool:
-		return boolYAMLNode(typed), nil
+// JSON numbers are converted before persistence so the native TOML encoder
+// retains integer values instead of treating json.Number as a string.
+func normalizePluginJSONValue(value any) (any, error) {
+	switch value := value.(type) {
 	case json.Number:
-		if _, errInt64 := typed.Int64(); errInt64 == nil {
-			return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!int", Value: typed.String()}, nil
+		if integer, err := value.Int64(); err == nil {
+			return integer, nil
 		}
-		if _, errFloat64 := typed.Float64(); errFloat64 == nil {
-			return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!float", Value: typed.String()}, nil
+		number, err := value.Float64()
+		if err != nil {
+			return nil, fmt.Errorf("invalid number %q: %w", value, err)
 		}
-		return nil, fmt.Errorf("invalid number %q", typed.String())
-	case float64:
-		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!float", Value: strconv.FormatFloat(typed, 'f', -1, 64)}, nil
-	case []any:
-		node := &yaml.Node{Kind: yaml.SequenceNode, Tag: "!!seq"}
-		for _, item := range typed {
-			child, errChild := yamlNodeFromJSONValue(item)
-			if errChild != nil {
-				return nil, errChild
-			}
-			node.Content = append(node.Content, child)
-		}
-		return node, nil
+		return number, nil
 	case map[string]any:
-		return yamlNodeFromJSONObject(typed)
+		out := make(map[string]any, len(value))
+		for key, child := range value {
+			normalized, err := normalizePluginJSONValue(child)
+			if err != nil {
+				return nil, fmt.Errorf("%s: %w", key, err)
+			}
+			out[key] = normalized
+		}
+		return out, nil
+	case []any:
+		out := make([]any, len(value))
+		for index, child := range value {
+			normalized, err := normalizePluginJSONValue(child)
+			if err != nil {
+				return nil, err
+			}
+			out[index] = normalized
+		}
+		return out, nil
 	default:
-		return nil, fmt.Errorf("unsupported value type %T", value)
-	}
-}
-
-func yamlNodeToJSONValue(node *yaml.Node) (any, error) {
-	if node == nil {
-		return nil, nil
-	}
-	switch node.Kind {
-	case yaml.MappingNode:
-		out := make(map[string]any, len(node.Content)/2)
-		for index := 0; index+1 < len(node.Content); index += 2 {
-			key := node.Content[index]
-			value := node.Content[index+1]
-			if key == nil {
-				continue
-			}
-			child, errChild := yamlNodeToJSONValue(value)
-			if errChild != nil {
-				return nil, fmt.Errorf("%s: %w", key.Value, errChild)
-			}
-			out[key.Value] = child
-		}
-		return out, nil
-	case yaml.SequenceNode:
-		out := make([]any, 0, len(node.Content))
-		for _, childNode := range node.Content {
-			child, errChild := yamlNodeToJSONValue(childNode)
-			if errChild != nil {
-				return nil, errChild
-			}
-			out = append(out, child)
-		}
-		return out, nil
-	case yaml.ScalarNode:
-		if node.Tag == "!!str" || node.Tag == "" {
-			return node.Value, nil
-		}
-		var value any
-		if errDecode := node.Decode(&value); errDecode != nil {
-			return nil, errDecode
-		}
 		return value, nil
-	case yaml.AliasNode:
-		return yamlNodeToJSONValue(node.Alias)
-	default:
-		return nil, fmt.Errorf("unsupported YAML node kind %d", node.Kind)
 	}
-}
-
-func emptyYAMLMappingNode() *yaml.Node {
-	return &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
-}
-
-func boolYAMLNode(value bool) *yaml.Node {
-	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: strconv.FormatBool(value)}
-}
-
-func intYAMLNode(value int) *yaml.Node {
-	return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!int", Value: strconv.Itoa(value)}
-}
-
-func setYAMLMappingValue(mapping *yaml.Node, key string, value *yaml.Node) {
-	if mapping.Kind != yaml.MappingNode {
-		*mapping = *emptyYAMLMappingNode()
-	}
-	for index := 0; index+1 < len(mapping.Content); index += 2 {
-		if mapping.Content[index] != nil && mapping.Content[index].Value == key {
-			mapping.Content[index+1] = value
-			return
-		}
-	}
-	mapping.Content = append(mapping.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: key}, value)
-}
-
-func deleteYAMLMappingKey(mapping *yaml.Node, key string) {
-	if mapping == nil || mapping.Kind != yaml.MappingNode {
-		return
-	}
-	for index := 0; index+1 < len(mapping.Content); index += 2 {
-		if mapping.Content[index] != nil && mapping.Content[index].Value == key {
-			mapping.Content = append(mapping.Content[:index], mapping.Content[index+2:]...)
-			return
-		}
-	}
-}
-
-func cloneYAMLNode(node *yaml.Node) *yaml.Node {
-	if node == nil {
-		return nil
-	}
-	out := *node
-	if len(node.Content) > 0 {
-		out.Content = make([]*yaml.Node, 0, len(node.Content))
-		for _, child := range node.Content {
-			out.Content = append(out.Content, cloneYAMLNode(child))
-		}
-	}
-	return &out
 }

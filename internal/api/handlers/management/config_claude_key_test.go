@@ -119,14 +119,9 @@ func TestPutClaudeKeysRejectsUnknownFingerprintProfile(t *testing.T) {
 
 func TestPatchClaudeKeyCloak(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: test-claude-key
-    cloak:
-      mode: always
-      strict-mode: true
-      cache-user-id: true
+	initialTOML := `claude-api-key = [{api-key = "test-claude-key", cloak = {mode = "always", strict-mode = true, cache-user-id = true}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -145,7 +140,7 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 	*cfg.ClaudeKey[0].Cloak.CacheUserID = true
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// 1. Partial patch: only update strict-mode to false. mode: always and cache-user-id: true must be preserved.
+	// 1. Partial patch: only update strict-mode to false. mode = \"always\" and cache-user-id = true must be preserved.
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = httptest.NewRequest(http.MethodPatch, "/v0/management/claude-api-key",
@@ -243,15 +238,9 @@ func TestPatchClaudeKeyCloak(t *testing.T) {
 
 func TestPatchClaudeKeyDoesNotInheritModeWhenIdentityChanged(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: key-a
-    base-url: https://a.example.com
-    prefix: teamA
-    proxy-url: http://127.0.0.1:8080
-    cloak:
-      mode: always
+	initialTOML := `claude-api-key = [{api-key = "key-a", base-url = "https://a.example.com", prefix = "teamA", proxy-url = "http://127.0.0.1:8080", cloak = {mode = "always"}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -298,14 +287,9 @@ func TestPatchClaudeKeyDoesNotInheritModeWhenIdentityChanged(t *testing.T) {
 
 func TestPutClaudeKeysCloakPersistence(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: sk-ant-test
-    cloak:
-      mode: always
-      strict-mode: true
-      cache-user-id: true
+	initialTOML := `claude-api-key = [{api-key = "sk-ant-test", cloak = {mode = "always", strict-mode = true, cache-user-id = true}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -340,18 +324,18 @@ func TestPutClaudeKeysCloakPersistence(t *testing.T) {
 	}
 	savedText := string(savedBytes)
 	// Empty mode preserves previous mode when left blank
-	if !strings.Contains(savedText, "mode: always") {
-		t.Fatalf("saved YAML lost preserved 'mode: always':\n%s", savedText)
+	if !savedClaudeKeyHasMode(t, savedBytes, "always") {
+		t.Fatalf("saved TOML lost preserved 'mode = \"always\"':\n%s", savedText)
 	}
-	// Switches: on is on, off is off (strict-mode: true is gone, cache-user-id: false is present)
-	if strings.Contains(savedText, "strict-mode: true") {
-		t.Fatalf("saved YAML still contains 'strict-mode: true':\n%s", savedText)
+	// Switches: on is on, off is off (strict-mode = true is gone, cache-user-id = false is present)
+	if strings.Contains(savedText, "strict-mode = true") {
+		t.Fatalf("saved TOML still contains 'strict-mode = true':\n%s", savedText)
 	}
-	if strings.Contains(savedText, "cache-user-id: true") {
-		t.Fatalf("saved YAML still contains 'cache-user-id: true':\n%s", savedText)
+	if strings.Contains(savedText, "cache-user-id = true") {
+		t.Fatalf("saved TOML still contains 'cache-user-id = true':\n%s", savedText)
 	}
-	if !strings.Contains(savedText, "cache-user-id: false") {
-		t.Fatalf("saved YAML missing 'cache-user-id: false':\n%s", savedText)
+	if !strings.Contains(savedText, "cache-user-id = false") {
+		t.Fatalf("saved TOML missing 'cache-user-id = false':\n%s", savedText)
 	}
 
 	// Verify GET returns preserved mode and updated false values so the frontend continues to display the original value
@@ -364,24 +348,18 @@ func TestPutClaudeKeysCloakPersistence(t *testing.T) {
 	}
 	bodyStr := getRec.Body.String()
 	if !strings.Contains(bodyStr, `"mode":"always"`) {
-		t.Fatalf("GET response missing preserved mode: always; got: %s", bodyStr)
+		t.Fatalf("GET response missing preserved mode = \"always\"; got: %s", bodyStr)
 	}
 	if !strings.Contains(bodyStr, `"cache-user-id":false`) {
-		t.Fatalf("GET response missing cache-user-id: false; got: %s", bodyStr)
+		t.Fatalf("GET response missing cache-user-id = false; got: %s", bodyStr)
 	}
 }
 
 func TestPutClaudeKeysPreservesModeByCredentialIdentity(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: key-a
-    cloak:
-      mode: always
-  - api-key: key-b
-    cloak:
-      mode: never
+	initialTOML := `claude-api-key = [{api-key = "key-a", cloak = {mode = "always"}}, {api-key = "key-b", cloak = {mode = "never"}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -423,24 +401,19 @@ func TestPutClaudeKeysPreservesModeByCredentialIdentity(t *testing.T) {
 		t.Fatalf("os.ReadFile() error = %v", errRead)
 	}
 	savedText := string(savedBytes)
-	if !strings.Contains(savedText, "mode: never") {
-		t.Fatalf("saved YAML missing 'mode: never':\n%s", savedText)
+	if !savedClaudeKeyHasMode(t, savedBytes, "never") {
+		t.Fatalf("saved TOML missing 'mode = \"never\"':\n%s", savedText)
 	}
-	if strings.Contains(savedText, "mode: always") {
-		t.Fatalf("saved YAML unexpectedly contains 'mode: always':\n%s", savedText)
+	if savedClaudeKeyHasMode(t, savedBytes, "always") {
+		t.Fatalf("saved TOML unexpectedly contains 'mode = \"always\"':\n%s", savedText)
 	}
 }
 
 func TestPutClaudeKeysRealFrontendPayload(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: sk-ant-test
-    cloak:
-      mode: always
-      strict-mode: true
-      cache-user-id: true
+	initialTOML := `claude-api-key = [{api-key = "sk-ant-test", cloak = {mode = "always", strict-mode = true, cache-user-id = true}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -478,15 +451,15 @@ func TestPutClaudeKeysRealFrontendPayload(t *testing.T) {
 	}
 	savedText := string(savedBytes)
 	// Mode is preserved from previous config
-	if !strings.Contains(savedText, "mode: always") {
-		t.Fatalf("saved YAML lost preserved 'mode: always':\n%s", savedText)
+	if !savedClaudeKeyHasMode(t, savedBytes, "always") {
+		t.Fatalf("saved TOML lost preserved 'mode = \"always\"':\n%s", savedText)
 	}
-	// Disabled switches: strict-mode: true and cache-user-id: true must be pruned
-	if strings.Contains(savedText, "strict-mode: true") {
-		t.Fatalf("saved YAML still contains 'strict-mode: true':\n%s", savedText)
+	// Disabled switches: strict-mode = true and cache-user-id = true must be pruned
+	if strings.Contains(savedText, "strict-mode = true") {
+		t.Fatalf("saved TOML still contains 'strict-mode = true':\n%s", savedText)
 	}
-	if strings.Contains(savedText, "cache-user-id: true") {
-		t.Fatalf("saved YAML still contains 'cache-user-id: true':\n%s", savedText)
+	if strings.Contains(savedText, "cache-user-id = true") {
+		t.Fatalf("saved TOML still contains 'cache-user-id = true':\n%s", savedText)
 	}
 
 	// Verify GET response
@@ -499,26 +472,18 @@ func TestPutClaudeKeysRealFrontendPayload(t *testing.T) {
 	}
 	bodyStr := getRec.Body.String()
 	if !strings.Contains(bodyStr, `"mode":"always"`) {
-		t.Fatalf("GET response missing preserved mode: always; got: %s", bodyStr)
+		t.Fatalf("GET response missing preserved mode = \"always\"; got: %s", bodyStr)
 	}
 	if strings.Contains(bodyStr, `"strict-mode":true`) {
-		t.Fatalf("GET response still has strict-mode: true; got: %s", bodyStr)
+		t.Fatalf("GET response still has strict-mode = true; got: %s", bodyStr)
 	}
 }
 
 func TestPutClaudeKeysPreservesModeWithDifferentPrefix(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: shared-key
-    prefix: team1
-    cloak:
-      mode: always
-  - api-key: shared-key
-    prefix: team2
-    cloak:
-      mode: never
+	initialTOML := `claude-api-key = [{api-key = "shared-key", prefix = "team1", cloak = {mode = "always"}}, {api-key = "shared-key", prefix = "team2", cloak = {mode = "never"}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -559,15 +524,9 @@ func TestPutClaudeKeysPreservesModeWithDifferentPrefix(t *testing.T) {
 
 func TestPutClaudeKeysAuthIndexCannotBypassStrictTupleIsolation(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: key-a
-    cloak:
-      mode: always
-  - api-key: key-b
-    cloak:
-      mode: never
+	initialTOML := `claude-api-key = [{api-key = "key-a", cloak = {mode = "always"}}, {api-key = "key-b", cloak = {mode = "never"}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -608,13 +567,9 @@ func TestPutClaudeKeysAuthIndexCannotBypassStrictTupleIsolation(t *testing.T) {
 
 func TestPutClaudeKeysDoesNotInheritModeForNewCredential(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: old-key
-    base-url: https://old.example.com
-    cloak:
-      mode: never
+	initialTOML := `claude-api-key = [{api-key = "old-key", base-url = "https://old.example.com", cloak = {mode = "never"}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -654,22 +609,16 @@ func TestPutClaudeKeysDoesNotInheritModeForNewCredential(t *testing.T) {
 		t.Fatalf("os.ReadFile() error = %v", errRead)
 	}
 	savedText := string(savedBytes)
-	if strings.Contains(savedText, "mode: never") {
-		t.Fatalf("saved YAML unexpectedly retained 'mode: never':\n%s", savedText)
+	if savedClaudeKeyHasMode(t, savedBytes, "never") {
+		t.Fatalf("saved TOML unexpectedly retained 'mode = \"never\"':\n%s", savedText)
 	}
 }
 
 func TestPutClaudeKeysAmbiguousCredentialsDoNotInheritMode(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: shared-key
-    cloak:
-      mode: always
-  - api-key: shared-key
-    cloak:
-      mode: never
+	initialTOML := `claude-api-key = [{api-key = "shared-key", cloak = {mode = "always"}}, {api-key = "shared-key", cloak = {mode = "never"}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -710,13 +659,9 @@ func TestPutClaudeKeysAmbiguousCredentialsDoNotInheritMode(t *testing.T) {
 
 func TestPutClaudeKeysNewCredentialWithDifferentPrefixDoesNotInheritMode(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: shared-key
-    prefix: team1
-    cloak:
-      mode: never
+	initialTOML := `claude-api-key = [{api-key = "shared-key", prefix = "team1", cloak = {mode = "never"}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -757,12 +702,9 @@ func TestPutClaudeKeysNewCredentialWithDifferentPrefixDoesNotInheritMode(t *test
 
 func TestPutClaudeKeysOmittedCloakPreservesExistingMode(t *testing.T) {
 	configFile := writeTestConfigFile(t)
-	initialYAML := `claude-api-key:
-  - api-key: sk-ant-test
-    cloak:
-      mode: always
+	initialTOML := `claude-api-key = [{api-key = "sk-ant-test", cloak = {mode = "always"}}]
 `
-	if errWrite := os.WriteFile(configFile, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configFile, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -776,7 +718,7 @@ func TestPutClaudeKeysOmittedCloakPreservesExistingMode(t *testing.T) {
 	}
 	h := &Handler{cfg: cfg, configFilePath: configFile}
 
-	// PUT sends the credential without a cloak block. Existing mode: always must be preserved.
+	// PUT sends the credential without a cloak block. Existing mode = \"always\" must be preserved.
 	payload := `[{"api-key":"sk-ant-test"}]`
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
@@ -792,7 +734,7 @@ func TestPutClaudeKeysOmittedCloakPreservesExistingMode(t *testing.T) {
 		t.Fatalf("ClaudeKey length = %d, want 1", len(cfg.ClaudeKey))
 	}
 	if cfg.ClaudeKey[0].Cloak == nil || cfg.ClaudeKey[0].Cloak.Mode != "always" {
-		t.Fatalf("Cloak = %+v, want preserved mode: always", cfg.ClaudeKey[0].Cloak)
+		t.Fatalf("Cloak = %+v, want preserved mode = \"always\"", cfg.ClaudeKey[0].Cloak)
 	}
 
 	savedBytes, errRead := os.ReadFile(configFile)
@@ -800,8 +742,8 @@ func TestPutClaudeKeysOmittedCloakPreservesExistingMode(t *testing.T) {
 		t.Fatalf("os.ReadFile() error = %v", errRead)
 	}
 	savedText := string(savedBytes)
-	if !strings.Contains(savedText, "mode: always") {
-		t.Fatalf("saved YAML lost preserved 'mode: always':\n%s", savedText)
+	if !savedClaudeKeyHasMode(t, savedBytes, "always") {
+		t.Fatalf("saved TOML lost preserved 'mode = \"always\"':\n%s", savedText)
 	}
 }
 
@@ -834,8 +776,8 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 		t.Fatalf("os.ReadFile() error = %v", errRead)
 	}
 	savedText := string(savedBytes)
-	if !strings.Contains(savedText, "priority: 20") {
-		t.Fatalf("saved YAML missing 'priority: 20':\n%s", savedText)
+	if !strings.Contains(savedText, "priority = 20") {
+		t.Fatalf("saved TOML missing 'priority = 20':\n%s", savedText)
 	}
 
 	// Verify GET returns the updated priority with structured unmarshaling
@@ -904,4 +846,27 @@ func TestPatchClaudeKeyPriority(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400; body=%s", rec.Code, rec.Body.String())
 	}
+}
+
+func savedClaudeKeyHasMode(t *testing.T, data []byte, mode string) bool {
+	t.Helper()
+	root, err := config.ParseConfigDocument(data)
+	if err != nil {
+		t.Fatalf("parse saved TOML: %v", err)
+	}
+	keys, ok := root["claude-api-key"].([]any)
+	if !ok {
+		t.Fatalf("saved TOML claude-api-key is not an array: %T", root["claude-api-key"])
+	}
+	for _, value := range keys {
+		key, ok := value.(map[string]any)
+		if !ok {
+			t.Fatalf("saved TOML Claude key is not a table: %T", value)
+		}
+		cloak, _ := key["cloak"].(map[string]any)
+		if cloak["mode"] == mode {
+			return true
+		}
+	}
+	return false
 }

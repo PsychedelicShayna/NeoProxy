@@ -39,12 +39,12 @@ func TestModelsApplyPatchClientConfigAndReload(t *testing.T) {
 				raw  string
 				want bool
 			}{
-				{"omitted", "{}", false},
-				{"disabled", "client: {codex: {enable-apply-patch: false}}", false},
-				{"enabled", "client: {codex: {enable-apply-patch: true}}", true},
-				{"disabled-again", "client: {codex: {enable-apply-patch: false}}", false},
-				{"enabled-again", "client: {codex: {enable-apply-patch: true}}", true},
-				{"removed", "{}", false},
+				{"omitted", "[client]\n", false},
+				{"disabled", "[client.codex]\nenable-apply-patch = false\n", false},
+				{"enabled", "[client.codex]\nenable-apply-patch = true\n", true},
+				{"disabled-again", "[client.codex]\nenable-apply-patch = false\n", false},
+				{"enabled-again", "[client.codex]\nenable-apply-patch = true\n", true},
+				{"removed", "[client]\n", false},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
 					if tc.name != "omitted" {

@@ -59,7 +59,7 @@ func TestCodingPlanKeyCheckFollowsEndpointChoice(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"base-url: " + china, "base-url: " + intl} {
+	for _, want := range []string{"base-url = '" + china + "'", "base-url = '" + intl + "'"} {
 		if !strings.Contains(string(cfg), want) {
 			t.Fatalf("engine config lacks %q:\n%s", want, cfg)
 		}

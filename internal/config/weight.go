@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/credentialweight"
-	"gopkg.in/yaml.v3"
 )
 
 // MaxCredentialWeight is the largest positive credential routing weight.
@@ -19,90 +18,40 @@ func ValidateCredentialWeight(weight *int) error {
 	return errNormalize
 }
 
-func validateCredentialWeightYAML(data []byte) error {
-	var document yaml.Node
-	if errUnmarshal := yaml.Unmarshal(data, &document); errUnmarshal != nil {
-		return nil
-	}
-	if len(document.Content) == 0 {
-		return nil
-	}
-	root, err := flattenV8(document.Content[0])
-	if err != nil {
-		return err
-	}
-	families := map[string]struct{}{
-		"gemini-api-key": {}, "interactions-api-key": {}, "claude-api-key": {},
-		"vertex-api-key": {}, "codex-api-key": {}, "xai-api-key": {}, "meta-api-key": {}, "gitlab-duo-agent-api-key": {},
-	}
-	for index := 0; root != nil && root.Kind == yaml.MappingNode && index+1 < len(root.Content); index += 2 {
-		name := root.Content[index].Value
-		value := root.Content[index+1]
-		if _, ok := families[name]; ok {
-			if errValidate := validateWeightSequenceNode(value, name); errValidate != nil {
-				return errValidate
-			}
-			continue
-		}
-		if name == "openai-compatibility" {
-			if errValidate := validateOpenAICompatibilityWeightNodes(value); errValidate != nil {
-				return errValidate
+func validateCredentialWeightMap(root map[string]any) error {
+	validate := func(values any, path string) error {
+		items, _ := values.([]any)
+		for i, raw := range items {
+			item, _ := raw.(map[string]any)
+			if value, present := item["weight"]; present {
+				var weight int64
+				switch n := value.(type) {
+				case int:
+					weight = int64(n)
+				case int64:
+					weight = n
+				default:
+					return fmt.Errorf("%s[%d].weight: weight must be an integer", path, i)
+				}
+				if _, err := credentialweight.Normalize(weight); err != nil {
+					return fmt.Errorf("%s[%d].weight: %w", path, i, err)
+				}
 			}
 		}
-	}
-	return nil
-}
-
-func validateWeightSequenceNode(sequence *yaml.Node, path string) error {
-	if sequence == nil || sequence.Kind != yaml.SequenceNode {
 		return nil
 	}
-	for index, item := range sequence.Content {
-		if errValidate := validateWeightMappingNode(item, fmt.Sprintf("%s[%d]", path, index)); errValidate != nil {
-			return errValidate
-		}
-	}
-	return nil
-}
-
-func validateWeightMappingNode(mapping *yaml.Node, path string) error {
-	if mapping == nil || mapping.Kind != yaml.MappingNode {
-		return nil
-	}
-	for index := 0; index+1 < len(mapping.Content); index += 2 {
-		if mapping.Content[index].Value != "weight" {
-			continue
-		}
-		value := mapping.Content[index+1]
-		if value.Kind != yaml.ScalarNode || value.Tag != "!!int" {
-			return fmt.Errorf("%s.weight: weight must be an integer", path)
-		}
-		var weight int64
-		if errDecode := value.Decode(&weight); errDecode != nil {
-			return fmt.Errorf("%s.weight: weight must be an integer", path)
-		}
-		if _, errNormalize := credentialweight.Normalize(weight); errNormalize != nil {
-			return fmt.Errorf("%s.weight: %w", path, errNormalize)
-		}
-	}
-	return nil
-}
-
-func validateOpenAICompatibilityWeightNodes(sequence *yaml.Node) error {
-	if sequence == nil || sequence.Kind != yaml.SequenceNode {
-		return nil
-	}
-	for providerIndex, provider := range sequence.Content {
-		if provider == nil || provider.Kind != yaml.MappingNode {
-			continue
-		}
-		for index := 0; index+1 < len(provider.Content); index += 2 {
-			if provider.Content[index].Value != "api-key-entries" {
-				continue
+	for _, family := range v8KeyFamilies {
+		if family.old == "openai-compatibility" {
+			providers, _ := root[family.old].([]any)
+			for i, raw := range providers {
+				provider, _ := raw.(map[string]any)
+				if err := validate(provider["api-key-entries"], fmt.Sprintf("openai-compatibility[%d].api-key-entries", i)); err != nil {
+					return err
+				}
 			}
-			path := fmt.Sprintf("openai-compatibility[%d].api-key-entries", providerIndex)
-			if errValidate := validateWeightSequenceNode(provider.Content[index+1], path); errValidate != nil {
-				return errValidate
+		} else {
+			if err := validate(root[family.old], family.old); err != nil {
+				return err
 			}
 		}
 	}

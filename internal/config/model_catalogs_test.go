@@ -5,16 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestModelCatalogConfigRoundTrip(t *testing.T) {
 	for _, migrate := range []bool{false, true} {
 		t.Run(fmt.Sprint(migrate), func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "config.yaml")
+			path := filepath.Join(t.TempDir(), "config.toml")
 			sources := ModelCatalogs{Catalog: filepath.Join(t.TempDir(), "models.json"), CodexCatalog: "https://example.com/codex.json"}
-			data, errMarshal := yaml.Marshal(map[string]any{"config-version": 8, "models": sources})
+			data, errMarshal := MarshalTOML(map[string]any{"config-version": 8, "models": sources})
 			if errMarshal != nil {
 				t.Fatal(errMarshal)
 			}
@@ -67,9 +65,8 @@ func TestModelCatalogConfigRoundTrip(t *testing.T) {
 func TestModelCatalogConfigValidation(t *testing.T) {
 	for _, field := range []string{"catalog", "codex-catalog"} {
 		for _, source := range []string{"relative.json", "./models.json", "~/models.json", "ftp://example.com/models", "file:///tmp/models.json", "https:///models"} {
-			data := []byte(fmt.Sprintf("models:\n  %s: %q\n", field, source))
-			var cfg Config
-			if errUnmarshal := yaml.Unmarshal(data, &cfg); errUnmarshal == nil {
+			data := []byte(fmt.Sprintf("[models]\n%s = %q\n", field, source))
+			if _, errUnmarshal := DecodeConfig(data, ConfigFormatTOML); errUnmarshal == nil {
 				t.Fatalf("accepted %s: %s", field, source)
 			}
 			if errValidate := ValidateV8Config(data); errValidate == nil {
@@ -77,7 +74,7 @@ func TestModelCatalogConfigValidation(t *testing.T) {
 			}
 		}
 	}
-	for _, raw := range []string{"models: {}", "models: {catalog: ''}", "models: {codex-catalog: 'https://example.com/models.json'}"} {
+	for _, raw := range []string{"\"models\" = {}\n", "\"models\" = {\"catalog\" = \"\"}\n", "\"models\" = {\"codex-catalog\" = \"https://example.com/models.json\"}\n"} {
 		if errValidate := ValidateV8Config([]byte(raw)); errValidate != nil {
 			t.Fatal(errValidate)
 		}

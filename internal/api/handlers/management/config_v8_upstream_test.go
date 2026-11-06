@@ -13,8 +13,8 @@ import (
 )
 
 func TestConfigV8SharedUpstreamRoundTrip(t *testing.T) {
-	file := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "oauth: {providers: {codex: {stream-bootstrap-buffering: true, live-media-relay: {max-sessions: 12}}}}\n"
+	file := filepath.Join(t.TempDir(), "config.toml")
+	raw := "oauth = {providers = {codex = {stream-bootstrap-buffering = true, live-media-relay = {max-sessions = 12}}}}\n"
 	if errWrite := os.WriteFile(file, []byte(raw), 0600); errWrite != nil {
 		t.Fatal(errWrite)
 	}

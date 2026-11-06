@@ -1,20 +1,20 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/yaml.v3"
 )
 
 const uploadTestPlaintextSecret = "upload-plaintext-secret"
 
 func writeUploadTestConfig(t *testing.T, content string) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "config.yaml")
+	path := filepath.Join(t.TempDir(), "config.toml")
 	if errWrite := os.WriteFile(path, []byte(content), 0o600); errWrite != nil {
 		t.Fatalf("write config: %v", errWrite)
 	}
@@ -42,8 +42,8 @@ func uploadTestBcrypt(t *testing.T) string {
 // uploadTestSecret returns the secret-key stored under section and whether it exists.
 func uploadTestSecret(t *testing.T, data, section string) (string, bool) {
 	t.Helper()
-	var doc map[string]any
-	if errParse := yaml.Unmarshal([]byte(data), &doc); errParse != nil {
+	doc, errParse := ParseConfigDocument([]byte(data))
+	if errParse != nil {
 		t.Fatalf("parse config: %v", errParse)
 	}
 	management, _ := doc[section].(map[string]any)
@@ -69,7 +69,7 @@ func TestPrepareConfigFileForUploadHashesPlaintextSecret(t *testing.T) {
 		{name: "v8 layout", section: "management", other: "remote-management"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := writeUploadTestConfig(t, "# operator note\nport: 8317\n"+tc.section+":\n  secret-key: "+uploadTestPlaintextSecret+"\n")
+			path := writeUploadTestConfig(t, fmt.Sprintf("# operator note\nport = 8317\n[%s]\nsecret-key = %q\n", tc.section, uploadTestPlaintextSecret))
 
 			if errPrepare := PrepareConfigFileForUpload(path); errPrepare != nil {
 				t.Fatalf("PrepareConfigFileForUpload() error = %v", errPrepare)
@@ -79,7 +79,7 @@ func TestPrepareConfigFileForUploadHashesPlaintextSecret(t *testing.T) {
 			if strings.Contains(saved, uploadTestPlaintextSecret) {
 				t.Fatalf("config still holds the plaintext secret:\n%s", saved)
 			}
-			if !strings.Contains(saved, "# operator note") || !strings.Contains(saved, "port: 8317") {
+			if !strings.Contains(saved, "# operator note") || !strings.Contains(saved, "port = 8317") {
 				t.Fatalf("hashing dropped unrelated content:\n%s", saved)
 			}
 			assertUploadTestHashed(t, saved, tc.section)
@@ -100,7 +100,7 @@ func TestPrepareConfigFileForUploadIgnoresKeysSpelledLikeSecret(t *testing.T) {
 	}{
 		{
 			name:    "v8 secret spelled like its section",
-			content: "management:\n  secret-key: management\n",
+			content: "[management]\nsecret-key = \"management\"\n",
 			check: func(t *testing.T, saved string) {
 				secret, _ := uploadTestSecret(t, saved, "management")
 				if errCompare := bcrypt.CompareHashAndPassword([]byte(secret), []byte("management")); errCompare != nil {
@@ -110,7 +110,7 @@ func TestPrepareConfigFileForUploadIgnoresKeysSpelledLikeSecret(t *testing.T) {
 		},
 		{
 			name:    "overridden legacy secret spelled like the v8 section",
-			content: "remote-management:\n  secret-key: management\nmanagement:\n  secret-key: '" + hashed + "'\n",
+			content: "[remote-management]\nsecret-key = \"management\"\n[management]\nsecret-key = '" + hashed + "'\n",
 			check: func(t *testing.T, saved string) {
 				if secret, _ := uploadTestSecret(t, saved, "management"); secret != hashed {
 					t.Fatalf("management.secret-key = %q, want the existing hash kept:\n%s", secret, saved)
@@ -133,9 +133,9 @@ func TestPrepareConfigFileForUploadIgnoresKeysSpelledLikeSecret(t *testing.T) {
 	}
 }
 
-// A YAML null elsewhere is not the string secret "null", so it must not block the upload.
-func TestPrepareConfigFileForUploadIgnoresYAMLNullBesideStringNullSecret(t *testing.T) {
-	path := writeUploadTestConfig(t, "proxy-url: null\nmanagement:\n  secret-key: 'null'\n")
+// An absent setting is not the string secret "null", so it must not block the upload.
+func TestPrepareConfigFileForUploadIgnoresAbsentSettingBesideStringNullSecret(t *testing.T) {
+	path := writeUploadTestConfig(t, "[management]\nsecret-key = 'null'\n")
 
 	if errPrepare := PrepareConfigFileForUpload(path); errPrepare != nil {
 		t.Fatalf("PrepareConfigFileForUpload() error = %v", errPrepare)
@@ -157,10 +157,10 @@ func TestPrepareConfigFileForUploadDropsConflictingLegacySecret(t *testing.T) {
 		v8Secret string
 	}{
 		{name: "duplicated plaintext", v8Secret: uploadTestPlaintextSecret},
-		{name: "stale legacy beside hashed v8", v8Secret: "'" + hashed + "'"},
+		{name: "stale legacy beside hashed v8", v8Secret: hashed},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := writeUploadTestConfig(t, "remote-management:\n  secret-key: "+uploadTestPlaintextSecret+"\nmanagement:\n  secret-key: "+tc.v8Secret+"\n")
+			path := writeUploadTestConfig(t, fmt.Sprintf("[remote-management]\nsecret-key = %q\n[management]\nsecret-key = %q\n", uploadTestPlaintextSecret, tc.v8Secret))
 
 			if errPrepare := PrepareConfigFileForUpload(path); errPrepare != nil {
 				t.Fatalf("PrepareConfigFileForUpload() error = %v", errPrepare)
@@ -180,16 +180,16 @@ func TestPrepareConfigFileForUploadDropsConflictingLegacySecret(t *testing.T) {
 
 func TestPrepareConfigFileForUploadLeavesSettledConfigUntouched(t *testing.T) {
 	hashed := uploadTestBcrypt(t)
-	shippedTemplate, errTemplate := os.ReadFile(filepath.Join("..", "..", "config.example.yaml"))
+	shippedTemplate, errTemplate := os.ReadFile(filepath.Join("..", "..", "config.example.toml"))
 	if errTemplate != nil {
-		t.Fatalf("read config.example.yaml: %v", errTemplate)
+		t.Fatalf("read config.example.toml: %v", errTemplate)
 	}
 	for name, content := range map[string]string{
-		"hashed legacy secret": "# operator note\nremote-management:\n  secret-key: '" + hashed + "'\n",
-		"hashed v8 secret":     "# operator note\nmanagement:\n  secret-key: '" + hashed + "'\n",
-		"no secret":            "# operator note\nport: 8317\n",
-		"null v8 secret":       "# operator note\nmanagement:\n  secret-key: null\n",
-		"tilde legacy secret":  "# operator note\nremote-management:\n  secret-key: ~\n",
+		"hashed legacy secret": "# operator note\n[remote-management]\nsecret-key = '" + hashed + "'\n",
+		"hashed v8 secret":     "# operator note\n[management]\nsecret-key = '" + hashed + "'\n",
+		"no secret":            "# operator note\nport = 8317\n",
+		"empty v8 secret":      "# operator note\n[management]\nsecret-key = ''\n",
+		"empty legacy secret":  "# operator note\n[remote-management]\nsecret-key = ''\n",
 		"empty file":           "",
 		"shipped template":     string(shippedTemplate),
 	} {
@@ -215,9 +215,9 @@ func TestPrepareConfigFileForUploadReportsSecretItCannotHash(t *testing.T) {
 		content  string
 		readOnly bool
 	}{
-		{name: "unparsable", content: "remote-management:\n  secret-key: " + uploadTestPlaintextSecret + "\nport: [8317\n"},
-		{name: "secret too long for bcrypt", content: "remote-management:\n  secret-key: " + strings.Repeat("s", 73) + "\n"},
-		{name: "read-only file", content: "remote-management:\n  secret-key: " + uploadTestPlaintextSecret + "\n", readOnly: true},
+		{name: "unparsable", content: "port = [8317\n[remote-management]\nsecret-key = '" + uploadTestPlaintextSecret + "'\n"},
+		{name: "secret too long for bcrypt", content: "[remote-management]\nsecret-key = '" + strings.Repeat("s", 73) + "'\n"},
+		{name: "read-only file", content: "[remote-management]\nsecret-key = '" + uploadTestPlaintextSecret + "'\n", readOnly: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			path := writeUploadTestConfig(t, tc.content)
@@ -249,21 +249,16 @@ func TestPrepareConfigFileForUploadReportsSecretItCannotHash(t *testing.T) {
 	}
 }
 
-// Hashing replaces only the effective key. A YAML anchor keeps the plaintext at its
-// source, and rewriting the source could change other settings sharing it, so the file
-// must be refused and left as it was; otherwise a later call would find the key hashed
-// and accept the file with the plaintext still at the anchor.
-func TestPrepareConfigFileForUploadRefusesPlaintextKeptByReferences(t *testing.T) {
-	anchoredLegacy := "defaults: &legacy\n  secret-key: " + uploadTestPlaintextSecret + "\nremote-management: *legacy\nmanagement:\n  secret-key: "
+// Hashing replaces only the effective key. Plaintext copied into another setting
+// must still cause upload refusal rather than rewriting unrelated settings.
+func TestPrepareConfigFileForUploadRefusesPlaintextKeptElsewhere(t *testing.T) {
+	legacyWithCopy := "password = '" + uploadTestPlaintextSecret + "'\n[remote-management]\nsecret-key = '" + uploadTestPlaintextSecret + "'\n[management]\nsecret-key = "
 	for name, content := range map[string]string{
-		"mapping anchor": "defaults: &management\n  secret-key: " + uploadTestPlaintextSecret + "\nmanagement: *management\n",
-		"scalar anchor":  "password: &password " + uploadTestPlaintextSecret + "\nmanagement:\n  secret-key: *password\n",
-		"merge key":      "defaults: &management\n  secret-key: " + uploadTestPlaintextSecret + "\nmanagement:\n  <<: *management\n  allow-remote: true\n",
-		"shared anchor":  "management: &management\n  secret-key: " + uploadTestPlaintextSecret + "\nother: *management\n",
-		// The overridden legacy secret is dropped from remote-management, but its anchor
-		// still holds the plaintext.
-		"anchored legacy beside plaintext v8": anchoredLegacy + "current-plaintext-secret\n",
-		"anchored legacy beside hashed v8":    anchoredLegacy + "'" + uploadTestBcrypt(t) + "'\n",
+		"scalar copy":                     "password = '" + uploadTestPlaintextSecret + "'\n[management]\nsecret-key = '" + uploadTestPlaintextSecret + "'\n",
+		"mapping copy":                    "[management]\nsecret-key = '" + uploadTestPlaintextSecret + "'\n[other]\nsecret-key = '" + uploadTestPlaintextSecret + "'\n",
+		"array copy":                      "passwords = ['" + uploadTestPlaintextSecret + "']\n[management]\nsecret-key = '" + uploadTestPlaintextSecret + "'\n",
+		"legacy copy beside plaintext v8": legacyWithCopy + "'current-plaintext-secret'\n",
+		"legacy copy beside hashed v8":    legacyWithCopy + "'" + uploadTestBcrypt(t) + "'\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			path := writeUploadTestConfig(t, content)

@@ -48,7 +48,7 @@ type issue6631Harness struct {
 
 // newIssue6631Harness wires the real Service, watcher reload, API server, and
 // management handler. The first reload that reaches the server is paused after
-// it read config.yaml, so a test can land a management save in between.
+// it read config.toml, so a test can land a management save in between.
 func newIssue6631Harness(t *testing.T) *issue6631Harness {
 	t.Helper()
 	previousLevel := log.GetLevel()
@@ -63,8 +63,8 @@ func newIssue6631Harness(t *testing.T) *issue6631Harness {
 	if errHash != nil {
 		t.Fatal(errHash)
 	}
-	configPath := filepath.Join(dir, "config.yaml")
-	raw := fmt.Sprintf("port: 8317\nauth-dir: %q\ndebug: false\nrequest-retry: 3\nmax-retry-credentials: 0\nremote-management:\n  allow-remote: true\n  secret-key: %q\n", filepath.ToSlash(authDir), string(hashedKey))
+	configPath := filepath.Join(dir, "config.toml")
+	raw := fmt.Sprintf("port = 8317\nauth-dir = %q\ndebug = false\nrequest-retry = 3\nmax-retry-credentials = 0\n[remote-management]\nallow-remote = true\nsecret-key = %q\n", filepath.ToSlash(authDir), string(hashedKey))
 	if errWrite := os.WriteFile(configPath, []byte(raw), 0o600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -146,7 +146,7 @@ func (h *issue6631Harness) put(path, value string) {
 	}
 }
 
-// awaitFirstReload waits until the reload for the first save has read config.yaml.
+// awaitFirstReload waits until the reload for the first save has read config.toml.
 func (h *issue6631Harness) awaitFirstReload() issue6631Values {
 	h.t.Helper()
 	select {
@@ -206,7 +206,7 @@ func TestManagementSequentialWritesSurviveStaleReload_Issue6631(t *testing.T) {
 		t.Fatalf("first reload read %+v, want the config saved by the first write", read)
 	}
 	h.put("request-retry", "5")
-	// The reload that read config.yaml before the second save publishes now.
+	// The reload that read config.toml before the second save publishes now.
 	h.publishFirstReload()
 	h.put("max-retry-credentials", "7")
 
@@ -215,7 +215,7 @@ func TestManagementSequentialWritesSurviveStaleReload_Issue6631(t *testing.T) {
 	runtime := issue6631ValuesOf(h.service.currentConfig())
 	disk := h.disk()
 	if !published || runtime != want || disk != want {
-		t.Fatalf("after three acknowledged writes: published=%v runtime=%+v config.yaml=%+v, want %+v", published, runtime, disk, want)
+		t.Fatalf("after three acknowledged writes: published=%v runtime=%+v config.toml=%+v, want %+v", published, runtime, disk, want)
 	}
 }
 
@@ -232,6 +232,6 @@ func TestManagementWriteDuringReloadReachesRuntime_Issue6631(t *testing.T) {
 	runtime := issue6631ValuesOf(h.service.currentConfig())
 	disk := h.disk()
 	if !published || runtime != want || disk != want {
-		t.Fatalf("after two acknowledged writes: published=%v runtime=%+v config.yaml=%+v, want %+v", published, runtime, disk, want)
+		t.Fatalf("after two acknowledged writes: published=%v runtime=%+v config.toml=%+v, want %+v", published, runtime, disk, want)
 	}
 }

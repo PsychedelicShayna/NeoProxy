@@ -19,15 +19,18 @@ The host passes the same `RequestID` to request interception, response intercept
 
 ## Configuration
 
-```yaml
-plugins:
-  enabled: true
-  configs:
-    request-lifecycle:
-      enabled: true
-      priority: 100
-      max_concurrency: 2
-      reject_keyword: "blocked"
+```toml
+
+[plugins]
+enabled = true
+
+[plugins.configs]
+
+[plugins.configs.request-lifecycle]
+enabled = true
+priority = 100
+max_concurrency = 2
+reject_keyword = "blocked"
 ```
 
 Set `reject_keyword` to an empty string to disable keyword rejection.

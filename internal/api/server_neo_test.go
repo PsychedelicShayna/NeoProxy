@@ -88,7 +88,7 @@ func TestNeoAdminSessionsUseRealEngineManagementWithoutSecret(t *testing.T) {
 	t.Setenv("MANAGEMENT_PASSWORD", "operator-secret")
 	store, admin, token, _ := neoTestIdentity(t)
 	server := newTestServerWithOptions(t, WithNeoStore(store), WithRequestLoggerFactory(nil))
-	if err := os.WriteFile(server.configFilePath, []byte("port: 0\napi-keys: [test-key]\n"), 0600); err != nil {
+	if err := os.WriteFile(server.configFilePath, []byte("port = 0\napi-keys = ['test-key']\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	request := func(token, secret string) *httptest.ResponseRecorder {
@@ -246,7 +246,7 @@ func TestNeoDataDirectorySelectionAndExplicitLifecycle(t *testing.T) {
 		t.Fatal("empty SDK config created shared database")
 	}
 	dir := t.TempDir()
-	configured := &Server{configFilePath: filepath.Join(dir, "engine.yaml")}
+	configured := &Server{configFilePath: filepath.Join(dir, "engine.toml")}
 	configured.initNeo(nil)
 	if err := configured.neoStartupError(); err != nil {
 		t.Fatal(err)
@@ -259,7 +259,7 @@ func TestNeoDataDirectorySelectionAndExplicitLifecycle(t *testing.T) {
 	}
 	override := t.TempDir()
 	t.Setenv("NEOPROXY_DATA_DIR", override)
-	selected := &Server{configFilePath: filepath.Join(dir, "other.yaml")}
+	selected := &Server{configFilePath: filepath.Join(dir, "other.toml")}
 	selected.initNeo(nil)
 	if err := selected.neoStartupError(); err != nil {
 		t.Fatal(err)
@@ -338,7 +338,7 @@ func TestNeoSessionDoesNotEnableDeprecatedManagement(t *testing.T) {
 	t.Setenv("MANAGEMENT_PASSWORD", "")
 	store, _, token, _ := neoTestIdentity(t)
 	server := newTestServerWithOptions(t, WithNeoStore(store), WithRequestLoggerFactory(nil))
-	if err := os.WriteFile(server.configFilePath, []byte("port: 0\napi-keys: [test-key]\n"), 0600); err != nil {
+	if err := os.WriteFile(server.configFilePath, []byte("port = 0\napi-keys = ['test-key']\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {

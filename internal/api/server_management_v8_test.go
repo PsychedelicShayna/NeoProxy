@@ -30,8 +30,8 @@ func TestManagementV8RoutesShareAccessControl(t *testing.T) {
 		{"home", true, true, true, 404},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "config.yaml")
-			if err := os.WriteFile(path, []byte("port: 8317\nremote-management: {secret-key: test-password}\n"), 0600); err != nil {
+			path := filepath.Join(t.TempDir(), "config.toml")
+			if err := os.WriteFile(path, []byte("port = 8317\n[remote-management]\nsecret-key = \"test-password\"\n"), 0600); err != nil {
 				t.Fatal(err)
 			}
 			cfg, err := config.LoadConfig(path)
@@ -62,8 +62,8 @@ func TestManagementV8RoutesShareAccessControl(t *testing.T) {
 }
 
 func TestManagementV8IndependentContract(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "port: 8317\nrequest-retry: 3\ndebug: false\napi-keys: [client]\nremote-management: {secret-key: test-password}\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := "port = 8317\nrequest-retry = 3\ndebug = false\napi-keys = [\"client\"]\n[remote-management]\nsecret-key = \"test-password\"\n"
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -87,6 +87,8 @@ func TestManagementV8IndependentContract(t *testing.T) {
 	}
 	for _, route := range []string{
 		"GET /v0/management/debug", "PUT /v0/management/request-retry", "GET /v0/management/auth-files",
+		"GET /v0/management/config.yaml", "PUT /v0/management/config.yaml",
+		"GET /v8/management/config.toml", "PUT /v8/management/config.toml",
 		"GET /v8/management/observability/logs", "GET /v8/management/observability/usage/queue",
 		"GET /v8/management/credentials", "POST /v8/management/credentials",
 		"GET /v8/management/oauth/auth-url", "POST /v8/management/oauth/import", "POST /v8/management/oauth/callback",
@@ -114,6 +116,8 @@ func TestManagementV8IndependentContract(t *testing.T) {
 		request(http.MethodGet, "/v8/management/"+legacy, "", http.StatusNotFound)
 	}
 	for _, route := range []struct{ method, path string }{
+		{http.MethodGet, "/v8/management/config.yaml"},
+		{http.MethodPut, "/v8/management/config.yaml"},
 		{http.MethodGet, "/v8/management/credentials/quota/providers"},
 		{http.MethodPost, "/v8/management/credentials/quota/fetch"},
 		{http.MethodPost, "/v8/management/credentials/quota/reset"},
@@ -181,8 +185,8 @@ func TestManagementV8IndependentContract(t *testing.T) {
 
 func TestManagementV8PluginOperationMigratesConfiguration(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	raw := fmt.Sprintf("codex: {disable-codex-cloaking: true}\nremote-management: {secret-key: test-password}\nplugins:\n  dir: %q\n  configs: {test-plugin: {enabled: false}}\n", filepath.ToSlash(dir))
+	path := filepath.Join(dir, "config.toml")
+	raw := fmt.Sprintf("[codex]\ndisable-codex-cloaking = true\n[remote-management]\nsecret-key = \"test-password\"\n[plugins]\ndir = %q\n[plugins.configs.test-plugin]\nenabled = false\n", filepath.ToSlash(dir))
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +210,7 @@ func TestManagementV8PluginOperationMigratesConfiguration(t *testing.T) {
 		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
 	}
 	saved, err := os.ReadFile(path)
-	if err != nil || !strings.Contains(string(saved), "config-version: 8") {
+	if err != nil || !strings.Contains(string(saved), "config-version = 8") {
 		t.Fatalf("plugin operation did not migrate the config: %v", err)
 	}
 	select {

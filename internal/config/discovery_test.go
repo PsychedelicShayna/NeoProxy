@@ -3,12 +3,7 @@ package config
 import "testing"
 
 func TestParseConfigBytesDiscoveryIncludeOverridesDefaultExcludes(t *testing.T) {
-	cfg, err := ParseConfigBytes([]byte(`
-discovery:
-  enabled: true
-  interfaces:
-    include:
-      - docker0
+	cfg, err := ParseConfigBytes([]byte(`"discovery" = {"enabled" = true, "interfaces" = {"include" = ["docker0"]}}
 `))
 	if err != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", err)

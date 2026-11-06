@@ -18,14 +18,14 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"github.com/router-for-me/CLIProxyAPI/v8/internal/misc"
 	cliproxyauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	objectStoreConfigKey  = "config/config.yaml"
-	objectStoreAuthPrefix = "auths"
+	objectStoreConfigKey       = "config/config.toml"
+	objectStoreLegacyConfigKey = "config/config.yaml"
+	objectStoreAuthPrefix      = "auths"
 )
 
 // ObjectStoreConfig captures configuration for the object storage-backed token store.
@@ -115,7 +115,7 @@ func NewObjectTokenStore(cfg ObjectStoreConfig) (*ObjectTokenStore, error) {
 		client:     client,
 		cfg:        cfg,
 		spoolRoot:  absRoot,
-		configPath: filepath.Join(configDir, "config.yaml"),
+		configPath: filepath.Join(configDir, "config.toml"),
 		authDir:    authDir,
 	}, nil
 }
@@ -346,7 +346,7 @@ func (s *ObjectTokenStore) PersistConfig(ctx context.Context) error {
 	if len(data) == 0 {
 		return s.deleteObject(ctx, objectStoreConfigKey)
 	}
-	return s.putObject(ctx, objectStoreConfigKey, data, "application/x-yaml")
+	return s.putObject(ctx, objectStoreConfigKey, data, "application/toml")
 }
 
 func (s *ObjectTokenStore) ensureBucket(ctx context.Context) error {
@@ -366,6 +366,19 @@ func (s *ObjectTokenStore) ensureBucket(ctx context.Context) error {
 func (s *ObjectTokenStore) syncConfigFromBucket(ctx context.Context, example string) error {
 	key := s.prefixedKey(objectStoreConfigKey)
 	_, err := s.client.StatObject(ctx, s.cfg.Bucket, key, minio.StatObjectOptions{})
+	legacy := false
+	if isObjectNotFound(err) {
+		key = s.prefixedKey(objectStoreLegacyConfigKey)
+		_, err = s.client.StatObject(ctx, s.cfg.Bucket, key, minio.StatObjectOptions{})
+		legacy = err == nil
+	} else if err == nil {
+		_, errLegacy := s.client.StatObject(ctx, s.cfg.Bucket, s.prefixedKey(objectStoreLegacyConfigKey), minio.StatObjectOptions{})
+		if errLegacy == nil {
+			log.Warn("object store: both TOML and legacy config objects exist; using TOML")
+		} else if !isObjectNotFound(errLegacy) {
+			return fmt.Errorf("object store: inspect legacy config: %w", errLegacy)
+		}
+	}
 	switch {
 	case err == nil:
 		object, errGet := s.client.GetObject(ctx, s.cfg.Bucket, key, minio.GetObjectOptions{})
@@ -377,20 +390,49 @@ func (s *ObjectTokenStore) syncConfigFromBucket(ctx context.Context, example str
 		if errRead != nil {
 			return fmt.Errorf("object store: read config: %w", errRead)
 		}
-		if errWrite := os.WriteFile(s.configPath, normalizeLineEndingsBytes(data), 0o600); errWrite != nil {
+		data = normalizeLineEndingsBytes(data)
+		if legacy {
+			// Keep the legacy object intact and publish a separate canonical object.
+			if _, errStat := os.Stat(s.configPath); errors.Is(errStat, fs.ErrNotExist) {
+				var errConvert error
+				data, errConvert = config.YAMLToTOML(data)
+				if errConvert != nil {
+					return fmt.Errorf("object store: import legacy config: %w", errConvert)
+				}
+				if errWrite := config.WriteConfigFile(s.configPath, data, 0o600); errWrite != nil {
+					return fmt.Errorf("object store: write imported config: %w", errWrite)
+				}
+			} else if errStat != nil {
+				return fmt.Errorf("object store: stat local config: %w", errStat)
+			} else {
+				log.Warn("object store: local TOML config exists; ignoring legacy config object")
+			}
+			if errPrepare := config.PrepareConfigFileForUpload(s.configPath); errPrepare != nil {
+				return fmt.Errorf("object store: prepare imported config: %w", errPrepare)
+			}
+			data, err = os.ReadFile(s.configPath)
+			if err != nil {
+				return fmt.Errorf("object store: read imported config: %w", err)
+			}
+			return s.putObject(ctx, objectStoreConfigKey, data, "application/toml")
+		}
+		if errWrite := config.WriteConfigFile(s.configPath, data, 0o600); errWrite != nil {
 			return fmt.Errorf("object store: write config: %w", errWrite)
 		}
 	case isObjectNotFound(err):
+		if _, errResolve := config.ResolveConfigPath(s.configPath); errResolve != nil {
+			return fmt.Errorf("object store: import local config: %w", errResolve)
+		}
 		if _, statErr := os.Stat(s.configPath); errors.Is(statErr, fs.ErrNotExist) {
 			if example != "" {
-				if errCopy := misc.CopyConfigTemplate(example, s.configPath); errCopy != nil {
+				if errCopy := config.CopyConfigTemplate(example, s.configPath); errCopy != nil {
 					return fmt.Errorf("object store: copy example config: %w", errCopy)
 				}
 			} else {
 				if errCreate := os.MkdirAll(filepath.Dir(s.configPath), 0o700); errCreate != nil {
 					return fmt.Errorf("object store: prepare config directory: %w", errCreate)
 				}
-				if errWrite := os.WriteFile(s.configPath, []byte{}, 0o600); errWrite != nil {
+				if errWrite := config.WriteConfigFile(s.configPath, []byte{}, 0o600); errWrite != nil {
 					return fmt.Errorf("object store: create empty config: %w", errWrite)
 				}
 			}
@@ -406,7 +448,7 @@ func (s *ObjectTokenStore) syncConfigFromBucket(ctx context.Context, example str
 			return fmt.Errorf("object store: read local config: %w", errRead)
 		}
 		if len(data) > 0 {
-			if errPut := s.putObject(ctx, objectStoreConfigKey, data, "application/x-yaml"); errPut != nil {
+			if errPut := s.putObject(ctx, objectStoreConfigKey, data, "application/toml"); errPut != nil {
 				return errPut
 			}
 		}

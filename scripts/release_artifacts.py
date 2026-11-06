@@ -29,7 +29,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCUMENTS = {"LICENSE": "LICENSE", "README.md": "README.md",
-             "config.example.yaml": "config.example.yaml", "docs/downloads.md": "DOWNLOADS.md"}
+             "config.example.toml": "config.example.toml", "docs/downloads.md": "DOWNLOADS.md"}
 
 
 def require(condition, message):

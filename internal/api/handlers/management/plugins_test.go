@@ -18,7 +18,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginhost"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
-	"gopkg.in/yaml.v3"
 )
 
 func waitForAsyncReload(t *testing.T, reloads <-chan *config.Config) *config.Config {
@@ -58,7 +57,7 @@ func TestConfigReloadGenerationSkipsOlderSnapshot(t *testing.T) {
 		cfg: &config.Config{
 			Plugins: config.PluginsConfig{
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample": pluginConfigFromYAML(t, "enabled: true\nmode: old\n"),
+					"sample": pluginConfigFromTOML(t, "enabled = true\nmode = \"old\"\n"),
 				},
 			},
 		},
@@ -194,7 +193,7 @@ func TestListPluginsUsesConfiguredStoreVersionWhenFilesCoexist(t *testing.T) {
 				Enabled: true,
 				Dir:     pluginsDir,
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample-provider": pluginConfigFromYAML(t, "enabled: true\nstore:\n  version: 0.1.0\n"),
+					"sample-provider": pluginConfigFromTOML(t, "enabled = true\n[store]\nversion = \"0.1.0\"\n"),
 				},
 			},
 		},
@@ -233,16 +232,14 @@ func TestGetPluginConfigReturnsPreservedRawConfig(t *testing.T) {
 		cfg: &config.Config{
 			Plugins: config.PluginsConfig{
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample": pluginConfigFromYAML(t, `
-enabled: false
-priority: 7
-mode: safe
-allowed_models:
-  - gemini-2.5-pro
-  - claude-sonnet-4
-options:
-  retries: 2
-  strict: true
+					"sample": pluginConfigFromTOML(t, `
+enabled = false
+priority = 7
+mode = "safe"
+allowed_models = ["gemini-2.5-pro", "claude-sonnet-4"]
+[options]
+retries = 2
+strict = true
 `),
 				},
 			},
@@ -342,7 +339,7 @@ func TestPatchPluginEnabledUpdatesOnlyPluginConfig(t *testing.T) {
 			Plugins: config.PluginsConfig{
 				Enabled: false,
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample": pluginConfigFromYAML(t, "enabled: false\npriority: 2\nmode: safe\n"),
+					"sample": pluginConfigFromTOML(t, "enabled = false\npriority = 2\nmode = \"safe\"\n"),
 				},
 			},
 		},
@@ -373,7 +370,7 @@ func TestPatchPluginEnabledUpdatesOnlyPluginConfig(t *testing.T) {
 	if snapshotItem.Enabled == nil || !*snapshotItem.Enabled {
 		t.Fatalf("snapshot sample enabled = %#v, want true", snapshotItem.Enabled)
 	}
-	if raw := marshalPluginRaw(t, snapshotItem); !strings.Contains(raw, "mode: safe") {
+	if raw := marshalPluginRaw(t, snapshotItem); !strings.Contains(raw, "mode = 'safe'") {
 		t.Fatalf("snapshot raw config lost custom field:\n%s", raw)
 	}
 	if h.cfg.Plugins.Enabled {
@@ -384,7 +381,7 @@ func TestPatchPluginEnabledUpdatesOnlyPluginConfig(t *testing.T) {
 		t.Fatalf("sample enabled = %#v, want true", item.Enabled)
 	}
 	raw := marshalPluginRaw(t, item)
-	if !strings.Contains(raw, "mode: safe") {
+	if !strings.Contains(raw, "mode = 'safe'") {
 		t.Fatalf("raw config lost custom field:\n%s", raw)
 	}
 }
@@ -395,7 +392,7 @@ func TestPatchPluginEnabledReloadSnapshotRawImmutability(t *testing.T) {
 		cfg: &config.Config{
 			Plugins: config.PluginsConfig{
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample": pluginConfigFromYAML(t, "enabled: false\nmode: first\n"),
+					"sample": pluginConfigFromTOML(t, "enabled = false\nmode = \"first\"\n"),
 				},
 			},
 		},
@@ -459,7 +456,7 @@ func TestPutPluginConfigReplacesPluginConfig(t *testing.T) {
 		cfg: &config.Config{
 			Plugins: config.PluginsConfig{
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample": pluginConfigFromYAML(t, "enabled: false\nmode: safe\nold: true\n"),
+					"sample": pluginConfigFromTOML(t, "enabled = false\nmode = \"safe\"\nold = true\n"),
 				},
 			},
 		},
@@ -482,7 +479,7 @@ func TestPutPluginConfigReplacesPluginConfig(t *testing.T) {
 		t.Fatalf("plugin host fields = enabled %#v priority %d, want true priority 7", item.Enabled, item.Priority)
 	}
 	raw := marshalPluginRaw(t, item)
-	if !strings.Contains(raw, "mode: fast") || strings.Contains(raw, "old:") {
+	if !strings.Contains(raw, "mode = 'fast'") || strings.Contains(raw, "old =") {
 		t.Fatalf("raw config =\n%s", raw)
 	}
 }
@@ -494,7 +491,7 @@ func TestPatchPluginConfigMergesAndDeletesFields(t *testing.T) {
 		cfg: &config.Config{
 			Plugins: config.PluginsConfig{
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample": pluginConfigFromYAML(t, "enabled: false\npriority: 3\nmode: safe\nremove: yes\n"),
+					"sample": pluginConfigFromTOML(t, "enabled = false\npriority = 3\nmode = \"safe\"\nremove = \"yes\"\n"),
 				},
 			},
 		},
@@ -517,7 +514,7 @@ func TestPatchPluginConfigMergesAndDeletesFields(t *testing.T) {
 		t.Fatalf("plugin host fields = enabled %#v priority %d, want false priority 3", item.Enabled, item.Priority)
 	}
 	raw := marshalPluginRaw(t, item)
-	if !strings.Contains(raw, "mode: fast") || !strings.Contains(raw, "count: 3") || strings.Contains(raw, "remove:") {
+	if !strings.Contains(raw, "mode = 'fast'") || !strings.Contains(raw, "count = 3") || strings.Contains(raw, "remove =") {
 		t.Fatalf("raw config =\n%s", raw)
 	}
 }
@@ -542,7 +539,7 @@ func TestDeletePluginRejectsUnresolvedPluginsDir(t *testing.T) {
 			Plugins: config.PluginsConfig{
 				Dir: "~/.cli-proxy-api/plugins",
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample": pluginConfigFromYAML(t, "enabled: false\n"),
+					"sample": pluginConfigFromTOML(t, "enabled = false\n"),
 				},
 			},
 		},
@@ -577,8 +574,8 @@ func TestDeletePluginRemovesDiscoveredFileAndConfig(t *testing.T) {
 	t.Parallel()
 
 	pluginsDir := writeManagementPluginFile(t, "sample")
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	if errWrite := os.WriteFile(configPath, []byte("plugins:\n  configs:\n    sample:\n      enabled: true\n      mode: safe\n    keep:\n      enabled: true\n      mode: retained\n"), 0o600); errWrite != nil {
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	if errWrite := os.WriteFile(configPath, []byte("[plugins.configs.sample]\nenabled = true\nmode = \"safe\"\n[plugins.configs.keep]\nenabled = true\nmode = \"retained\"\n"), 0o600); errWrite != nil {
 		t.Fatalf("failed to write test config: %v", errWrite)
 	}
 	h := &Handler{
@@ -586,8 +583,8 @@ func TestDeletePluginRemovesDiscoveredFileAndConfig(t *testing.T) {
 			Plugins: config.PluginsConfig{
 				Dir: pluginsDir,
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample": pluginConfigFromYAML(t, "enabled: true\nmode: safe\n"),
-					"keep":   pluginConfigFromYAML(t, "enabled: true\nmode: retained\n"),
+					"sample": pluginConfigFromTOML(t, "enabled = true\nmode = \"safe\"\n"),
+					"keep":   pluginConfigFromTOML(t, "enabled = true\nmode = \"retained\"\n"),
 				},
 			},
 		},
@@ -641,10 +638,10 @@ func TestDeletePluginRemovesDiscoveredFileAndConfig(t *testing.T) {
 		t.Fatalf("failed to read saved config: %v", errReadConfig)
 	}
 	text := string(data)
-	if strings.Contains(text, "sample:") || strings.Contains(text, "mode: safe") {
+	if strings.Contains(text, "[plugins.configs.sample]") || strings.Contains(text, "mode = 'safe'") {
 		t.Fatalf("saved config still contains removed plugin:\n%s", text)
 	}
-	if !strings.Contains(text, "keep:") || !strings.Contains(text, "mode: retained") {
+	if !strings.Contains(text, "[plugins.configs.keep]") || !strings.Contains(text, "mode = 'retained'") {
 		t.Fatalf("saved config lost retained plugin:\n%s", text)
 	}
 	if _, errStat := os.Stat(path); !os.IsNotExist(errStat) {
@@ -686,7 +683,7 @@ func TestDeletePluginUsesConfiguredStoreVersionWhenFilesCoexist(t *testing.T) {
 			Plugins: config.PluginsConfig{
 				Dir: pluginsDir,
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample-provider": pluginConfigFromYAML(t, "enabled: true\nstore:\n  version: 0.1.0\n"),
+					"sample-provider": pluginConfigFromTOML(t, "enabled = true\n[store]\nversion = \"0.1.0\"\n"),
 				},
 			},
 		},
@@ -851,18 +848,22 @@ func managementPluginExtension(goos string) string {
 	}
 }
 
-func pluginConfigFromYAML(t *testing.T, text string) config.PluginInstanceConfig {
+func pluginConfigFromTOML(t *testing.T, text string) config.PluginInstanceConfig {
 	t.Helper()
-	var item config.PluginInstanceConfig
-	if errUnmarshal := yaml.Unmarshal([]byte(text), &item); errUnmarshal != nil {
-		t.Fatalf("unmarshal plugin config: %v", errUnmarshal)
+	raw, errParse := config.ParseConfigDocument([]byte(text))
+	if errParse != nil {
+		t.Fatalf("parse plugin config: %v", errParse)
+	}
+	item, errConfig := config.PluginInstanceConfigFromMap(raw)
+	if errConfig != nil {
+		t.Fatalf("decode plugin config: %v", errConfig)
 	}
 	return item
 }
 
 func marshalPluginRaw(t *testing.T, item config.PluginInstanceConfig) string {
 	t.Helper()
-	data, errMarshal := yaml.Marshal(&item.Raw)
+	data, errMarshal := config.MarshalTOML(item.Raw)
 	if errMarshal != nil {
 		t.Fatalf("marshal plugin raw: %v", errMarshal)
 	}
@@ -871,22 +872,17 @@ func marshalPluginRaw(t *testing.T, item config.PluginInstanceConfig) string {
 
 func pluginRawScalarValue(t *testing.T, item config.PluginInstanceConfig, key string) string {
 	t.Helper()
-	for i := 0; i+1 < len(item.Raw.Content); i += 2 {
-		if item.Raw.Content[i] != nil && item.Raw.Content[i].Value == key && item.Raw.Content[i+1] != nil {
-			return item.Raw.Content[i+1].Value
-		}
+	value, ok := item.Raw[key].(string)
+	if !ok {
+		t.Fatalf("plugin raw missing string key %q", key)
 	}
-	t.Fatalf("plugin raw missing scalar key %q", key)
-	return ""
+	return value
 }
 
-func setPluginRawScalarValue(t *testing.T, node *yaml.Node, key, value string) {
+func setPluginRawScalarValue(t *testing.T, raw *map[string]any, key, value string) {
 	t.Helper()
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		if node.Content[i] != nil && node.Content[i].Value == key && node.Content[i+1] != nil {
-			node.Content[i+1].Value = value
-			return
-		}
+	if _, ok := (*raw)[key]; !ok {
+		t.Fatalf("plugin raw missing scalar key %q", key)
 	}
-	t.Fatalf("plugin raw missing scalar key %q", key)
+	(*raw)[key] = value
 }

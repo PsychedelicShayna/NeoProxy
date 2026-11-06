@@ -25,7 +25,7 @@ type loadedPlugin struct {
 	path             string
 	version          string
 	name             string
-	configYAML       []byte
+	configTOML       []byte
 	plugin           pluginapi.Plugin
 	registered       bool
 	client           pluginClient
@@ -1071,11 +1071,11 @@ func (h *Host) rollbackReplacement(lp *loadedPlugin, item runtimeItemConfig) (ca
 		return capabilityRecord{}, pluginFile{}, false
 	}
 	h.mu.Lock()
-	configYAML := bytes.Clone(lp.configYAML)
+	configTOML := bytes.Clone(lp.configTOML)
 	previousPlugin := lp.plugin
 	h.mu.Unlock()
-	if len(configYAML) > 0 {
-		item.ConfigYAML = configYAML
+	if len(configTOML) > 0 {
+		item.ConfigTOML = configTOML
 	}
 
 	plugin, okCall := h.callRegister(context.Background(), lp, item)
@@ -1117,7 +1117,7 @@ func (h *Host) callRegister(ctx context.Context, lp *loadedPlugin, item runtimeI
 	}
 
 	plugin, okCall := h.safePluginCall(ctx, lp.id, method, func() pluginapi.Plugin {
-		plugin, errRegister := registerRPCPlugin(ctx, h, lp.id, lp.client, method, item.ConfigYAML)
+		plugin, errRegister := registerRPCPlugin(ctx, h, lp.id, lp.client, method, item.ConfigTOML)
 		if errRegister != nil {
 			log.Warnf("pluginhost: plugin %s %s failed: %v", lp.id, method, errRegister)
 			return pluginapi.Plugin{}
@@ -1140,7 +1140,7 @@ func (h *Host) callRegister(ctx context.Context, lp *loadedPlugin, item runtimeI
 	if strings.TrimSpace(lp.version) == "" {
 		lp.version = strings.TrimSpace(plugin.Metadata.Version)
 	}
-	lp.configYAML = bytes.Clone(item.ConfigYAML)
+	lp.configTOML = bytes.Clone(item.ConfigTOML)
 	lp.plugin = plugin
 	h.mu.Unlock()
 	return plugin, true

@@ -8,7 +8,6 @@ import (
 	internalregistry "github.com/router-for-me/CLIProxyAPI/v8/internal/registry"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
-	"gopkg.in/yaml.v3"
 )
 
 // ModelInfo describes a plugin-provided model using public plugin SDK types.
@@ -36,11 +35,11 @@ type RuntimeConfig struct {
 	Configs             map[string]PluginInstanceConfig
 }
 
-// PluginInstanceConfig stores host-owned plugin settings and the original plugin YAML subtree.
+// PluginInstanceConfig stores host-owned settings and the original plugin TOML table.
 type PluginInstanceConfig struct {
-	Enabled  *bool
-	Priority int
-	Raw      yaml.Node
+	Enabled  *bool          `toml:"enabled"`
+	Priority int            `toml:"priority"`
+	Raw      map[string]any `toml:"-"`
 }
 
 // AuthModelResult is the public result for per-auth model discovery.
@@ -241,7 +240,7 @@ func pluginConfigsToInternal(in map[string]PluginInstanceConfig) map[string]inte
 		out[id] = internalconfig.PluginInstanceConfig{
 			Enabled:  item.Enabled,
 			Priority: item.Priority,
-			Raw:      *deepCopyYAMLNode(&item.Raw),
+			Raw:      clonePluginConfigMap(item.Raw),
 		}
 	}
 	return out
@@ -345,16 +344,34 @@ func cloneStringSliceMap(in map[string][]string) map[string][]string {
 	return out
 }
 
-func deepCopyYAMLNode(node *yaml.Node) *yaml.Node {
-	if node == nil {
-		return &yaml.Node{}
+func clonePluginConfigMap(in map[string]any) map[string]any {
+	if in == nil {
+		return nil
 	}
-	copyNode := *node
-	if len(node.Content) > 0 {
-		copyNode.Content = make([]*yaml.Node, 0, len(node.Content))
-		for _, child := range node.Content {
-			copyNode.Content = append(copyNode.Content, deepCopyYAMLNode(child))
+	out := make(map[string]any, len(in))
+	for key, value := range in {
+		out[key] = clonePluginConfigValue(value)
+	}
+	return out
+}
+
+func clonePluginConfigValue(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		return clonePluginConfigMap(value)
+	case []any:
+		out := make([]any, len(value))
+		for index, item := range value {
+			out[index] = clonePluginConfigValue(item)
 		}
+		return out
+	case []map[string]any:
+		out := make([]map[string]any, len(value))
+		for index, item := range value {
+			out[index] = clonePluginConfigMap(item)
+		}
+		return out
+	default:
+		return value
 	}
-	return &copyNode
 }

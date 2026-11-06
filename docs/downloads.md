@@ -165,7 +165,7 @@ Every published archive passes real server startup, administrator bootstrap,
 user/key creation, session login/logout, restart persistence and SQLite integrity
 checks on its own native CI runner. A successful `go build` alone is not the
 release check. The archive contains only `neoproxy` (or `neoproxy.exe`), `LICENSE`,
-`README.md`, `DOWNLOADS.md`, `config.example.yaml` and `BUILD.json`. The manifest
+`README.md`, `DOWNLOADS.md`, `config.example.toml` and `BUILD.json`. The manifest
 records the full source commit, Go version, platform, CGO setting, plugin variant
 and binary SHA-256. No runtime configuration, database or credentials are shipped.
 
@@ -227,7 +227,7 @@ extract it with `tar -xzf`. macOS may request approval for the unsigned executab
 
 These steps are for the administrator of a **new local instance**, not an office
 member connecting to the shared service. There are no default users or passwords.
-The large `config.example.yaml` describes all engine options; do not expose its
+The large `config.example.toml` describes all engine options; do not expose its
 placeholder client keys as real access credentials. Generate this minimal private
 configuration instead. Keep the operator secret in a password manager **before
 first launch**: the engine may replace its plaintext configuration value with a
@@ -238,22 +238,32 @@ hash. It is separate from ordinary dashboard passwords and inference keys.
 Run in the extracted directory. This refuses to overwrite an existing instance.
 
 ```powershell
-if (Test-Path config.yaml) { throw "config.yaml already exists; do not overwrite it" }
+if ((Test-Path config.toml) -or (Test-Path config.yaml) -or (Test-Path config.yml)) { throw "Configuration already exists; do not overwrite it" }
 $random = New-Object byte[] 32
 $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
 try { $rng.GetBytes($random) } finally { $rng.Dispose() }
 $operator = -join ($random | ForEach-Object { $_.ToString("x2") })
-$config = @{
-  'config-version' = 8
-  server = @{ host = '127.0.0.1'; port = 8317; discovery = @{ enabled = $false } }
-  management = @{ 'secret-key' = $operator; 'disable-control-panel' = $false; 'disable-auto-update-panel' = $true }
-  oauth = @{ 'auth-dir' = (Join-Path (Get-Location) 'auths') }
-  access = @{ 'api-keys' = @() }
-}
-$config | ConvertTo-Json -Depth 8 | Set-Content -Encoding UTF8 config.yaml
-notepad .\config.yaml
+$authDir = (Join-Path (Get-Location) 'auths') | ConvertTo-Json -Compress
+$config = @"
+config-version = 8
+[server]
+host = "127.0.0.1"
+port = 8317
+[server.discovery]
+enabled = false
+[management]
+secret-key = "$operator"
+disable-control-panel = false
+disable-auto-update-panel = true
+[oauth]
+auth-dir = $authDir
+[access]
+api-keys = []
+"@
+[IO.File]::WriteAllText((Join-Path (Get-Location) 'config.toml'), $config, (New-Object Text.UTF8Encoding $false))
+notepad .\config.toml
 # Save the generated management secret in your password manager, then close Notepad.
-.\neoproxy.exe --config .\config.yaml --local-model
+.\neoproxy.exe --config .\config.toml --local-model
 ```
 
 The configuration is under your private user directory. For a shared Windows
@@ -264,29 +274,45 @@ the service account and administrator before accepting users.
 
 The following one-time configuration generator uses Python 3; the running proxy
 itself does not require Python or Go. An administrator may instead create the
-same JSON/YAML using their normal private configuration tooling.
+same TOML using their normal private configuration tooling.
 
 ```sh
 umask 077
 python3 - <<'PY'
 import json, secrets
 from pathlib import Path
-config = {
-    "config-version": 8,
-    "server": {"host": "127.0.0.1", "port": 8317, "discovery": {"enabled": False}},
-    "management": {"secret-key": secrets.token_hex(32), "disable-control-panel": False,
-                   "disable-auto-update-panel": True},
-    "oauth": {"auth-dir": str(Path("auths").resolve())},
-    "access": {"api-keys": []},
-}
-with open("config.yaml", "x", encoding="utf-8") as output:
-    json.dump(config, output, indent=2)
-    output.write("\n")
+if Path("config.yaml").exists() or Path("config.yml").exists():
+    raise SystemExit("Legacy configuration exists; start the engine to import it instead")
+config = f"""config-version = 8
+[server]
+host = "127.0.0.1"
+port = 8317
+[server.discovery]
+enabled = false
+[management]
+secret-key = "{secrets.token_hex(32)}"
+disable-control-panel = false
+disable-auto-update-panel = true
+[oauth]
+auth-dir = {json.dumps(str(Path("auths").resolve()), ensure_ascii=False)}
+[access]
+api-keys = []
+"""
+with open("config.toml", "x", encoding="utf-8") as output:
+    output.write(config)
 PY
-${EDITOR:-vi} config.yaml
+${EDITOR:-vi} config.toml
 # Save the generated management secret in your password manager before starting.
-./neoproxy --config ./config.yaml --local-model
+./neoproxy --config ./config.toml --local-model
 ```
+
+For an existing instance, do not run these generators over its configuration.
+Starting with a YAML path (or with the default `config.yaml` present) imports it
+once to a sibling `.toml` file. An existing TOML sibling takes precedence. The
+import is atomic, keeps the source permissions, and never edits the YAML source.
+The engine, dashboard saves, and watcher then use that TOML sibling. Saves retain
+existing key/table comments and order where possible; layout migration may move
+comments. Keep the original YAML as a reference.
 
 Keep `management.disable-control-panel` set to `false`: `true` removes the
 dashboard and `/neo/` returns 404. Open **http://127.0.0.1:8317/neo/**. Choose

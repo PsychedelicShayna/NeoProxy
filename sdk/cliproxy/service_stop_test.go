@@ -96,8 +96,8 @@ func TestServiceRun_ShutdownContextFreshAtExit(t *testing.T) {
 		AuthDir: authDir,
 	}
 
-	cfgPath := filepath.Join(authDir, "config.yaml")
-	if errWrite := os.WriteFile(cfgPath, []byte("{}"), 0o644); errWrite != nil {
+	cfgPath := filepath.Join(authDir, "config.toml")
+	if errWrite := os.WriteFile(cfgPath, nil, 0o644); errWrite != nil {
 		t.Fatalf("failed to write dummy config: %v", errWrite)
 	}
 

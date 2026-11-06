@@ -6,8 +6,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 // models.devin-catalog and the devin block's sensitive-words were retired with
@@ -21,18 +19,18 @@ func TestRetiredDevinKeysAreIgnored(t *testing.T) {
 		retired   []string
 		v8        bool
 	}{
-		{"legacy", "port: 8317\ndevin: {sensitive-words: [secret-word]}\n",
+		{"legacy", "\"port\" = 8317\n\"devin\" = {\"sensitive-words\" = [\"secret-word\"]}\n",
 			[]string{"devin"}, false},
-		{"legacy with catalogs", "port: 8317\nmodels: {codex-catalog: 'https://example.com/codex.json', devin-catalog: 'https://example.com/devin.json'}\ndevin: {sensitive-words: [secret-word]}\n",
+		{"legacy with catalogs", "\"port\" = 8317\n\"models\" = {\"codex-catalog\" = \"https://example.com/codex.json\", \"devin-catalog\" = \"https://example.com/devin.json\"}\n\"devin\" = {\"sensitive-words\" = [\"secret-word\"]}\n",
 			[]string{"devin", "models.devin-catalog"}, true},
-		{"v8", "config-version: 8\nserver: {port: 8317}\nmodels: {codex-catalog: 'https://example.com/codex.json', devin-catalog: 'https://example.com/devin.json'}\noauth: {providers: {devin: {sensitive-words: [secret-word]}}}\n",
+		{"v8", "\"config-version\" = 8\n\"server\" = {\"port\" = 8317}\n\"models\" = {\"codex-catalog\" = \"https://example.com/codex.json\", \"devin-catalog\" = \"https://example.com/devin.json\"}\n\"oauth\" = {\"providers\" = {\"devin\" = {\"sensitive-words\" = [\"secret-word\"]}}}\n",
 			[]string{"models.devin-catalog", "oauth.providers.devin"}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var warned []string
 			SetV8MigrationWarnFunc(func(section, _ string) { warned = append(warned, section) })
 			t.Cleanup(func() { SetV8MigrationWarnFunc(nil) })
-			path := filepath.Join(t.TempDir(), "config.yaml")
+			path := filepath.Join(t.TempDir(), "config.toml")
 			if err := os.WriteFile(path, []byte(tc.raw), 0o600); err != nil {
 				t.Fatal(err)
 			}
@@ -47,12 +45,12 @@ func TestRetiredDevinKeysAreIgnored(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var doc yaml.Node
-			if err = yaml.Unmarshal(saved, &doc); err != nil {
+			doc, err := ParseConfigDocument(saved)
+			if err != nil {
 				t.Fatal(err)
 			}
 			for _, retired := range tc.retired {
-				if yamlPath(doc.Content[0], retired) != nil {
+				if _, exists := mapPath(doc, retired); exists {
 					t.Fatalf("save wrote retired %s back:\n%s", retired, saved)
 				}
 			}

@@ -54,7 +54,7 @@ func TestResolveCooldownStateStoreUsesCapturedBackendProvider(t *testing.T) {
 	}
 	service, errBuild := NewBuilder().
 		WithConfig(cfg).
-		WithConfigPath(filepath.Join(t.TempDir(), "config.yaml")).
+		WithConfigPath(filepath.Join(t.TempDir(), "config.toml")).
 		Build()
 	if errBuild != nil {
 		t.Fatalf("Build() error = %v", errBuild)

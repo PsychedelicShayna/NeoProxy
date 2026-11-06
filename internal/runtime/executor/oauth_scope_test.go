@@ -39,12 +39,16 @@ func TestV8SharedUpstreamRequestSettingsAffectBothAuthKinds(t *testing.T) {
 						_, _ = w.Write([]byte(`{"error":{"message":"captured request"}}`))
 					}))
 					defer server.Close()
-					cfg, err := config.ParseConfigBytes([]byte(`proxy-url: direct
-disable-image-generation: true
-client: {codex: {optimize-multi-agent-v2: true}}
-upstream:
-  codex: {orphan-delegation-compatibility: true}
-  xai: {inject-x-search: true}
+					cfg, err := config.ParseConfigBytes([]byte(`[requests]
+proxy-url = 'direct'
+[multimedia]
+disable-image-generation = true
+[client.codex]
+optimize-multi-agent-v2 = true
+[upstream.codex]
+orphan-delegation-compatibility = true
+[upstream.xai]
+inject-x-search = true
 `))
 					if err != nil {
 						t.Fatal(err)
@@ -99,7 +103,7 @@ upstream:
 }
 
 func TestV8ScopedExecutorsPreserveWebsocketStores(t *testing.T) {
-	cfg, err := config.ParseConfigBytes([]byte("upstream: {codex: {response-steering: true}, xai: {inject-x-search: true}}\noauth: {providers: {codex: {live-media-relay: {max-sessions: 12}}}}"))
+	cfg, err := config.ParseConfigBytes([]byte("[upstream.codex]\nresponse-steering = true\n[upstream.xai]\ninject-x-search = true\n[oauth.providers.codex.live-media-relay]\nmax-sessions = 12\n"))
 	if err != nil {
 		t.Fatal(err)
 	}

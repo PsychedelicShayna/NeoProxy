@@ -35,7 +35,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/http2"
-	"gopkg.in/yaml.v3"
 )
 
 // Server represents the main API server.
@@ -62,9 +61,9 @@ type Server struct {
 	cfgMu sync.RWMutex
 	cfg   *config.Config
 
-	// oldConfigYaml stores a YAML snapshot of the previous configuration for change detection.
+	// oldConfigTOML stores a TOML snapshot of the previous configuration for change detection.
 	// This prevents issues when the config object is modified in place by Management API.
-	oldConfigYaml []byte
+	oldConfigTOML []byte
 
 	// accessManager handles request authentication providers.
 	accessManager *sdkaccess.Manager
@@ -73,7 +72,7 @@ type Server struct {
 	requestLogger logging.RequestLogger
 	loggerToggle  func(bool)
 
-	// configFilePath is the absolute path to the YAML config file for persistence.
+	// configFilePath is the absolute path to the TOML config file for persistence.
 	configFilePath string
 
 	// currentPath is the absolute path to the current working directory.
@@ -215,8 +214,8 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 		optionState.pluginHost.SetModelExecutor(s.handlers)
 		optionState.pluginHost.SetAuthManager(authManager)
 	}
-	// Save initial YAML snapshot
-	s.oldConfigYaml, _ = yaml.Marshal(cfg)
+	// Save initial TOML snapshot.
+	s.oldConfigTOML, _ = config.EncodeConfig(cfg)
 	s.applyAccessConfig(nil, cfg)
 	if authManager != nil {
 		authManager.SetRetryConfig(cfg.RequestRetry, time.Duration(cfg.MaxRetryInterval)*time.Second, cfg.MaxRetryCredentials)

@@ -15,7 +15,7 @@ func TestBuilderBuildInjectsPluginHostScheduler(t *testing.T) {
 	host := pluginhost.New()
 	service, errBuild := NewBuilder().
 		WithConfig(&config.Config{AuthDir: t.TempDir()}).
-		WithConfigPath(t.TempDir() + "/config.yaml").
+		WithConfigPath(t.TempDir() + "/config.toml").
 		WithPluginHost(host).
 		Build()
 	if errBuild != nil {

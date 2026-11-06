@@ -6,9 +6,7 @@ import (
 )
 
 func TestParseConfigBytesTrustedProxies(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`trusted-proxies:
-  - 192.0.2.0/24
-  - 2001:db8::1
+	cfg, errParse := ParseConfigBytes([]byte(`"trusted-proxies" = ["192.0.2.0/24", "2001:db8::1"]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -21,7 +19,7 @@ func TestParseConfigBytesTrustedProxies(t *testing.T) {
 }
 
 func TestParseConfigBytesRejectsInvalidTrustedProxy(t *testing.T) {
-	if _, errParse := ParseConfigBytes([]byte("trusted-proxies: [not-an-ip]")); errParse == nil {
+	if _, errParse := ParseConfigBytes([]byte("\"trusted-proxies\" = [\"not-an-ip\"]\n")); errParse == nil {
 		t.Fatal("ParseConfigBytes() error = nil, want invalid trusted proxy error")
 	}
 }

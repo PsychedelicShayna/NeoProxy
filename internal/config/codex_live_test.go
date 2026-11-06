@@ -4,27 +4,13 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestCodexLiveMediaRelayConfigParsesAndValidates(t *testing.T) {
 	var cfg Config
-	raw := []byte(`codex:
-  live-media-relay:
-    enabled: true
-    max-sessions: 64
-    disable-private-remote-ips: true
-    public-ip: "203.0.113.10"
-    udp-port-min: 40000
-    udp-port-max: 40150
-    ice-servers:
-      - urls: ["stun:stun.example.com:3478"]
-      - urls: ["turn:turn.example.com:3478?transport=udp"]
-        username: "relay-user"
-        credential: "relay-secret"
+	raw := []byte(`"codex" = {"live-media-relay" = {"enabled" = true, "max-sessions" = 64, "disable-private-remote-ips" = true, "public-ip" = "203.0.113.10", "udp-port-min" = 40000, "udp-port-max" = 40150, "ice-servers" = [{"urls" = ["stun:stun.example.com:3478"]}, {"urls" = ["turn:turn.example.com:3478?transport=udp"], "username" = "relay-user", "credential" = "relay-secret"}]}}
 `)
-	if errUnmarshal := yaml.Unmarshal(raw, &cfg); errUnmarshal != nil {
+	if errUnmarshal := decodeTOMLTestConfig(raw, &cfg); errUnmarshal != nil {
 		t.Fatalf("unmarshal Codex Live media relay config: %v", errUnmarshal)
 	}
 	relay := cfg.Codex.LiveMediaRelay
@@ -53,15 +39,16 @@ func TestCodexLiveMediaRelayConfigParsesAndValidates(t *testing.T) {
 
 func TestCodexLiveMediaRelayConfigMigratesLegacyPrivateIPSetting(t *testing.T) {
 	for name, raw := range map[string]string{
-		"legacy allow true":  "allow-private-remote-ips: true\n",
-		"legacy allow false": "allow-private-remote-ips: false\n",
-		"new default":        "enabled: true\n",
+		"legacy allow true":  "allow-private-remote-ips = true\n",
+		"legacy allow false": "allow-private-remote-ips = false\n",
+		"new default":        "enabled = true\n",
 	} {
 		t.Run(name, func(t *testing.T) {
-			var relay CodexLiveMediaRelayConfig
-			if errUnmarshal := yaml.Unmarshal([]byte(raw), &relay); errUnmarshal != nil {
+			cfg, errUnmarshal := DecodeConfig([]byte("[codex.live-media-relay]\n"+raw), ConfigFormatTOML)
+			if errUnmarshal != nil {
 				t.Fatalf("unmarshal media relay config: %v", errUnmarshal)
 			}
+			relay := cfg.Codex.LiveMediaRelay
 			wantDisabled := name == "legacy allow false"
 			if relay.DisablePrivateRemoteIPs != wantDisabled {
 				t.Fatalf("disable-private-remote-ips = %t, want %t", relay.DisablePrivateRemoteIPs, wantDisabled)
@@ -69,8 +56,7 @@ func TestCodexLiveMediaRelayConfigMigratesLegacyPrivateIPSetting(t *testing.T) {
 		})
 	}
 
-	var relay CodexLiveMediaRelayConfig
-	errUnmarshal := yaml.Unmarshal([]byte("allow-private-remote-ips: true\ndisable-private-remote-ips: false\n"), &relay)
+	_, errUnmarshal := DecodeConfig([]byte("[codex.live-media-relay]\nallow-private-remote-ips = true\ndisable-private-remote-ips = false\n"), ConfigFormatTOML)
 	if errUnmarshal == nil {
 		t.Fatal("accepted conflicting private IP settings")
 	}

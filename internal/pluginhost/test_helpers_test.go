@@ -12,7 +12,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
-	"gopkg.in/yaml.v3"
 )
 
 type testSymbolLoader struct {
@@ -238,15 +237,15 @@ func (l *testSymbolLookup) callLifecycle(request []byte, reload bool) ([]byte, e
 	var plugin pluginapi.Plugin
 	if reload {
 		if l.reconfigureOverride != nil {
-			plugin = l.reconfigureOverride(req.ConfigYAML)
+			plugin = l.reconfigureOverride(req.ConfigTOML)
 		} else {
-			plugin = l.plugin.Reconfigure(req.ConfigYAML)
+			plugin = l.plugin.Reconfigure(req.ConfigTOML)
 		}
 	} else {
 		if l.registerOverride != nil {
-			plugin = l.registerOverride(req.ConfigYAML)
+			plugin = l.registerOverride(req.ConfigTOML)
 		} else {
-			plugin = l.plugin.Register(req.ConfigYAML)
+			plugin = l.plugin.Register(req.ConfigTOML)
 		}
 	}
 	l.active = plugin
@@ -427,13 +426,9 @@ func writeVersionedPluginFile(t *testing.T, root, id, version string) string {
 
 func enabledPluginConfigWithStoreVersion(t *testing.T, version string) config.PluginInstanceConfig {
 	t.Helper()
-	var node yaml.Node
-	if errDecode := yaml.Unmarshal([]byte(fmt.Sprintf("store:\n  version: %s\n", version)), &node); errDecode != nil {
-		t.Fatalf("yaml.Unmarshal() error = %v", errDecode)
-	}
 	enabled := true
 	return config.PluginInstanceConfig{
 		Enabled: &enabled,
-		Raw:     *node.Content[0],
+		Raw:     map[string]any{"store": map[string]any{"version": version}},
 	}
 }

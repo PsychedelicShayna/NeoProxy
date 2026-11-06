@@ -3,16 +3,10 @@ package config
 import (
 	"encoding/json"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestCodexModelSupportConfigurationUpdate(t *testing.T) {
-	const yamlConfig = `codex-api-key:
-  - models:
-      - name: custom-one
-        support-configuration-update: true
-      - name: custom-two
+	const tomlConfig = `"codex-api-key" = [{"models" = [{"name" = "custom-one", "support-configuration-update" = true}, {"name" = "custom-two"}]}]
 `
 	const jsonConfig = `{"codex-api-key":[{"models":[{"name":"custom-one","support-configuration-update":true},{"name":"custom-two"}]}]}`
 
@@ -21,9 +15,9 @@ func TestCodexModelSupportConfigurationUpdate(t *testing.T) {
 		decode func(*Config) error
 	}{
 		{
-			name: "YAML",
+			name: "TOML",
 			decode: func(cfg *Config) error {
-				return yaml.Unmarshal([]byte(yamlConfig), cfg)
+				return decodeTOMLTestConfig([]byte(tomlConfig), cfg)
 			},
 		},
 		{
@@ -49,13 +43,7 @@ func TestCodexModelSupportConfigurationUpdate(t *testing.T) {
 }
 
 func TestCodexModelIsCompatConfigDecoding(t *testing.T) {
-	const yamlConfig = `codex-api-key:
-  - models:
-      - name: deepseek-upstream
-        alias: deepseek-alias
-        is-compat: true
-      - name: native-upstream
-        alias: native-alias
+	const tomlConfig = `"codex-api-key" = [{"models" = [{"name" = "deepseek-upstream", "alias" = "deepseek-alias", "is-compat" = true}, {"name" = "native-upstream", "alias" = "native-alias"}]}]
 `
 	const jsonConfig = `{"codex-api-key":[{"models":[{"name":"deepseek-upstream","alias":"deepseek-alias","is-compat":true},{"name":"native-upstream","alias":"native-alias"}]}]}`
 
@@ -64,9 +52,9 @@ func TestCodexModelIsCompatConfigDecoding(t *testing.T) {
 		decode func(*Config) error
 	}{
 		{
-			name: "YAML",
+			name: "TOML",
 			decode: func(cfg *Config) error {
-				return yaml.Unmarshal([]byte(yamlConfig), cfg)
+				return decodeTOMLTestConfig([]byte(tomlConfig), cfg)
 			},
 		},
 		{

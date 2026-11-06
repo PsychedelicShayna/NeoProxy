@@ -1,84 +1,93 @@
 package config
 
 import (
+	"fmt"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
-// ProjectV8ConfigAliases moves canonical fields into a requested historical
-// subtree. Moving, rather than copying, preserves PUT and DELETE semantics when
-// the subtree contains both shared settings and OAuth-only fields.
-func ProjectV8ConfigAliases(root *yaml.Node, path string) {
+// ProjectV8ConfigAliases moves canonical fields into a requested historical subtree.
+func ProjectV8ConfigAliases(root map[string]any, path string) {
 	if path == "" {
 		return
 	}
-	paths := append(append([]configPath(nil), v8Aliases...), v8SharedStructPaths...)
+	paths := append(append([]configPath{}, v8Aliases...), v8SharedStructPaths...)
 	for _, alias := range paths {
 		if path != alias.old && !strings.HasPrefix(alias.old, path+".") && !strings.HasPrefix(path, alias.old+".") {
 			continue
 		}
-		value := yamlPath(root, alias.current)
-		if value == nil {
+		value, ok := mapPath(root, alias.current)
+		if !ok {
 			continue
 		}
-		// Struct aliases only represent empty containers; their populated fields
-		// have individual mappings, sometimes with different nesting.
-		if value.Kind == yaml.MappingNode && len(value.Content) != 0 {
+		if m, ok := value.(map[string]any); ok && len(m) != 0 {
 			continue
 		}
-		copy := copyYAMLPathValue(root, alias.current)
-		setYAMLPathWithComments(root, alias.old, copy)
-		deleteYAMLPath(root, alias.current)
+		setMapPath(root, alias.old, cloneNative(value))
+		deleteMapPath(root, alias.current)
 	}
 }
 
-// NormalizeV8ConfigAliases accepts historical v8 paths without discarding
-// unknown fields. Callers still validate the canonical document before saving.
-// Normalize request bodies before merging so an alias update can replace a
-// canonical value already present in the stored configuration.
-func NormalizeV8ConfigAliases(root *yaml.Node) error {
-	var shape any
-	if err := root.Decode(&shape); err != nil {
-		return err
-	}
-	*root = *expandConfigAliases(root)
-	// A null historical container resets its fields. Represent the reset as
-	// null leaves so merging a root PATCH cannot turn it into an empty-map no-op.
+// NormalizeV8ConfigAliases resolves historical v8 names by field presence.
+func NormalizeV8ConfigAliases(root map[string]any) error {
 	for _, container := range v8SharedStructPaths {
-		value := yamlPath(root, container.old)
-		if value == nil || value.Tag != "!!null" {
+		value, present := mapPath(root, container.old)
+		if !present || value != nil {
 			continue
 		}
-		copy := copyYAMLPathValue(root, container.old)
 		for _, alias := range v8Aliases {
-			if strings.HasPrefix(alias.old, container.old+".") && yamlPath(root, alias.current) == nil {
-				setYAMLPathWithComments(root, alias.current, copy)
-				copy.HeadComment = ""
+			if strings.HasPrefix(alias.old, container.old+".") {
+				if _, exists := mapPath(root, alias.current); !exists {
+					setMapPath(root, alias.current, nil)
+				}
 			}
 		}
-		deleteYAMLPath(root, container.old)
+		deleteMapPath(root, container.old)
 	}
 	for _, alias := range v8Aliases {
-		if yamlPath(root, alias.old) == nil {
-			continue
+		if value, ok := mapPath(root, alias.old); ok {
+			if _, present := mapPath(root, alias.current); !present {
+				setMapPath(root, alias.current, cloneNative(value))
+			}
+			deleteMapPath(root, alias.old)
 		}
-		if yamlPath(root, alias.current) == nil {
-			setYAMLPathWithComments(root, alias.current, copyYAMLPathValue(root, alias.old))
-		}
-		deleteYAMLPath(root, alias.old)
 	}
 	for _, alias := range v8SharedStructPaths {
-		value := yamlPath(root, alias.old)
-		if value == nil || (value.Tag != "!!null" && (value.Kind != yaml.MappingNode || len(value.Content) != 0)) {
+		value, present := mapPath(root, alias.old)
+		if !present {
 			continue
 		}
-		if yamlPath(root, alias.current) == nil {
-			setYAMLPathWithComments(root, alias.current, copyYAMLPathValue(root, alias.old))
-			value = yamlPath(root, alias.current)
-			value.Kind, value.Tag, value.Value = yaml.MappingNode, "!!map", ""
+		m, isMap := value.(map[string]any)
+		if value != nil && !isMap {
+			return fmt.Errorf("%s must be a mapping", alias.old)
 		}
-		deleteYAMLPath(root, alias.old)
+		if isMap && len(m) != 0 {
+			continue
+		}
+		if _, exists := mapPath(root, alias.current); !exists {
+			setMapPath(root, alias.current, map[string]any{})
+		}
+		deleteMapPath(root, alias.old)
+	}
+	for _, prefix := range []string{"codex.live-media-relay", "oauth.providers.codex.live-media-relay"} {
+		old := prefix + ".allow-private-remote-ips"
+		if value, ok := mapPath(root, old); ok {
+			if prefix == "codex.live-media-relay" {
+				if _, present := mapPath(root, "oauth.providers.codex.live-media-relay.disable-private-remote-ips"); present {
+					deleteMapPath(root, old)
+					continue
+				}
+			}
+			canonical := prefix + ".disable-private-remote-ips"
+			if _, present := mapPath(root, canonical); present {
+				return fmt.Errorf("%s and %s cannot both be configured", old, canonical)
+			}
+			allow, valid := value.(bool)
+			if !valid {
+				return fmt.Errorf("%s must be a boolean", old)
+			}
+			setMapPath(root, canonical, !allow)
+			deleteMapPath(root, old)
+		}
 	}
 	return nil
 }

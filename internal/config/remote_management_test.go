@@ -5,9 +5,7 @@ import (
 )
 
 func TestParseConfigBytesRemoteManagementBaseURL(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`remote-management:
-  allow-remote: true
-  base-url: "https://proxy.example.com"
+	cfg, errParse := ParseConfigBytes([]byte(`"remote-management" = {"allow-remote" = true, "base-url" = "https://proxy.example.com"}
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)

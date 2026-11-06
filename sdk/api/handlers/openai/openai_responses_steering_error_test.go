@@ -178,11 +178,11 @@ func TestResponsesSteeringErrorRecoveryIntegration(t *testing.T) {
 // Codex OAuth turns run through the NeoPi provider port, whose upstream socket
 // is a per-session cache rather than a passthrough, so only API keys qualify.
 func TestResponsesWebsocketClosesOnIdleCodexDisconnect(t *testing.T) {
-	for _, tc := range []struct{ name, yaml string }{
-		{"legacy_disabled_api_key", "codex: {response-steering: false}\n"},
-		{"legacy_enabled_api_key", "codex: {response-steering: true}\n"},
-		{"v8_enabled_api_key", "oauth: {providers: {codex: {response-steering: true}}}\n"},
-		{"upstream_enabled_api_key", "upstream: {codex: {response-steering: true}}\n"},
+	for _, tc := range []struct{ name, toml string }{
+		{"legacy_disabled_api_key", "[codex]\nresponse-steering = false\n"},
+		{"legacy_enabled_api_key", "[codex]\nresponse-steering = true\n"},
+		{"v8_enabled_api_key", "[oauth.providers.codex]\nresponse-steering = true\n"},
+		{"upstream_enabled_api_key", "[upstream.codex]\nresponse-steering = true\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			closeUpstream := make(chan struct{})
@@ -221,7 +221,7 @@ func TestResponsesWebsocketClosesOnIdleCodexDisconnect(t *testing.T) {
 				}
 			}))
 			t.Cleanup(upstream.Close)
-			cfg, err := config.ParseConfigBytes([]byte(tc.yaml))
+			cfg, err := config.ParseConfigBytes([]byte(tc.toml))
 			if err != nil {
 				t.Fatal(err)
 			}

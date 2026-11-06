@@ -20,8 +20,68 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/watcher/synthesizer"
 	sdkAuth "github.com/router-for-me/CLIProxyAPI/v8/sdk/auth"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
-	"gopkg.in/yaml.v3"
 )
+
+func TestNewWatcherResolvesLegacyConfigPath(t *testing.T) {
+	for _, nativeExists := range []bool{false, true} {
+		t.Run(fmt.Sprintf("native-exists-%t", nativeExists), func(t *testing.T) {
+			dir := t.TempDir()
+			authDir := filepath.Join(dir, "auth")
+			if err := os.MkdirAll(authDir, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			legacyPath := filepath.Join(dir, "config.yaml")
+			nativePath := filepath.Join(dir, "config.toml")
+			legacy := []byte(fmt.Sprintf("port: 8317\nauth-dir: %q\n", filepath.ToSlash(authDir)))
+			if err := os.WriteFile(legacyPath, legacy, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			wantPort := 8317
+			if nativeExists {
+				wantPort = 8318
+				raw := fmt.Sprintf("port = 8318\nauth-dir = %q\n", filepath.ToSlash(authDir))
+				if err := os.WriteFile(nativePath, []byte(raw), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			w, err := NewWatcher(legacyPath, authDir, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = w.Stop() }()
+			if w.configPath != nativePath {
+				t.Fatalf("watch path = %q, want %q", w.configPath, nativePath)
+			}
+			cfg, err := config.LoadConfig(nativePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.Port != wantPort {
+				t.Fatalf("port = %d, want %d", cfg.Port, wantPort)
+			}
+			w.SetConfig(cfg)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			if err := w.Start(ctx); err != nil {
+				t.Fatal(err)
+			}
+			watchingNative := false
+			for _, path := range w.watcher.WatchList() {
+				if path == legacyPath {
+					t.Fatal("watcher registered the legacy YAML source")
+				}
+				watchingNative = watchingNative || path == nativePath
+			}
+			if !watchingNative {
+				t.Fatal("watcher did not register the native TOML configuration")
+			}
+			unchanged, err := os.ReadFile(legacyPath)
+			if err != nil || string(unchanged) != string(legacy) {
+				t.Fatalf("legacy config changed: %v", err)
+			}
+		})
+	}
+}
 
 func TestApplyAuthExcludedModelsMeta_APIKey(t *testing.T) {
 	auth := &coreauth.Auth{Attributes: map[string]string{}}
@@ -175,7 +235,7 @@ func TestReloadConfigIfChanged_TriggersOnChangeAndSkipsUnchanged(t *testing.T) {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
 
-	configPath := filepath.Join(tmpDir, "config.yaml")
+	configPath := filepath.Join(tmpDir, "config.toml")
 	writeConfig := func(port int, allowRemote bool) {
 		cfg := &config.Config{
 			Port:               port,
@@ -185,7 +245,7 @@ func TestReloadConfigIfChanged_TriggersOnChangeAndSkipsUnchanged(t *testing.T) {
 				AllowRemote: allowRemote,
 			},
 		}
-		data, err := yaml.Marshal(cfg)
+		data, err := config.EncodeConfig(cfg)
 		if err != nil {
 			t.Fatalf("failed to marshal config: %v", err)
 		}
@@ -232,8 +292,8 @@ func TestStartAndStopSuccess(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to create config file: %v", err)
 	}
 
@@ -267,7 +327,7 @@ func TestStartFailsWhenConfigMissing(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "missing-config.yaml")
+	configPath := filepath.Join(tmpDir, "missing-config.toml")
 
 	w, err := NewWatcher(configPath, authDir, nil)
 	if err != nil {
@@ -675,7 +735,7 @@ func TestReloadClientsLogsConfigDiffs(t *testing.T) {
 		config:  oldCfg,
 	}
 	w.SetConfig(oldCfg)
-	w.oldConfigYaml, _ = yaml.Marshal(oldCfg)
+	w.oldConfigTOML, _ = config.EncodeConfig(oldCfg)
 
 	w.clientsMutex.Lock()
 	w.config = newCfg
@@ -888,7 +948,7 @@ func TestProcessEventsHandlesEventErrorAndChannelClose(t *testing.T) {
 			Events: make(chan fsnotify.Event, 2),
 			Errors: make(chan error, 2),
 		},
-		configPath: "config.yaml",
+		configPath: "config.toml",
 		authDir:    "auth",
 	}
 
@@ -947,8 +1007,8 @@ func TestHandleEventIgnoresUnrelatedFiles(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 
@@ -973,8 +1033,8 @@ func TestHandleEventConfigChangeSchedulesReload(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 
@@ -1001,8 +1061,8 @@ func TestHandleEventAuthWriteTriggersUpdate(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 	authFile := filepath.Join(authDir, "a.json")
@@ -1031,8 +1091,8 @@ func TestHandleEventRemoveDebounceSkips(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 	authFile := filepath.Join(authDir, "remove.json")
@@ -1061,8 +1121,8 @@ func TestHandleEventAtomicReplaceUnchangedSkips(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 	authFile := filepath.Join(authDir, "same.json")
@@ -1094,8 +1154,8 @@ func TestHandleEventAtomicReplaceChangedTriggersUpdate(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 	authFile := filepath.Join(authDir, "change.json")
@@ -1128,8 +1188,8 @@ func TestHandleEventRemoveUnknownFileIgnored(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 	authFile := filepath.Join(authDir, "unknown.json")
@@ -1155,8 +1215,8 @@ func TestHandleEventAtomicReplaceDelayedStatPreservesClient(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 	authFile := filepath.Join(authDir, "token.json")
@@ -1220,8 +1280,8 @@ func TestHandleEventRemoveKnownFileDeletes(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 	authFile := filepath.Join(authDir, "known.json")
@@ -1361,12 +1421,12 @@ func TestReloadConfigIfChangedHandlesMissingAndEmpty(t *testing.T) {
 	}
 
 	w := &Watcher{
-		configPath: filepath.Join(tmpDir, "missing.yaml"),
+		configPath: filepath.Join(tmpDir, "missing.toml"),
 		authDir:    authDir,
 	}
 	w.reloadConfigIfChanged() // missing file -> log + return
 
-	emptyPath := filepath.Join(tmpDir, "empty.yaml")
+	emptyPath := filepath.Join(tmpDir, "empty.toml")
 	if err := os.WriteFile(emptyPath, []byte(""), 0o644); err != nil {
 		t.Fatalf("failed to write empty config: %v", err)
 	}
@@ -1381,8 +1441,8 @@ func TestReloadConfigUsesMirroredAuthDir(t *testing.T) {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
 
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+filepath.Join(tmpDir, "other")+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(filepath.Join(tmpDir, "other")))), 0o644); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -1411,7 +1471,7 @@ func TestReloadConfigFiltersAffectedOAuthProviders(t *testing.T) {
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
+	configPath := filepath.Join(tmpDir, "config.toml")
 
 	// Ensure SnapshotCoreAuths yields a provider that is NOT affected, so we can assert it survives.
 	if err := os.WriteFile(filepath.Join(authDir, "provider-b.json"), []byte(`{"type":"provider-b","email":"b@example.com"}`), 0o644); err != nil {
@@ -1432,7 +1492,7 @@ func TestReloadConfigFiltersAffectedOAuthProviders(t *testing.T) {
 			"provider-a": {"m2"},
 		},
 	}
-	data, err := yaml.Marshal(newCfg)
+	data, err := config.EncodeConfig(newCfg)
 	if err != nil {
 		t.Fatalf("failed to marshal config: %v", err)
 	}
@@ -1489,8 +1549,8 @@ func TestReloadConfigRedispatchesUnchangedAuthForGlobalOAuthExclusionChange(t *t
 			OAuthExcludedModels: map[string][]string{"claude": {excluded}},
 		}
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	data, errMarshal := yaml.Marshal(newConfig("m2"))
+	configPath := filepath.Join(tmpDir, "config.toml")
+	data, errMarshal := config.EncodeConfig(newConfig("m2"))
 	if errMarshal != nil {
 		t.Fatalf("failed to marshal config: %v", errMarshal)
 	}
@@ -1540,7 +1600,7 @@ func TestReloadConfigTriggersCallbackForMaxRetryCredentialsChange(t *testing.T) 
 	if err := os.MkdirAll(authDir, 0o755); err != nil {
 		t.Fatalf("failed to create auth dir: %v", err)
 	}
-	configPath := filepath.Join(tmpDir, "config.yaml")
+	configPath := filepath.Join(tmpDir, "config.toml")
 
 	oldCfg := &config.Config{
 		AuthDir:             authDir,
@@ -1556,7 +1616,7 @@ func TestReloadConfigTriggersCallbackForMaxRetryCredentialsChange(t *testing.T) 
 		RequestRetry:        1,
 		MaxRetryInterval:    5,
 	}
-	data, errMarshal := yaml.Marshal(newCfg)
+	data, errMarshal := config.EncodeConfig(newCfg)
 	if errMarshal != nil {
 		t.Fatalf("failed to marshal config: %v", errMarshal)
 	}
@@ -1599,8 +1659,8 @@ func TestReloadConfigTriggersCallbackForMaxRetryCredentialsChange(t *testing.T) 
 
 func TestStartFailsWhenAuthDirMissing(t *testing.T) {
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := os.WriteFile(configPath, []byte("auth_dir: "+filepath.Join(tmpDir, "missing-auth")+"\n"), 0o644); err != nil {
+	configPath := filepath.Join(tmpDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(filepath.Join(tmpDir, "missing-auth")))), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 	authDir := filepath.Join(tmpDir, "missing-auth")
@@ -1693,7 +1753,7 @@ func TestNewWatcherDetectsPersisterAndAuthDir(t *testing.T) {
 	sdkAuth.RegisterTokenStore(store)
 	defer sdkAuth.RegisterTokenStore(orig)
 
-	w, err := NewWatcher("config.yaml", "auth", nil)
+	w, err := NewWatcher("config.toml", "auth", nil)
 	if err != nil {
 		t.Fatalf("NewWatcher failed: %v", err)
 	}
@@ -1739,8 +1799,8 @@ func TestPersistConfigAndAuthAsyncInvokePersister(t *testing.T) {
 func TestScheduleConfigReloadDebounces(t *testing.T) {
 	tmp := t.TempDir()
 	authDir := tmp
-	cfgPath := tmp + "/config.yaml"
-	if err := os.WriteFile(cfgPath, []byte("auth_dir: "+authDir+"\n"), 0o644); err != nil {
+	cfgPath := tmp + "/config.toml"
+	if err := os.WriteFile(cfgPath, []byte(fmt.Sprintf("auth-dir = %q\n", filepath.ToSlash(authDir))), 0o644); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -1864,7 +1924,7 @@ func TestScheduleProcessEventsStopsOnContextDone(t *testing.T) {
 			Events: make(chan fsnotify.Event, 1),
 			Errors: make(chan error, 1),
 		},
-		configPath: "config.yaml",
+		configPath: "config.toml",
 		authDir:    "auth",
 	}
 	ctx, cancel := context.WithCancel(context.Background())

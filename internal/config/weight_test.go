@@ -21,7 +21,7 @@ func TestAPIKeyWeightValidation(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, errParse := ParseConfigBytes([]byte("gemini-api-key:\n  - api-key: key\n    weight: " + test.weight + "\n"))
+			_, errParse := ParseConfigBytes([]byte("[[gemini-api-key]]\napi-key = 'key'\nweight = " + test.weight + "\n"))
 			if (errParse == nil) != test.valid {
 				t.Fatalf("ParseConfigBytes(weight=%s) error = %v, want valid=%v", test.weight, errParse, test.valid)
 			}
@@ -30,10 +30,7 @@ func TestAPIKeyWeightValidation(t *testing.T) {
 }
 
 func TestAPIKeyWeightParsingAndZeroPersistence(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`xai-api-key:
-  - api-key: key
-    base-url: https://api.x.ai/v1
-    weight: 0
+	cfg, errParse := ParseConfigBytes([]byte(`"xai-api-key" = [{"api-key" = "key", "base-url" = "https://api.x.ai/v1", "weight" = 0}]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -42,10 +39,8 @@ func TestAPIKeyWeightParsingAndZeroPersistence(t *testing.T) {
 		t.Fatalf("parsed weight = %#v, want explicit zero", cfg.XAIKey)
 	}
 
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	if errWrite := os.WriteFile(configPath, []byte(`xai-api-key:
-  - api-key: key
-    base-url: https://api.x.ai/v1
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	if errWrite := os.WriteFile(configPath, []byte(`"xai-api-key" = [{"api-key" = "key", "base-url" = "https://api.x.ai/v1"}]
 `), 0644); errWrite != nil {
 		t.Fatalf("WriteFile() error = %v", errWrite)
 	}
@@ -56,7 +51,7 @@ func TestAPIKeyWeightParsingAndZeroPersistence(t *testing.T) {
 	if errRead != nil {
 		t.Fatalf("ReadFile() error = %v", errRead)
 	}
-	if !strings.Contains(string(saved), "weight: 0") {
+	if !strings.Contains(string(saved), "weight = 0") {
 		t.Fatalf("saved config does not preserve explicit zero weight:\n%s", saved)
 	}
 }

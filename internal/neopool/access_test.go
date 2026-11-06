@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -96,8 +97,8 @@ func newAccessFixture(t *testing.T) *accessFixture {
 	if err = os.MkdirAll(f.authDir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	f.cfgPath = filepath.Join(dir, "config.yaml")
-	if err = os.WriteFile(f.cfgPath, []byte("port: 8317\nauth-dir: "+f.authDir+"\n"), 0o600); err != nil {
+	f.cfgPath = filepath.Join(dir, "config.toml")
+	if err = os.WriteFile(f.cfgPath, []byte("port = 8317\nauth-dir = "+strconv.Quote(f.authDir)+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	engine := management.NewHandler(&config.Config{AuthDir: f.authDir}, f.cfgPath, f.manager)
@@ -243,7 +244,7 @@ func TestAccessAPIKeysValidateRouteAndStayScoped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"name: custom-office-llm", "name: openrouter", "base-url: " + f.upstream.URL + "/v1", "name: fake-a", "name: fake-b", "api-key: " + openaiKey} {
+	for _, want := range []string{"name = 'custom-office-llm'", "name = 'openrouter'", "base-url = '" + f.upstream.URL + "/v1'", "name = 'fake-a'", "name = 'fake-b'", "api-key = '" + openaiKey + "'"} {
 		if !strings.Contains(string(cfg), want) {
 			t.Fatalf("engine config lacks %q:\n%s", want, cfg)
 		}
@@ -300,7 +301,7 @@ func TestAccessAPIKeysValidateRouteAndStayScoped(t *testing.T) {
 	if paused.Health != "disabled" {
 		t.Fatalf("pause: %+v", paused)
 	}
-	if cfg, _ = os.ReadFile(f.cfgPath); !strings.Contains(string(cfg), "disabled: true") {
+	if cfg, _ = os.ReadFile(f.cfgPath); !strings.Contains(string(cfg), "disabled = true") {
 		t.Fatalf("pause not persisted in engine config:\n%s", cfg)
 	}
 	loaded, err := config.LoadConfig(f.cfgPath)

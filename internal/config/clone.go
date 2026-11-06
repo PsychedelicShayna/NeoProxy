@@ -2,11 +2,7 @@ package config
 
 import (
 	"reflect"
-
-	"gopkg.in/yaml.v3"
 )
-
-var yamlNodeType = reflect.TypeOf(yaml.Node{})
 
 // CloneForRuntime returns an independent in-memory snapshot of the full config.
 func (cfg *Config) CloneForRuntime() *Config {
@@ -20,11 +16,6 @@ func (cfg *Config) CloneForRuntime() *Config {
 func cloneRuntimeValue(v reflect.Value) reflect.Value {
 	if !v.IsValid() {
 		return v
-	}
-
-	if v.Type() == yamlNodeType {
-		node := v.Interface().(yaml.Node)
-		return reflect.ValueOf(*deepCopyNode(&node))
 	}
 
 	switch v.Kind() {

@@ -16,15 +16,15 @@ const (
 
 // CredentialInFlightConfig controls in-flight credential observation snapshots.
 type CredentialInFlightConfig struct {
-	SnapshotInterval   string `yaml:"snapshot-interval" json:"snapshot-interval"`
-	StaleAfter         string `yaml:"stale-after" json:"stale-after"`
-	MaxPartBytes       int    `yaml:"max-part-bytes" json:"max-part-bytes"`
-	MaxPartCount       int    `yaml:"max-part-count" json:"max-part-count"`
-	MaxRevisionBytes   int    `yaml:"max-revision-bytes" json:"max-revision-bytes"`
-	MaxAggregateGroups int    `yaml:"max-aggregate-groups" json:"max-aggregate-groups"`
-	MaxDetails         int    `yaml:"max-details" json:"max-details"`
-	MaxStringBytes     int    `yaml:"max-string-bytes" json:"max-string-bytes"`
-	StagingRetention   string `yaml:"staging-retention" json:"staging-retention"`
+	SnapshotInterval   string `yaml:"snapshot-interval" toml:"snapshot-interval" json:"snapshot-interval"`
+	StaleAfter         string `yaml:"stale-after" toml:"stale-after" json:"stale-after"`
+	MaxPartBytes       int    `yaml:"max-part-bytes" toml:"max-part-bytes" json:"max-part-bytes"`
+	MaxPartCount       int    `yaml:"max-part-count" toml:"max-part-count" json:"max-part-count"`
+	MaxRevisionBytes   int    `yaml:"max-revision-bytes" toml:"max-revision-bytes" json:"max-revision-bytes"`
+	MaxAggregateGroups int    `yaml:"max-aggregate-groups" toml:"max-aggregate-groups" json:"max-aggregate-groups"`
+	MaxDetails         int    `yaml:"max-details" toml:"max-details" json:"max-details"`
+	MaxStringBytes     int    `yaml:"max-string-bytes" toml:"max-string-bytes" json:"max-string-bytes"`
+	StagingRetention   string `yaml:"staging-retention" toml:"staging-retention" json:"staging-retention"`
 }
 
 // DefaultCredentialInFlightConfig returns the in-flight observation defaults.

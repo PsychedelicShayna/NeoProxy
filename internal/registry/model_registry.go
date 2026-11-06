@@ -156,19 +156,19 @@ type availableModelsCacheEntry struct {
 // Values are interpreted in provider-native token units.
 type ThinkingSupport struct {
 	// Min is the minimum allowed thinking budget (inclusive).
-	Min int `json:"min,omitempty" yaml:"min,omitempty"`
+	Min int `toml:"min,omitempty" json:"min,omitempty" yaml:"min,omitempty"`
 	// Max is the maximum allowed thinking budget (inclusive).
-	Max int `json:"max,omitempty" yaml:"max,omitempty"`
+	Max int `toml:"max,omitempty" json:"max,omitempty" yaml:"max,omitempty"`
 	// ZeroAllowed indicates whether 0 is a valid value (to disable thinking).
-	ZeroAllowed bool `json:"zero_allowed,omitempty" yaml:"zero-allowed,omitempty"`
+	ZeroAllowed bool `toml:"zero-allowed,omitempty" json:"zero_allowed,omitempty" yaml:"zero-allowed,omitempty"`
 	// DynamicAllowed indicates whether -1 is a valid value (dynamic thinking budget).
-	DynamicAllowed bool `json:"dynamic_allowed,omitempty" yaml:"dynamic-allowed,omitempty"`
+	DynamicAllowed bool `toml:"dynamic-allowed,omitempty" json:"dynamic_allowed,omitempty" yaml:"dynamic-allowed,omitempty"`
 	// DisableType is the Claude thinking.type sent when thinking is turned off.
 	// Empty means "disabled"; claude-sonnet-5-5 needs "between_tools".
-	DisableType string `json:"disable_type,omitempty" yaml:"disable-type,omitempty"`
+	DisableType string `toml:"disable-type,omitempty" json:"disable_type,omitempty" yaml:"disable-type,omitempty"`
 	// Levels defines discrete reasoning effort levels (e.g., "low", "medium", "high").
 	// When set, the model uses level-based reasoning instead of token budgets.
-	Levels []string `json:"levels,omitempty" yaml:"levels,omitempty"`
+	Levels []string `toml:"levels,omitempty" json:"levels,omitempty" yaml:"levels,omitempty"`
 }
 
 // ModelRegistration tracks a model's availability

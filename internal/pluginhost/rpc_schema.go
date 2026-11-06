@@ -8,7 +8,7 @@ import (
 )
 
 type rpcLifecycleRequest struct {
-	ConfigYAML    []byte `json:"config_yaml"`
+	ConfigTOML    []byte `json:"config_toml"`
 	SchemaVersion uint32 `json:"schema_version"`
 }
 

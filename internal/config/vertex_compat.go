@@ -15,18 +15,18 @@ import (
 type VertexCompatKey struct {
 	// APIKey is the authentication key for accessing the Vertex-compatible API.
 	// Maps to the x-goog-api-key header.
-	APIKey string `yaml:"api-key" json:"api-key"`
+	APIKey string `yaml:"api-key" toml:"api-key" json:"api-key"`
 
 	// Priority controls selection preference when multiple credentials match.
 	// Higher values are preferred; defaults to 0.
-	Priority int `yaml:"priority,omitempty" json:"priority,omitempty"`
+	Priority int `yaml:"priority,omitempty" toml:"priority,omitempty" json:"priority,omitempty"`
 
 	// Weight controls proportional selection under weighted-round-robin.
 	// An omitted value defaults to 1; non-positive values exclude this credential; maximum 1,000,000.
-	Weight *int `yaml:"weight,omitempty" json:"weight,omitempty"`
+	Weight *int `yaml:"weight,omitempty" toml:"weight,omitempty" json:"weight,omitempty"`
 
 	// Prefix optionally namespaces model aliases for this credential (e.g., "teamA/vertex-pro").
-	Prefix string `yaml:"prefix,omitempty" json:"prefix,omitempty"`
+	Prefix string `yaml:"prefix,omitempty" toml:"prefix,omitempty" json:"prefix,omitempty"`
 
 	// BaseURL optionally overrides the Vertex-compatible API endpoint.
 	// When it contains a "/publishers/" segment it is used as the full resource
@@ -34,31 +34,31 @@ type VertexCompatKey struct {
 	// and the executor only appends "/{model}:{action}". Otherwise "/v1" is
 	// inserted if absent, then "/publishers/google/models" is appended; a
 	// trailing version segment like "/v1" or "/v1beta1" is never duplicated.
-	BaseURL string `yaml:"base-url,omitempty" json:"base-url,omitempty"`
+	BaseURL string `yaml:"base-url,omitempty" toml:"base-url,omitempty" json:"base-url,omitempty"`
 
 	// ProxyURL optionally overrides the global proxy for this API key.
-	ProxyURL string `yaml:"proxy-url,omitempty" json:"proxy-url,omitempty"`
+	ProxyURL string `yaml:"proxy-url,omitempty" toml:"proxy-url,omitempty" json:"proxy-url,omitempty"`
 
 	// Headers optionally adds extra HTTP headers for requests sent with this key.
 	// Commonly used for cookies, user-agent, and other authentication headers.
-	Headers map[string]string `yaml:"headers,omitempty" json:"headers,omitempty"`
+	Headers map[string]string `yaml:"headers,omitempty" toml:"headers,omitempty" json:"headers,omitempty"`
 
 	// Models defines the model configurations including aliases for routing.
-	Models []VertexCompatModel `yaml:"models,omitempty" json:"models,omitempty"`
+	Models []VertexCompatModel `yaml:"models,omitempty" toml:"models,omitempty" json:"models,omitempty"`
 
 	// ExcludedModels lists model IDs that should be excluded for this provider.
-	ExcludedModels []string `yaml:"excluded-models,omitempty" json:"excluded-models,omitempty"`
+	ExcludedModels []string `yaml:"excluded-models,omitempty" toml:"excluded-models,omitempty" json:"excluded-models,omitempty"`
 
 	// DisableCooling overrides the global cooling policy for this credential when set.
 	// True disables auth/model cooldowns; false explicitly enables them.
-	DisableCooling *bool `yaml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
+	DisableCooling *bool `yaml:"disable-cooling,omitempty" toml:"disable-cooling,omitempty" json:"disable-cooling,omitempty"`
 
 	// RequestRetry optionally overrides the global request-retry for this credential.
 	// Nil or a negative value means "use the global request-retry". 0 disables additional retry rounds.
-	RequestRetry *int `yaml:"request-retry,omitempty" json:"request-retry,omitempty"`
+	RequestRetry *int `yaml:"request-retry,omitempty" toml:"request-retry,omitempty" json:"request-retry,omitempty"`
 
 	// Interactions optionally enables native Vertex Interactions API routing for this key.
-	Interactions *bool `yaml:"interactions,omitempty" json:"interactions,omitempty"`
+	Interactions *bool `yaml:"interactions,omitempty" toml:"interactions,omitempty" json:"interactions,omitempty"`
 }
 
 func (k VertexCompatKey) GetAPIKey() string   { return k.APIKey }
@@ -70,19 +70,19 @@ func (k VertexCompatKey) GetProxyURL() string { return k.ProxyURL }
 // including the actual model name and its alias for API routing.
 type VertexCompatModel struct {
 	// Name is the actual model name used by the external provider.
-	Name string `yaml:"name" json:"name"`
+	Name string `yaml:"name" toml:"name" json:"name"`
 
 	// Alias is the model name alias that clients will use to reference this model.
-	Alias string `yaml:"alias" json:"alias"`
+	Alias string `yaml:"alias" toml:"alias" json:"alias"`
 
 	// DisplayName is the optional human-readable name shown in model catalogs.
-	DisplayName string `yaml:"display-name,omitempty" json:"display-name,omitempty"`
+	DisplayName string `yaml:"display-name,omitempty" toml:"display-name,omitempty" json:"display-name,omitempty"`
 
 	// ForceMapping rewrites upstream response model fields back to Alias.
-	ForceMapping bool `yaml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
+	ForceMapping bool `yaml:"force-mapping,omitempty" toml:"force-mapping,omitempty" json:"force-mapping,omitempty"`
 
 	// Thinking configures the thinking/reasoning capability for this model.
-	Thinking *registry.ThinkingSupport `yaml:"thinking,omitempty" json:"thinking,omitempty"`
+	Thinking *registry.ThinkingSupport `yaml:"thinking,omitempty" toml:"thinking,omitempty" json:"thinking,omitempty"`
 }
 
 func (m VertexCompatModel) GetName() string        { return m.Name }

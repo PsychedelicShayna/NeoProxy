@@ -5,6 +5,8 @@ neoproxy
 
 # Configuration
 config.yaml
+config.yml
+config.toml
 .env
 
 # Generated content

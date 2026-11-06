@@ -40,7 +40,7 @@ func TestKiloImportFromNeoPiVault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"name: kilo", "base-url: https://api.kilo.ai/api/gateway", "api-key: " + token} {
+	for _, want := range []string{"name = 'kilo'", "base-url = 'https://api.kilo.ai/api/gateway'", "api-key = '" + token + "'"} {
 		if !strings.Contains(string(cfg), want) {
 			t.Fatalf("engine config lacks %q:\n%s", want, cfg)
 		}

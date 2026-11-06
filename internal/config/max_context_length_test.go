@@ -3,42 +3,16 @@ package config
 import (
 	"encoding/json"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestMaxContextLengthConfigDecoding(t *testing.T) {
 	const want = 1048576
-	const yamlConfig = `codex-api-key:
-  - models:
-      - name: codex-upstream
-        alias: codex-alias
-        max-context-length: 1048576
-claude-api-key:
-  - models:
-      - name: claude-upstream
-        alias: claude-alias
-        max-context-length: 1048576
-gemini-api-key:
-  - models:
-      - name: gemini-upstream
-        alias: gemini-alias
-        max-context-length: 1048576
-interactions-api-key:
-  - models:
-      - name: interactions-upstream
-        alias: interactions-alias
-        max-context-length: 1048576
-xai-api-key:
-  - models:
-      - name: xai-upstream
-        alias: xai-alias
-        max-context-length: 1048576
-openai-compatibility:
-  - models:
-      - name: compat-upstream
-        alias: compat-alias
-        max-context-length: 1048576
+	const tomlConfig = `"codex-api-key" = [{"models" = [{"name" = "codex-upstream", "alias" = "codex-alias", "max-context-length" = 1048576}]}]
+"claude-api-key" = [{"models" = [{"name" = "claude-upstream", "alias" = "claude-alias", "max-context-length" = 1048576}]}]
+"gemini-api-key" = [{"models" = [{"name" = "gemini-upstream", "alias" = "gemini-alias", "max-context-length" = 1048576}]}]
+"interactions-api-key" = [{"models" = [{"name" = "interactions-upstream", "alias" = "interactions-alias", "max-context-length" = 1048576}]}]
+"xai-api-key" = [{"models" = [{"name" = "xai-upstream", "alias" = "xai-alias", "max-context-length" = 1048576}]}]
+"openai-compatibility" = [{"models" = [{"name" = "compat-upstream", "alias" = "compat-alias", "max-context-length" = 1048576}]}]
 `
 	const jsonConfig = `{"codex-api-key":[{"models":[{"name":"codex-upstream","alias":"codex-alias","max-context-length":1048576}]}],"claude-api-key":[{"models":[{"name":"claude-upstream","alias":"claude-alias","max-context-length":1048576}]}],"gemini-api-key":[{"models":[{"name":"gemini-upstream","alias":"gemini-alias","max-context-length":1048576}]}],"interactions-api-key":[{"models":[{"name":"interactions-upstream","alias":"interactions-alias","max-context-length":1048576}]}],"xai-api-key":[{"models":[{"name":"xai-upstream","alias":"xai-alias","max-context-length":1048576}]}],"openai-compatibility":[{"models":[{"name":"compat-upstream","alias":"compat-alias","max-context-length":1048576}]}]}`
 
@@ -47,9 +21,9 @@ openai-compatibility:
 		decode func(*Config) error
 	}{
 		{
-			name: "YAML",
+			name: "TOML",
 			decode: func(cfg *Config) error {
-				return yaml.Unmarshal([]byte(yamlConfig), cfg)
+				return decodeTOMLTestConfig([]byte(tomlConfig), cfg)
 			},
 		},
 		{

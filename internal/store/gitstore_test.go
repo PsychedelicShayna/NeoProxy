@@ -499,7 +499,7 @@ func TestGitTokenStorePersistConfigDropsUnrelatedStagedDeletions(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 	configPath := store.ConfigPath()
-	if err := os.WriteFile(configPath, []byte("version: one\n"), 0o600); err != nil {
+	if err := os.WriteFile(configPath, []byte("version = 'one'\n"), 0o600); err != nil {
 		t.Fatalf("write initial config: %v", err)
 	}
 	if err := store.PersistConfig(context.Background()); err != nil {
@@ -533,7 +533,7 @@ func TestGitTokenStorePersistConfigDropsUnrelatedStagedDeletions(t *testing.T) {
 	if _, err := os.Stat(authPath); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("removed auth stat error = %v, want not exist", err)
 	}
-	if err := os.WriteFile(configPath, []byte("version: two\n"), 0o600); err != nil {
+	if err := os.WriteFile(configPath, []byte("version = 'two'\n"), 0o600); err != nil {
 		t.Fatalf("write updated config: %v", err)
 	}
 
@@ -541,7 +541,7 @@ func TestGitTokenStorePersistConfigDropsUnrelatedStagedDeletions(t *testing.T) {
 		t.Fatalf("PersistConfig with corrupt index: %v", err)
 	}
 	assertRemoteTreePath(t, remoteDir, "master", "auths/protected.json", true)
-	assertRemoteFileContents(t, remoteDir, "master", "config/config.yaml", "version: two\n")
+	assertRemoteFileContents(t, remoteDir, "master", "config/config.toml", "version = 'two'\n")
 }
 
 func TestGitTokenStorePersistConfigRepairsIndexAfterUnstagedPull(t *testing.T) {
@@ -557,7 +557,7 @@ func TestGitTokenStorePersistConfigRepairsIndexAfterUnstagedPull(t *testing.T) {
 		t.Fatalf("EnsureRepository: %v", err)
 	}
 	configPath := store.ConfigPath()
-	if err := os.WriteFile(configPath, []byte("source: local-config\n"), 0o600); err != nil {
+	if err := os.WriteFile(configPath, []byte("source = 'local-config'\n"), 0o600); err != nil {
 		t.Fatalf("write local config: %v", err)
 	}
 	advanceRemoteBranch(t, filepath.Join(root, "seed"), remoteDir, "master", "remote branch advanced\n", "advance remote")
@@ -566,7 +566,7 @@ func TestGitTokenStorePersistConfigRepairsIndexAfterUnstagedPull(t *testing.T) {
 		t.Fatalf("PersistConfig after unstaged pull: %v", err)
 	}
 	assertRemoteBranchContents(t, remoteDir, "master", "remote branch advanced\n")
-	assertRemoteFileContents(t, remoteDir, "master", "config/config.yaml", "source: local-config\n")
+	assertRemoteFileContents(t, remoteDir, "master", "config/config.toml", "source = 'local-config'\n")
 }
 
 func TestGitTokenStorePersistConfigPreservesRemoteOnlyAuthAfterDivergence(t *testing.T) {
@@ -599,7 +599,7 @@ func TestGitTokenStorePersistConfigPreservesRemoteOnlyAuthAfterDivergence(t *tes
 	assertRemoteTreePath(t, remoteDir, "master", "auths/remote-only.json", true)
 
 	configPathA := storeA.ConfigPath()
-	if err := os.WriteFile(configPathA, []byte("source: store-a\n"), 0o600); err != nil {
+	if err := os.WriteFile(configPathA, []byte("source = 'store-a'\n"), 0o600); err != nil {
 		t.Fatalf("write config A: %v", err)
 	}
 	if err := storeA.PersistConfig(context.Background()); err != nil {
@@ -607,7 +607,7 @@ func TestGitTokenStorePersistConfigPreservesRemoteOnlyAuthAfterDivergence(t *tes
 	}
 
 	assertRemoteTreePath(t, remoteDir, "master", "auths/remote-only.json", true)
-	assertRemoteFileContents(t, remoteDir, "master", "config/config.yaml", "source: store-a\n")
+	assertRemoteFileContents(t, remoteDir, "master", "config/config.toml", "source = 'store-a'\n")
 }
 
 func TestGitTokenStoreRejectsStaleForcePush(t *testing.T) {
@@ -638,24 +638,24 @@ func TestGitTokenStoreRejectsStaleForcePush(t *testing.T) {
 		t.Fatalf("Save B: %v", err)
 	}
 	configPathA := storeA.ConfigPath()
-	if err := os.WriteFile(configPathA, []byte("source: stale-a\n"), 0o600); err != nil {
+	if err := os.WriteFile(configPathA, []byte("source = 'stale-a'\n"), 0o600); err != nil {
 		t.Fatalf("write stale config A: %v", err)
 	}
 
 	storeA.mu.Lock()
-	errPush := storeA.commitAndPushLocked("Update stale config", "config/config.yaml")
+	errPush := storeA.commitAndPushLocked("Update stale config", "config/config.toml")
 	storeA.mu.Unlock()
 	if errPush == nil {
 		t.Fatal("stale force push error = nil, want lease rejection")
 	}
 	assertRemoteTreePath(t, remoteDir, "master", "auths/concurrent.json", true)
-	assertRemoteTreePath(t, remoteDir, "master", "config/config.yaml", false)
+	assertRemoteTreePath(t, remoteDir, "master", "config/config.toml", false)
 
 	if err := storeA.PersistConfig(context.Background()); err != nil {
 		t.Fatalf("PersistConfig A after lease rejection: %v", err)
 	}
 	assertRemoteTreePath(t, remoteDir, "master", "auths/concurrent.json", true)
-	assertRemoteFileContents(t, remoteDir, "master", "config/config.yaml", "source: stale-a\n")
+	assertRemoteFileContents(t, remoteDir, "master", "config/config.toml", "source = 'stale-a'\n")
 }
 
 func TestGitTokenStoreSaveRetryAfterLeaseConflictCommitsMatchingContent(t *testing.T) {
@@ -794,7 +794,7 @@ func TestGitTokenStoreConcurrentInitializationDoesNotOverwriteCreatedBranch(t *t
 	}
 	winnerFiles := map[string]string{
 		"auths/remote.json":  `{"type":"codex","access_token":"remote"}`,
-		"config/config.yaml": "source: winner\n",
+		"config/config.toml": "source = 'winner'\n",
 	}
 	winnerWorktree, errWinnerWorktree := winnerRepo.Worktree()
 	if errWinnerWorktree != nil {
@@ -838,13 +838,13 @@ func TestGitTokenStoreConcurrentInitializationDoesNotOverwriteCreatedBranch(t *t
 		t.Fatal("late initialization push error = nil, want branch-creation rejection")
 	}
 	assertRemoteFileContents(t, remoteDir, "master", "auths/remote.json", winnerFiles["auths/remote.json"])
-	assertRemoteFileContents(t, remoteDir, "master", "config/config.yaml", winnerFiles["config/config.yaml"])
+	assertRemoteFileContents(t, remoteDir, "master", "config/config.toml", winnerFiles["config/config.toml"])
 
 	if errEnsure := store.EnsureRepository(); errEnsure != nil {
 		t.Fatalf("EnsureRepository after initialization race: %v", errEnsure)
 	}
 	assertLocalFileContents(t, filepath.Join(workspaceDir, "auths", "remote.json"), winnerFiles["auths/remote.json"])
-	assertLocalFileContents(t, filepath.Join(workspaceDir, "config", "config.yaml"), winnerFiles["config/config.yaml"])
+	assertLocalFileContents(t, filepath.Join(workspaceDir, "config", "config.toml"), winnerFiles["config/config.toml"])
 }
 
 func TestEnsureRepositoryRetryRestoresTrackedAuthOnUpToDatePull(t *testing.T) {
@@ -971,7 +971,7 @@ func TestEnsureRepositoryReconcilesRemoteAuthChangesAroundLocalConfig(t *testing
 			t.Fatalf("Save owner %s: %v", id, errSave)
 		}
 	}
-	if errWrite := os.WriteFile(owner.ConfigPath(), []byte("source: original\n"), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(owner.ConfigPath(), []byte("source = 'original'\n"), 0o600); errWrite != nil {
 		t.Fatalf("write owner config: %v", errWrite)
 	}
 	if errPersist := owner.PersistConfig(context.Background()); errPersist != nil {
@@ -988,7 +988,7 @@ func TestEnsureRepositoryReconcilesRemoteAuthChangesAroundLocalConfig(t *testing
 	if errEnsure := storeB.EnsureRepository(); errEnsure != nil {
 		t.Fatalf("EnsureRepository B: %v", errEnsure)
 	}
-	if errWrite := os.WriteFile(storeA.ConfigPath(), []byte("source: local-a\n"), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(storeA.ConfigPath(), []byte("source = 'local-a'\n"), 0o600); errWrite != nil {
 		t.Fatalf("write local config A: %v", errWrite)
 	}
 	if _, errSave := storeB.Save(context.Background(), &cliproxyauth.Auth{
@@ -1004,7 +1004,7 @@ func TestEnsureRepositoryReconcilesRemoteAuthChangesAroundLocalConfig(t *testing
 	if errEnsure := storeA.EnsureRepository(); errEnsure != nil {
 		t.Fatalf("EnsureRepository A after remote auth changes: %v", errEnsure)
 	}
-	assertLocalFileContents(t, storeA.ConfigPath(), "source: local-a\n")
+	assertLocalFileContents(t, storeA.ConfigPath(), "source = 'local-a'\n")
 	assertLocalJSONValue(t, filepath.Join(storeA.AuthDir(), "modified.json"), "access_token", "new")
 	if _, errStat := os.Stat(filepath.Join(storeA.AuthDir(), "deleted.json")); !errors.Is(errStat, os.ErrNotExist) {
 		t.Fatalf("deleted local auth stat error = %v, want not exist", errStat)
@@ -1027,7 +1027,7 @@ func TestEnsureRepositoryReconcilesRemoteConfigChangesAroundLocalAuth(t *testing
 	}); errSave != nil {
 		t.Fatalf("Save owner auth: %v", errSave)
 	}
-	if errWrite := os.WriteFile(owner.ConfigPath(), []byte("source: original\n"), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(owner.ConfigPath(), []byte("source = 'original'\n"), 0o600); errWrite != nil {
 		t.Fatalf("write owner config: %v", errWrite)
 	}
 	if errPersist := owner.PersistConfig(context.Background()); errPersist != nil {
@@ -1049,7 +1049,7 @@ func TestEnsureRepositoryReconcilesRemoteConfigChangesAroundLocalAuth(t *testing
 	if errWrite := os.WriteFile(localAuthPath, []byte(localAuthContents), 0o600); errWrite != nil {
 		t.Fatalf("write local dirty auth: %v", errWrite)
 	}
-	if errWrite := os.WriteFile(storeB.ConfigPath(), []byte("source: remote-modified\n"), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(storeB.ConfigPath(), []byte("source = 'remote-modified'\n"), 0o600); errWrite != nil {
 		t.Fatalf("write remote config update: %v", errWrite)
 	}
 	if errPersist := storeB.PersistConfig(context.Background()); errPersist != nil {
@@ -1059,14 +1059,14 @@ func TestEnsureRepositoryReconcilesRemoteConfigChangesAroundLocalAuth(t *testing
 	if errEnsure := storeA.EnsureRepository(); errEnsure != nil {
 		t.Fatalf("EnsureRepository A after remote config update: %v", errEnsure)
 	}
-	assertLocalFileContents(t, storeA.ConfigPath(), "source: remote-modified\n")
+	assertLocalFileContents(t, storeA.ConfigPath(), "source = 'remote-modified'\n")
 	assertLocalFileContents(t, localAuthPath, localAuthContents)
 
 	if errRemove := os.Remove(storeB.ConfigPath()); errRemove != nil {
 		t.Fatalf("remove config B: %v", errRemove)
 	}
 	storeB.mu.Lock()
-	errDeleteConfig := storeB.commitAndPushLocked("Delete config", "config/config.yaml")
+	errDeleteConfig := storeB.commitAndPushLocked("Delete config", "config/config.toml")
 	storeB.mu.Unlock()
 	if errDeleteConfig != nil {
 		t.Fatalf("commit remote config deletion: %v", errDeleteConfig)
@@ -1090,7 +1090,7 @@ func TestEnsureRepositoryFailsClosedOnSamePathConflict(t *testing.T) {
 	if errEnsure := owner.EnsureRepository(); errEnsure != nil {
 		t.Fatalf("EnsureRepository owner: %v", errEnsure)
 	}
-	if errWrite := os.WriteFile(owner.ConfigPath(), []byte("source: original\n"), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(owner.ConfigPath(), []byte("source = 'original'\n"), 0o600); errWrite != nil {
 		t.Fatalf("write owner config: %v", errWrite)
 	}
 	if errPersist := owner.PersistConfig(context.Background()); errPersist != nil {
@@ -1107,10 +1107,10 @@ func TestEnsureRepositoryFailsClosedOnSamePathConflict(t *testing.T) {
 	if errEnsure := storeB.EnsureRepository(); errEnsure != nil {
 		t.Fatalf("EnsureRepository B: %v", errEnsure)
 	}
-	if errWrite := os.WriteFile(storeA.ConfigPath(), []byte("source: local\n"), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(storeA.ConfigPath(), []byte("source = 'local'\n"), 0o600); errWrite != nil {
 		t.Fatalf("write local config: %v", errWrite)
 	}
-	if errWrite := os.WriteFile(storeB.ConfigPath(), []byte("source: remote\n"), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(storeB.ConfigPath(), []byte("source = 'remote'\n"), 0o600); errWrite != nil {
 		t.Fatalf("write remote config: %v", errWrite)
 	}
 	if errPersist := storeB.PersistConfig(context.Background()); errPersist != nil {
@@ -1121,8 +1121,8 @@ func TestEnsureRepositoryFailsClosedOnSamePathConflict(t *testing.T) {
 	if errEnsure == nil || !strings.Contains(errEnsure.Error(), "conflicts with local change") {
 		t.Fatalf("EnsureRepository conflict error = %v, want fail-closed conflict", errEnsure)
 	}
-	assertLocalFileContents(t, storeA.ConfigPath(), "source: local\n")
-	assertRemoteFileContents(t, remoteDir, "master", "config/config.yaml", "source: remote\n")
+	assertLocalFileContents(t, storeA.ConfigPath(), "source = 'local'\n")
+	assertRemoteFileContents(t, remoteDir, "master", "config/config.toml", "source = 'remote'\n")
 }
 
 func TestInstallRecoveredGitDirectoryRetainsBackupWhenRestoreFails(t *testing.T) {
@@ -1431,7 +1431,7 @@ func TestGitTokenStoreCorruptionRecoveryPreservesOnlyNonConflictingLocalChanges(
 
 	t.Run("non-conflicting change", func(t *testing.T) {
 		workspaceDir, owner, store := setup(t)
-		if errWrite := os.WriteFile(store.ConfigPath(), []byte("source: local\n"), 0o600); errWrite != nil {
+		if errWrite := os.WriteFile(store.ConfigPath(), []byte("source = 'local'\n"), 0o600); errWrite != nil {
 			t.Fatalf("write local config: %v", errWrite)
 		}
 		if _, errSave := owner.Save(context.Background(), &cliproxyauth.Auth{
@@ -1445,7 +1445,7 @@ func TestGitTokenStoreCorruptionRecoveryPreservesOnlyNonConflictingLocalChanges(
 		if errEnsure := store.EnsureRepository(); errEnsure != nil {
 			t.Fatalf("EnsureRepository recovery: %v", errEnsure)
 		}
-		assertLocalFileContents(t, store.ConfigPath(), "source: local\n")
+		assertLocalFileContents(t, store.ConfigPath(), "source = 'local'\n")
 		assertLocalJSONValue(t, filepath.Join(store.AuthDir(), "victim.json"), "access_token", "remote-new")
 	})
 
@@ -1492,14 +1492,14 @@ func TestGitTokenStoreFullPackfileCorruptionFailsClosedWithDirtyManagedFile(t *t
 	t.Run("config", func(t *testing.T) {
 		remoteDir, workspaceDir, store := setup(t)
 		configPath := store.ConfigPath()
-		if errWrite := os.WriteFile(configPath, []byte("source: remote\n"), 0o600); errWrite != nil {
+		if errWrite := os.WriteFile(configPath, []byte("source = 'remote'\n"), 0o600); errWrite != nil {
 			t.Fatalf("write initial config: %v", errWrite)
 		}
 		if errPersist := store.PersistConfig(context.Background()); errPersist != nil {
 			t.Fatalf("PersistConfig initial config: %v", errPersist)
 		}
 
-		localContents := "source: local-dirty\n"
+		localContents := "source = 'local-dirty'\n"
 		if errWrite := os.WriteFile(configPath, []byte(localContents), 0o600); errWrite != nil {
 			t.Fatalf("write dirty config: %v", errWrite)
 		}
@@ -1510,7 +1510,7 @@ func TestGitTokenStoreFullPackfileCorruptionFailsClosedWithDirtyManagedFile(t *t
 			t.Fatalf("PersistConfig error = %v, want fail-closed recovery baseline error", errPersist)
 		}
 		assertLocalFileContents(t, configPath, localContents)
-		assertRemoteFileContents(t, remoteDir, "master", "config/config.yaml", "source: remote\n")
+		assertRemoteFileContents(t, remoteDir, "master", "config/config.toml", "source = 'remote'\n")
 	})
 
 	t.Run("auth", func(t *testing.T) {

@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Codex header defaults were retired once Codex OAuth started sending the
@@ -17,14 +15,14 @@ func TestRetiredCodexHeaderDefaultsAreIgnored(t *testing.T) {
 		name, raw, retired string
 		v8                 bool
 	}{
-		{"legacy", "port: 8317\ncodex-header-defaults: {user-agent: old-agent, beta-features: old-beta}\ncodex: {disable-codex-cloaking: true}\n", "codex-header-defaults", false},
-		{"v8", "config-version: 8\nserver: {port: 8317}\nupstream: {codex: {disable-codex-cloaking: true}}\noauth: {providers: {codex: {header-defaults: {user-agent: old-agent, beta-features: old-beta}}}}\n", "oauth.providers.codex.header-defaults", true},
+		{"legacy", "\"port\" = 8317\n\"codex-header-defaults\" = {\"user-agent\" = \"old-agent\", \"beta-features\" = \"old-beta\"}\n\"codex\" = {\"disable-codex-cloaking\" = true}\n", "codex-header-defaults", false},
+		{"v8", "\"config-version\" = 8\n\"server\" = {\"port\" = 8317}\n\"upstream\" = {\"codex\" = {\"disable-codex-cloaking\" = true}}\n\"oauth\" = {\"providers\" = {\"codex\" = {\"header-defaults\" = {\"user-agent\" = \"old-agent\", \"beta-features\" = \"old-beta\"}}}}\n", "oauth.providers.codex.header-defaults", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var warned []string
 			SetV8MigrationWarnFunc(func(section, _ string) { warned = append(warned, section) })
 			t.Cleanup(func() { SetV8MigrationWarnFunc(nil) })
-			path := filepath.Join(t.TempDir(), "config.yaml")
+			path := filepath.Join(t.TempDir(), "config.toml")
 			if err := os.WriteFile(path, []byte(tc.raw), 0o600); err != nil {
 				t.Fatal(err)
 			}
@@ -39,15 +37,15 @@ func TestRetiredCodexHeaderDefaultsAreIgnored(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var doc yaml.Node
-			if err = yaml.Unmarshal(saved, &doc); err != nil {
+			doc, err := ParseConfigDocument(saved)
+			if err != nil {
 				t.Fatal(err)
 			}
-			if yamlPath(doc.Content[0], tc.retired) != nil {
+			if _, exists := mapPath(doc, tc.retired); exists {
 				t.Fatalf("save wrote retired %s back:\n%s", tc.retired, saved)
 			}
 			if tc.v8 {
-				if !strings.Contains(string(saved), "# "+tc.retired+":") || len(warned) != 1 || warned[0] != tc.retired {
+				if !strings.Contains(string(saved), "# "+tc.retired+" =") || len(warned) != 1 || warned[0] != tc.retired {
 					t.Fatalf("v8 save did not comment out retired key with a warning: warned=%v\n%s", warned, saved)
 				}
 				if err = ValidateV8Config(saved); err != nil {
@@ -65,13 +63,10 @@ func TestRetiredCodexHeaderDefaultsAreIgnored(t *testing.T) {
 
 func TestLoadConfigOptional_CodexOptions(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, "config.yaml")
-	configYAML := []byte(`
-codex:
-  disable-codex-cloaking: true
-  optimize-multi-agent-v2: true
+	configPath := filepath.Join(dir, "config.toml")
+	configTOML := []byte(`"codex" = {"disable-codex-cloaking" = true, "optimize-multi-agent-v2" = true}
 `)
-	if err := os.WriteFile(configPath, configYAML, 0o600); err != nil {
+	if err := os.WriteFile(configPath, configTOML, 0o600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -90,12 +85,10 @@ codex:
 
 func TestLoadConfigOptional_CodexModelLevelCooling(t *testing.T) {
 	dir := t.TempDir()
-	configPath := filepath.Join(dir, "config.yaml")
-	configYAML := []byte(`
-codex:
-  model-level-cooling: true
+	configPath := filepath.Join(dir, "config.toml")
+	configTOML := []byte(`"codex" = {"model-level-cooling" = true}
 `)
-	if err := os.WriteFile(configPath, configYAML, 0o600); err != nil {
+	if err := os.WriteFile(configPath, configTOML, 0o600); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
 
@@ -108,7 +101,8 @@ codex:
 		t.Fatalf("ModelLevelCooling = false, want true")
 	}
 
-	defaultCfg, errDefault := ParseConfigBytes([]byte(`{}`))
+	defaultCfg, errDefault := ParseConfigBytes([]byte(`
+`))
 	if errDefault != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errDefault)
 	}

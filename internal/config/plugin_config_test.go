@@ -3,15 +3,12 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestParseConfigBytes_PluginsDefaults(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
-plugins: {}
+[plugins]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -37,8 +34,8 @@ func TestParseConfigBytes_PluginsDirExpandsLeadingTilde(t *testing.T) {
 	t.Setenv("USERPROFILE", homeDir)
 
 	cfg, errParse := ParseConfigBytes([]byte(`
-plugins:
-  dir: "~/.cli-proxy-api/plugins"
+[plugins]
+dir = "~/.cli-proxy-api/plugins"
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -54,8 +51,8 @@ func TestLoadConfig_PluginsDirExpandsLeadingTilde(t *testing.T) {
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
 	t.Setenv("USERPROFILE", homeDir)
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	if errWrite := os.WriteFile(configPath, []byte("plugins:\n  dir: \"~/.cli-proxy-api/plugins\"\n"), 0o600); errWrite != nil {
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	if errWrite := os.WriteFile(configPath, []byte("[plugins]\ndir = \"~/.cli-proxy-api/plugins\"\n"), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -72,10 +69,8 @@ func TestLoadConfig_PluginsDirExpandsLeadingTilde(t *testing.T) {
 
 func TestParseConfigBytes_PluginStoreSources(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
-plugins:
-  store-sources:
-    - " https://community.example/registry.json "
-    - ""
+[plugins]
+store-sources = [" https://community.example/registry.json ", ""]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -92,14 +87,14 @@ plugins:
 
 func TestParseConfigBytes_PluginStoreAuth(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
-plugins:
-  store-auth:
-    - match: " https://plugins.example.com/ "
-      apply-to: ["registry", "artifact", "registry"]
-      type: bearer
-      token-env: " CLIPROXY_PLUGIN_STORE_TOKEN "
-    - match: ""
-      type: bearer
+[[plugins.store-auth]]
+match = " https://plugins.example.com/ "
+apply-to = ["registry", "artifact", "registry"]
+type = "bearer"
+token-env = " CLIPROXY_PLUGIN_STORE_TOKEN "
+[[plugins.store-auth]]
+match = ""
+type = "bearer"
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -118,7 +113,7 @@ plugins:
 }
 
 func TestParseConfigBytes_PluginAuthRevision(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte("plugins:\n  auth-revision: 42\n"))
+	cfg, errParse := ParseConfigBytes([]byte("[plugins]\nauth-revision = 42\n"))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
 	}
@@ -127,11 +122,9 @@ func TestParseConfigBytes_PluginAuthRevision(t *testing.T) {
 	}
 }
 
-func TestParseConfigBytes_PluginInstanceEmptyRawYAML(t *testing.T) {
+func TestParseConfigBytes_PluginInstanceEmptyRawTOML(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
-plugins:
-  configs:
-    sample: {}
+[plugins.configs.sample]
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -151,34 +144,26 @@ plugins:
 		t.Fatalf("Plugin.Priority = %d, want 0", plugin.Priority)
 	}
 
-	raw, errMarshal := yaml.Marshal(&plugin.Raw)
-	if errMarshal != nil {
-		t.Fatalf("yaml.Marshal(Raw) error = %v", errMarshal)
-	}
-	rawText := string(raw)
-	if strings.Contains(rawText, "enabled:") {
-		t.Fatalf("Raw YAML contains enabled default:\n%s", rawText)
-	}
-	if strings.Contains(rawText, "priority:") {
-		t.Fatalf("Raw YAML contains priority default:\n%s", rawText)
-	}
-
-	marshaled, errMarshalPlugin := yaml.Marshal(plugin)
-	if errMarshalPlugin != nil {
-		t.Fatalf("yaml.Marshal(plugin) error = %v", errMarshalPlugin)
-	}
-	marshaledText := string(marshaled)
-	if strings.Contains(marshaledText, "enabled:") {
-		t.Fatalf("Plugin YAML contains enabled default:\n%s", marshaledText)
-	}
-	if strings.Contains(marshaledText, "priority:") {
-		t.Fatalf("Plugin YAML contains priority default:\n%s", marshaledText)
+	for name, value := range map[string]any{"raw": plugin.Raw, "plugin": plugin} {
+		data, errMarshal := MarshalTOML(value)
+		if errMarshal != nil {
+			t.Fatalf("MarshalTOML(%s) error = %v", name, errMarshal)
+		}
+		doc, errParse := ParseConfigDocument(data)
+		if errParse != nil {
+			t.Fatal(errParse)
+		}
+		for _, key := range []string{"enabled", "priority"} {
+			if _, present := doc[key]; present {
+				t.Fatalf("%s TOML contains %s default:\n%s", name, key, data)
+			}
+		}
 	}
 }
 
 func TestSaveConfigPreserveComments_PrunesDefaultPluginsDir(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	if errWrite := os.WriteFile(configPath, []byte("debug: true\n"), 0o600); errWrite != nil {
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	if errWrite := os.WriteFile(configPath, []byte("debug = true\n"), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -197,27 +182,26 @@ func TestSaveConfigPreserveComments_PrunesDefaultPluginsDir(t *testing.T) {
 	if errRead != nil {
 		t.Fatalf("os.ReadFile() error = %v", errRead)
 	}
-	text := string(data)
-	if strings.Contains(text, "plugins:") {
-		t.Fatalf("saved config contains plugins default section:\n%s", text)
+	doc, errParse := ParseConfigDocument(data)
+	if errParse != nil {
+		t.Fatal(errParse)
 	}
-	if strings.Contains(text, "dir: plugins") {
-		t.Fatalf("saved config contains default plugins dir:\n%s", text)
+	if _, present := doc["plugins"]; present {
+		t.Fatalf("saved config contains plugins default section:\n%s", data)
 	}
 }
 
-func TestParseConfigBytes_PluginInstanceRawYAML(t *testing.T) {
+func TestParseConfigBytes_PluginInstanceRawTOML(t *testing.T) {
 	cfg, errParse := ParseConfigBytes([]byte(`
-plugins:
-  enabled: true
-  dir: custom-plugins
-  configs:
-    sample:
-      enabled: false
-      priority: 7
-      config1: value1
-      config2:
-        nested: value2
+[plugins]
+enabled = true
+dir = "custom-plugins"
+[plugins.configs.sample]
+enabled = false
+priority = 7
+config1 = "value1"
+[plugins.configs.sample.config2]
+nested = "value2"
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -237,20 +221,19 @@ plugins:
 		t.Fatalf("Plugin.Priority = %d, want 7", plugin.Priority)
 	}
 
-	raw, errMarshal := yaml.Marshal(&plugin.Raw)
+	raw, errMarshal := MarshalTOML(plugin.Raw)
 	if errMarshal != nil {
-		t.Fatalf("yaml.Marshal(Raw) error = %v", errMarshal)
+		t.Fatalf("MarshalTOML(Raw) error = %v", errMarshal)
 	}
-	rawText := string(raw)
-	for _, want := range []string{
-		"enabled: false",
-		"priority: 7",
-		"config1: value1",
-		"config2:",
-		"nested: value2",
-	} {
-		if !strings.Contains(rawText, want) {
-			t.Fatalf("Raw YAML missing %q in:\n%s", want, rawText)
-		}
+	doc, errParse := ParseConfigDocument(raw)
+	if errParse != nil {
+		t.Fatal(errParse)
+	}
+	if doc["enabled"] != false || doc["priority"] != int64(7) || doc["config1"] != "value1" {
+		t.Fatalf("Raw TOML lost plugin values: %#v", doc)
+	}
+	nested, ok := doc["config2"].(map[string]any)
+	if !ok || nested["nested"] != "value2" {
+		t.Fatalf("Raw TOML lost nested config: %#v", doc)
 	}
 }

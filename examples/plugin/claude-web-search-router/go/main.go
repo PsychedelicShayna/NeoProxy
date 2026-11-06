@@ -64,9 +64,9 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
-	"gopkg.in/yaml.v3"
 )
 
 const pluginIdentifier = "claude-web-search-router"
@@ -96,19 +96,19 @@ type envelopeError struct {
 }
 
 type lifecycleRequest struct {
-	ConfigYAML []byte `json:"config_yaml"`
+	ConfigTOML []byte `json:"config_toml"`
 }
 
 type pluginConfig struct {
-	Enabled              bool     `yaml:"enabled"`
-	Route                string   `yaml:"route"`
-	AntigravityModel     string   `yaml:"antigravity_model"`
-	CodexModel           string   `yaml:"codex_model"`
-	XAIModel             string   `yaml:"xai_model"`
-	DefaultProvider      string   `yaml:"default_provider"`
-	DefaultProviderModel string   `yaml:"default_provider_model"`
-	TavilyAPIKeys        []string `yaml:"tavily_api_keys"`
-	RequireWebSearchOnly bool     `yaml:"require_web_search_only"`
+	Enabled              bool     `toml:"enabled"`
+	Route                string   `toml:"route"`
+	AntigravityModel     string   `toml:"antigravity_model"`
+	CodexModel           string   `toml:"codex_model"`
+	XAIModel             string   `toml:"xai_model"`
+	DefaultProvider      string   `toml:"default_provider"`
+	DefaultProviderModel string   `toml:"default_provider_model"`
+	TavilyAPIKeys        []string `toml:"tavily_api_keys"`
+	RequireWebSearchOnly bool     `toml:"require_web_search_only"`
 }
 
 type registration struct {
@@ -214,8 +214,8 @@ func configure(raw []byte) error {
 		}
 	}
 	cfg := defaultPluginConfig()
-	if len(req.ConfigYAML) > 0 {
-		decoded, errDecode := decodeConfig(req.ConfigYAML)
+	if len(req.ConfigTOML) > 0 {
+		decoded, errDecode := decodeConfig(req.ConfigTOML)
 		if errDecode != nil {
 			return errDecode
 		}
@@ -235,7 +235,7 @@ func defaultPluginConfig() pluginConfig {
 
 func decodeConfig(raw []byte) (pluginConfig, error) {
 	cfg := defaultPluginConfig()
-	if errUnmarshal := yaml.Unmarshal(raw, &cfg); errUnmarshal != nil {
+	if errUnmarshal := toml.Unmarshal(raw, &cfg); errUnmarshal != nil {
 		return pluginConfig{}, errUnmarshal
 	}
 	cfg.Route = strings.TrimSpace(cfg.Route)

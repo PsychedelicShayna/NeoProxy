@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestIsV8ConfigLayout(t *testing.T) {
@@ -14,25 +12,22 @@ func TestIsV8ConfigLayout(t *testing.T) {
 		name, raw string
 		v8        bool
 	}{
-		{"legacy", "request-retry: 3\ncodex: {response-steering: true}\n", false},
-		{"legacy common roots", "routing: {strategy: fill-first}\nplugins: {configs: {example: {enabled: true}}}\nquota-exceeded: {switch-project: true}\nclient: {codex: {enable-apply-patch: true}}\napi-keys: [client-key]\n", false},
-		{"legacy optimize alias", "codex: {optimize-multi-agent-v2: true}\n", false},
-		{"declared v8", "config-version: 8\nrequest-retry: 3\n", true},
-		{"historical v8", "oauth: {providers: {codex: {response-steering: true}}}\n", true},
-		{"empty v8", "server: {}\n", true},
-		{"latest v8", "upstream: {xai: {inject-x-search: false}}\n", true},
-		{"grouped credentials", "api-keys: {}\n", true},
-		{"partial v8 retry", "request-retry: 3\nrouting: {retry: {max-retry-credentials: 2}}\n", true},
-		{"empty v8 retry", "routing: {retry: {}}\n", true},
-		{"historical client", "providers: {codex: {optimize-multi-agent-v2: true}}\n", true},
-		{"latest client", "client: {codex: {optimize-multi-agent-v2: false}}\n", true},
+		{"legacy", "request-retry = 3\ncodex.response-steering = true\n", false},
+		{"legacy common roots", "routing.strategy = 'fill-first'\nplugins.configs.example.enabled = true\nquota-exceeded.switch-project = true\nclient.codex.enable-apply-patch = true\napi-keys = ['client-key']\n", false},
+		{"legacy optimize alias", "codex.optimize-multi-agent-v2 = true\n", false},
+		{"declared v8", "config-version = 8\nrequest-retry = 3\n", true},
+		{"historical v8", "oauth.providers.codex.response-steering = true\n", true},
+		{"empty v8", "server = {}\n", true},
+		{"latest v8", "upstream.xai.inject-x-search = false\n", true},
+		{"grouped credentials", "api-keys = {}\n", true},
+		{"partial v8 retry", "request-retry = 3\nrouting.retry.max-retry-credentials = 2\n", true},
+		{"empty v8 retry", "routing.retry = {}\n", true},
+		{"historical client", "providers.codex.optimize-multi-agent-v2 = true\n", true},
+		{"latest client", "client.codex.optimize-multi-agent-v2 = false\n", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var doc yaml.Node
-			if err := yaml.Unmarshal([]byte(tc.raw), &doc); err != nil {
-				t.Fatal(err)
-			}
-			if got := IsV8ConfigLayout(doc.Content[0]); got != tc.v8 {
+			root := testV8Document(t, []byte(tc.raw))
+			if got := IsV8ConfigLayout(root); got != tc.v8 {
 				t.Fatalf("v8 layout = %v, want %v", got, tc.v8)
 			}
 		})
@@ -40,10 +35,10 @@ func TestIsV8ConfigLayout(t *testing.T) {
 }
 
 func TestV0SaveUpgradesHistoricalV8Layout(t *testing.T) {
-	for _, version := range []string{"", "config-version: 8\n"} {
+	for _, version := range []string{"", "config-version = 8\n"} {
 		t.Run(version, func(t *testing.T) {
-			file := filepath.Join(t.TempDir(), "config.yaml")
-			raw := version + "# Preserve provider settings\noauth: {providers: {codex: {response-steering: true}, xai: {inject-x-search: true}}}\n"
+			file := filepath.Join(t.TempDir(), "config.toml")
+			raw := version + "# Preserve provider settings\noauth.providers.codex.response-steering = true\noauth.providers.xai.inject-x-search = true\n"
 			if err := os.WriteFile(file, []byte(raw), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -63,12 +58,8 @@ func TestV0SaveUpgradesHistoricalV8Layout(t *testing.T) {
 			if err = ValidateV8Config(data); err != nil {
 				t.Fatalf("v0 saved legacy/mixed fields: %v", err)
 			}
-			var doc yaml.Node
-			if err = yaml.Unmarshal(data, &doc); err != nil {
-				t.Fatal(err)
-			}
-			root := doc.Content[0]
-			if yamlPath(root, "upstream.codex.response-steering") == nil || yamlPath(root, "upstream.xai.inject-x-search") == nil || yamlPath(root, "server.port").Value != "8318" {
+			root := testV8Document(t, data)
+			if testV8Path(root, "upstream.codex.response-steering") != true || testV8Path(root, "upstream.xai.inject-x-search") != true || testV8Path(root, "server.port") != int64(8318) {
 				t.Fatal("v0 save did not restore canonical provider fields and updated port")
 			}
 			if !cfg.ForAPIKey().Codex.ResponseSteering || !cfg.ForAPIKey().XAI.InjectXSearch || !cfg.Home.Enabled {

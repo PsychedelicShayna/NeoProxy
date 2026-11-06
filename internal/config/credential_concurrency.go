@@ -3,8 +3,6 @@ package config
 import (
 	"fmt"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -21,17 +19,17 @@ const (
 
 // CredentialConcurrencyConfig controls the credential concurrency lifecycle managed by Home.
 type CredentialConcurrencyConfig struct {
-	LifecycleConfigRevision    int64         `yaml:"lifecycle-config-revision" json:"lifecycle-config-revision"`
-	ObservationBarrierRevision int64         `yaml:"observation-barrier-revision" json:"observation-barrier-revision"`
-	CPAHeartbeatTimeout        time.Duration `yaml:"cpa-heartbeat-timeout" json:"cpa-heartbeat-timeout"`
-	CPACancelBound             time.Duration `yaml:"cpa-cancel-bound" json:"cpa-cancel-bound"`
-	ReclaimGrace               time.Duration `yaml:"reclaim-grace" json:"reclaim-grace"`
-	CleanupInterval            time.Duration `yaml:"cleanup-interval" json:"cleanup-interval"`
-	ReleaseFlushInterval       time.Duration `yaml:"release-flush-interval" json:"release-flush-interval"`
-	ReleaseMaxBackoff          time.Duration `yaml:"release-max-backoff" json:"release-max-backoff"`
-	BusyRetryMin               time.Duration `yaml:"busy-retry-min" json:"busy-retry-min"`
-	BusyRetryMax               time.Duration `yaml:"busy-retry-max" json:"busy-retry-max"`
-	MaxLimit                   int64         `yaml:"max-limit" json:"max-limit"`
+	LifecycleConfigRevision    int64         `yaml:"lifecycle-config-revision" toml:"lifecycle-config-revision" json:"lifecycle-config-revision"`
+	ObservationBarrierRevision int64         `yaml:"observation-barrier-revision" toml:"observation-barrier-revision" json:"observation-barrier-revision"`
+	CPAHeartbeatTimeout        time.Duration `yaml:"cpa-heartbeat-timeout" toml:"cpa-heartbeat-timeout" json:"cpa-heartbeat-timeout"`
+	CPACancelBound             time.Duration `yaml:"cpa-cancel-bound" toml:"cpa-cancel-bound" json:"cpa-cancel-bound"`
+	ReclaimGrace               time.Duration `yaml:"reclaim-grace" toml:"reclaim-grace" json:"reclaim-grace"`
+	CleanupInterval            time.Duration `yaml:"cleanup-interval" toml:"cleanup-interval" json:"cleanup-interval"`
+	ReleaseFlushInterval       time.Duration `yaml:"release-flush-interval" toml:"release-flush-interval" json:"release-flush-interval"`
+	ReleaseMaxBackoff          time.Duration `yaml:"release-max-backoff" toml:"release-max-backoff" json:"release-max-backoff"`
+	BusyRetryMin               time.Duration `yaml:"busy-retry-min" toml:"busy-retry-min" json:"busy-retry-min"`
+	BusyRetryMax               time.Duration `yaml:"busy-retry-max" toml:"busy-retry-max" json:"busy-retry-max"`
+	MaxLimit                   int64         `yaml:"max-limit" toml:"max-limit" json:"max-limit"`
 
 	lifecycleConfigRevisionPresent    bool
 	observationBarrierRevisionPresent bool
@@ -44,66 +42,6 @@ type CredentialConcurrencyConfig struct {
 	busyRetryMinPresent               bool
 	busyRetryMaxPresent               bool
 	maxLimitPresent                   bool
-}
-
-// UnmarshalYAML preserves field presence so only absent lifecycle values receive legacy defaults.
-func (c *CredentialConcurrencyConfig) UnmarshalYAML(value *yaml.Node) error {
-	type rawCredentialConcurrencyConfig struct {
-		LifecycleConfigRevision    int64         `yaml:"lifecycle-config-revision"`
-		ObservationBarrierRevision int64         `yaml:"observation-barrier-revision"`
-		CPAHeartbeatTimeout        time.Duration `yaml:"cpa-heartbeat-timeout"`
-		CPACancelBound             time.Duration `yaml:"cpa-cancel-bound"`
-		ReclaimGrace               time.Duration `yaml:"reclaim-grace"`
-		CleanupInterval            time.Duration `yaml:"cleanup-interval"`
-		ReleaseFlushInterval       time.Duration `yaml:"release-flush-interval"`
-		ReleaseMaxBackoff          time.Duration `yaml:"release-max-backoff"`
-		BusyRetryMin               time.Duration `yaml:"busy-retry-min"`
-		BusyRetryMax               time.Duration `yaml:"busy-retry-max"`
-		MaxLimit                   int64         `yaml:"max-limit"`
-	}
-
-	var raw rawCredentialConcurrencyConfig
-	if errDecode := value.Decode(&raw); errDecode != nil {
-		return errDecode
-	}
-
-	*c = CredentialConcurrencyConfig{
-		LifecycleConfigRevision:           raw.LifecycleConfigRevision,
-		ObservationBarrierRevision:        raw.ObservationBarrierRevision,
-		CPAHeartbeatTimeout:               raw.CPAHeartbeatTimeout,
-		CPACancelBound:                    raw.CPACancelBound,
-		ReclaimGrace:                      raw.ReclaimGrace,
-		CleanupInterval:                   raw.CleanupInterval,
-		ReleaseFlushInterval:              raw.ReleaseFlushInterval,
-		ReleaseMaxBackoff:                 raw.ReleaseMaxBackoff,
-		BusyRetryMin:                      raw.BusyRetryMin,
-		BusyRetryMax:                      raw.BusyRetryMax,
-		MaxLimit:                          raw.MaxLimit,
-		lifecycleConfigRevisionPresent:    credentialConcurrencyFieldPresent(value, "lifecycle-config-revision"),
-		observationBarrierRevisionPresent: credentialConcurrencyFieldPresent(value, "observation-barrier-revision"),
-		cpaHeartbeatTimeoutPresent:        credentialConcurrencyFieldPresent(value, "cpa-heartbeat-timeout"),
-		cpaCancelBoundPresent:             credentialConcurrencyFieldPresent(value, "cpa-cancel-bound"),
-		reclaimGracePresent:               credentialConcurrencyFieldPresent(value, "reclaim-grace"),
-		cleanupIntervalPresent:            credentialConcurrencyFieldPresent(value, "cleanup-interval"),
-		releaseFlushIntervalPresent:       credentialConcurrencyFieldPresent(value, "release-flush-interval"),
-		releaseMaxBackoffPresent:          credentialConcurrencyFieldPresent(value, "release-max-backoff"),
-		busyRetryMinPresent:               credentialConcurrencyFieldPresent(value, "busy-retry-min"),
-		busyRetryMaxPresent:               credentialConcurrencyFieldPresent(value, "busy-retry-max"),
-		maxLimitPresent:                   credentialConcurrencyFieldPresent(value, "max-limit"),
-	}
-	return nil
-}
-
-func credentialConcurrencyFieldPresent(value *yaml.Node, field string) bool {
-	if value == nil || value.Kind != yaml.MappingNode {
-		return false
-	}
-	for index := 0; index+1 < len(value.Content); index += 2 {
-		if value.Content[index].Value == field {
-			return true
-		}
-	}
-	return false
 }
 
 // WithDefaults applies the lifecycle defaults required for compatibility with older Home versions.

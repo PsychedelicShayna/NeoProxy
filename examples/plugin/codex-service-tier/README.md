@@ -13,13 +13,16 @@ Requests that do not match these conditions are returned unchanged.
 
 Add the plugin under `plugins.configs`:
 
-```yaml
-plugins:
-  configs:
-    codex-service-tier:
-      enabled: true
-      priority: 1
-      fast: false
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.codex-service-tier]
+enabled = true
+priority = 1
+fast = false
 ```
 
 `fast` is a boolean field. Set it to `true` to enable priority service tier shaping for matching Codex `gpt-5.5` requests.

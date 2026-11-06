@@ -10,6 +10,26 @@ type SDKConfig = internalconfig.SDKConfig
 
 type Config = internalconfig.Config
 
+type ConfigFormat = internalconfig.ConfigFormat
+
+const (
+	ConfigFormatTOML = internalconfig.ConfigFormatTOML
+	ConfigFormatYAML = internalconfig.ConfigFormatYAML
+)
+
+func ResolveConfigPath(path string) (string, error) { return internalconfig.ResolveConfigPath(path) }
+func DecodeConfig(data []byte, format ConfigFormat) (*Config, error) {
+	return internalconfig.DecodeConfig(data, format)
+}
+func EncodeConfig(cfg *Config) ([]byte, error) { return internalconfig.EncodeConfig(cfg) }
+func MarshalTOML(value any) ([]byte, error)    { return internalconfig.MarshalTOML(value) }
+func ParseConfigDocument(data []byte) (map[string]any, error) {
+	return internalconfig.ParseConfigDocument(data)
+}
+func RenderConfigDocument(root map[string]any) ([]byte, error) {
+	return internalconfig.RenderConfigDocument(root)
+}
+
 type ModelCatalogs = internalconfig.ModelCatalogs
 
 type ClientConfig = internalconfig.ClientConfig

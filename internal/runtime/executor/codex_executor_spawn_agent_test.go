@@ -530,7 +530,7 @@ func TestCodexExecutor_IsCompat_V8Layout_ClientScope_Issue6233(t *testing.T) {
 
 	payload := codexSpawnAgentTestPayload()
 	// The historical OAuth spelling now migrates to client-wide optimization.
-	parsed, errParse := config.ParseConfigBytes([]byte("oauth: {providers: {codex: {optimize-multi-agent-v2: true, orphan-delegation-compatibility: true}}}"))
+	parsed, errParse := config.ParseConfigBytes([]byte("[oauth.providers.codex]\noptimize-multi-agent-v2 = true\norphan-delegation-compatibility = true\n"))
 	if errParse != nil {
 		t.Fatalf("parse historical config: %v", errParse)
 	}

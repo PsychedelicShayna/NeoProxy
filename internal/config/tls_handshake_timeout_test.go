@@ -33,9 +33,7 @@ func TestSDKConfigTLSHandshakeTimeout(t *testing.T) {
 // TestParseConfigBytesRequestsTLSHandshakeTimeout ensures the canonical v8
 // layout exposes the setting under requests and parses as integer seconds.
 func TestParseConfigBytesRequestsTLSHandshakeTimeout(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`
-requests:
-  tls-handshake-timeout-seconds: 12
+	cfg, errParse := ParseConfigBytes([]byte(`"requests" = {"tls-handshake-timeout-seconds" = 12}
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -51,8 +49,7 @@ requests:
 // TestParseConfigBytesRequestsTLSHandshakeTimeoutLegacyLayout ensures the
 // pre-v8 flat layout maps tls-handshake-timeout-seconds onto the same field.
 func TestParseConfigBytesRequestsTLSHandshakeTimeoutLegacyLayout(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`
-tls-handshake-timeout-seconds: 7
+	cfg, errParse := ParseConfigBytes([]byte(`"tls-handshake-timeout-seconds" = 7
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
@@ -71,23 +68,23 @@ tls-handshake-timeout-seconds: 7
 func TestParseConfigBytesRequestsTLSHandshakeTimeoutPrecedence(t *testing.T) {
 	tests := []struct {
 		name string
-		yaml string
+		toml string
 		want int
 	}{
 		{
 			name: "canonical positive wins",
-			yaml: "tls-handshake-timeout-seconds: 7\nrequests:\n  tls-handshake-timeout-seconds: 12\n",
+			toml: "\"tls-handshake-timeout-seconds\" = 7\n\"requests\" = {\"tls-handshake-timeout-seconds\" = 12}\n",
 			want: 12,
 		},
 		{
 			name: "canonical explicit zero wins",
-			yaml: "tls-handshake-timeout-seconds: 7\nrequests:\n  tls-handshake-timeout-seconds: 0\n",
+			toml: "\"tls-handshake-timeout-seconds\" = 7\n\"requests\" = {\"tls-handshake-timeout-seconds\" = 0}\n",
 			want: 0,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg, errParse := ParseConfigBytes([]byte(tt.yaml))
+			cfg, errParse := ParseConfigBytes([]byte(tt.toml))
 			if errParse != nil {
 				t.Fatalf("ParseConfigBytes() error = %v", errParse)
 			}
@@ -102,10 +99,7 @@ func TestParseConfigBytesRequestsTLSHandshakeTimeoutPrecedence(t *testing.T) {
 // relocation: the never-released upstream.claude spelling must not remain
 // a second functional entry point after moving to requests.
 func TestParseConfigBytesUpstreamClaudeTLSHandshakeTimeoutIgnored(t *testing.T) {
-	cfg, errParse := ParseConfigBytes([]byte(`
-upstream:
-  claude:
-    tls-handshake-timeout-seconds: 99
+	cfg, errParse := ParseConfigBytes([]byte(`"upstream" = {"claude" = {"tls-handshake-timeout-seconds" = 99}}
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)

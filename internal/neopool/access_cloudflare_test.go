@@ -25,7 +25,7 @@ func TestCloudflareKeyCarriesAccountAndGateway(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := `api-key: '{"token":"cfut_0123456789abcd","accountId":"acct0123456789abcdef0123456789ab","gatewayId":"default"}'`; !strings.Contains(string(cfg), want) {
+	if want := `api-key = '{"token":"cfut_0123456789abcd","accountId":"acct0123456789abcdef0123456789ab","gatewayId":"default"}'`; !strings.Contains(string(cfg), want) {
 		t.Fatalf("engine config lacks %s:\n%s", want, cfg)
 	}
 
@@ -67,7 +67,7 @@ func TestCloudflareImportCarriesAccountAndGateway(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := `api-key: '{"token":"cfut_imported-wxyz","accountId":"acct0123456789abcdef0123456789ab","gatewayId":"prod"}'`; !strings.Contains(string(cfg), want) {
+	if want := `api-key = '{"token":"cfut_imported-wxyz","accountId":"acct0123456789abcdef0123456789ab","gatewayId":"prod"}'`; !strings.Contains(string(cfg), want) {
 		t.Fatalf("engine config lacks %s:\n%s", want, cfg)
 	}
 }

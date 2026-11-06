@@ -41,9 +41,9 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
-	"gopkg.in/yaml.v3"
 )
 
 var state = pluginState{
@@ -58,8 +58,8 @@ type pluginState struct {
 }
 
 type pluginConfig struct {
-	MaxConcurrency int    `yaml:"max_concurrency"`
-	RejectKeyword  string `yaml:"reject_keyword"`
+	MaxConcurrency int    `toml:"max_concurrency"`
+	RejectKeyword  string `toml:"reject_keyword"`
 }
 
 type envelope struct {
@@ -74,7 +74,7 @@ type envelopeError struct {
 }
 
 type lifecycleRequest struct {
-	ConfigYAML    []byte `json:"config_yaml"`
+	ConfigTOML    []byte `json:"config_toml"`
 	SchemaVersion uint32 `json:"schema_version"`
 }
 
@@ -170,8 +170,8 @@ func configure(raw []byte) error {
 		return fmt.Errorf("request lifecycle plugin requires host schema version 2 or newer")
 	}
 	cfg := pluginConfig{MaxConcurrency: 2, RejectKeyword: "blocked"}
-	if len(req.ConfigYAML) > 0 {
-		if errUnmarshal := yaml.Unmarshal(req.ConfigYAML, &cfg); errUnmarshal != nil {
+	if len(req.ConfigTOML) > 0 {
+		if errUnmarshal := toml.Unmarshal(req.ConfigTOML, &cfg); errUnmarshal != nil {
 			return errUnmarshal
 		}
 	}

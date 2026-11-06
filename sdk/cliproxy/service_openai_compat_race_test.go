@@ -36,9 +36,9 @@ func TestPutOpenAICompatConcurrentWithAuthFieldsPatch_Issue6559(t *testing.T) {
 		t.Fatalf("bcrypt hash failed: %v", errHash)
 	}
 
-	configPath := filepath.Join(authDir, "config.yaml")
-	initialYAML := fmt.Sprintf("port: 8317\nauth-dir: %q\nremote-management:\n  allow-remote: true\n  secret-key: %q\n", filepath.ToSlash(authDir), string(hashedSecret))
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
+	configPath := filepath.Join(authDir, "config.toml")
+	initialTOML := fmt.Sprintf("port = 8317\nauth-dir = %q\n[remote-management]\nallow-remote = true\nsecret-key = %q\n", filepath.ToSlash(authDir), string(hashedSecret))
+	if errWrite := os.WriteFile(configPath, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("write config file: %v", errWrite)
 	}
 
@@ -206,8 +206,8 @@ func TestPutOpenAICompatConcurrentWithConfigReloadAndAuthUpdate_Issue6559(t *tes
 		t.Fatalf("write auth file: %v", errWrite)
 	}
 
-	configPath := filepath.Join(authDir, "config.yaml")
-	if errWrite := os.WriteFile(configPath, []byte("port: 8317\n"), 0o600); errWrite != nil {
+	configPath := filepath.Join(authDir, "config.toml")
+	if errWrite := os.WriteFile(configPath, []byte("port = 8317\n"), 0o600); errWrite != nil {
 		t.Fatalf("write config file: %v", errWrite)
 	}
 

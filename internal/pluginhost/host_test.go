@@ -75,9 +75,9 @@ func TestHostApplyConfig_DisabledGlobalDoesNotResolvePluginsDir(t *testing.T) {
 	t.Setenv("HOME", "")
 	t.Setenv("USERPROFILE", "")
 	disabledCfg, errParseConfig := config.ParseConfigBytes([]byte(`
-plugins:
-  enabled: false
-  dir: "~/.cli-proxy-api/plugins"
+[plugins]
+enabled = false
+dir = "~/.cli-proxy-api/plugins"
 `))
 	if errParseConfig != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParseConfig)
@@ -964,9 +964,9 @@ func TestHostApplyConfigRollsBackQuiescedPluginWhenReplacementFails(t *testing.T
 			}
 			configMu.Lock()
 			if method == pluginabi.MethodPluginRegister {
-				registeredConfig = bytes.Clone(lifecycleRequest.ConfigYAML)
+				registeredConfig = bytes.Clone(lifecycleRequest.ConfigTOML)
 			} else {
-				rollbackConfig = bytes.Clone(lifecycleRequest.ConfigYAML)
+				rollbackConfig = bytes.Clone(lifecycleRequest.ConfigTOML)
 			}
 			configMu.Unlock()
 			return lifecycleRegistrationResult(validTestPlugin("alpha"))

@@ -22,6 +22,7 @@ import subprocess
 import sys
 import threading
 import time
+import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -48,6 +49,22 @@ def private_json(path, value):
         os.chmod(path, 0o600)
         json.dump(value, output, indent=2)
         output.write('\n')
+
+
+def private_toml(path, value):
+    def literal(item):
+        if isinstance(item, dict):
+            return '{ ' + ', '.join(json.dumps(key) + ' = ' + literal(child)
+                                   for key, child in item.items()) + ' }'
+        if isinstance(item, list):
+            return '[' + ', '.join(literal(child) for child in item) + ']'
+        return json.dumps(item)
+
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with path.open('w', encoding='utf-8') as output:
+        os.chmod(path, 0o600)
+        for key, item in value.items():
+            output.write(json.dumps(key) + ' = ' + literal(item) + '\n')
 
 
 def redact_bytes(raw, sensitive):
@@ -168,7 +185,7 @@ def prepare(args):
         'routing': {'retry': {'request-retry': 0, 'max-retry-interval': 0}},
         'observability': {'logs': {'debug': False, 'logging-to-file': False, 'request-log': False}},
     }
-    private_json(root / 'proxy-config.yml', config)  # JSON is valid YAML.
+    private_toml(root / 'proxy-config.toml', config)
     private_json(root / 'private.json', {'operator': operator, 'password': secrets.token_hex(24)})
     manifest = {
         'scratch': str(root), 'proxy_port': port, 'fault_port': fault_port,
@@ -314,7 +331,8 @@ def profile(root, wire, protocol, selector, port, key):
     model = {'id': selector, 'name': 'NeoProxy isolated proof', 'reasoning': False,
              'input': ['text'], 'contextWindow': 32768, 'maxTokens': 512,
              'compat': {'supportsReasoningEffort': False, 'supportsDeveloperRole': False}}
-    private_json(home / 'agent/models.yml', {'providers': {provider: {
+    # NeoPi models currently accept JSON/JSONC but not TOML.
+    private_json(home / 'agent/models.json', {'providers': {provider: {
         'baseUrl': f'http://127.0.0.1:{port}/v1', 'apiKey': 'NEOPROXY_PROOF_KEY',
         'api': protocol, 'auth': 'apiKey', 'authHeader': True,
         'headers': {'X-Client': 'neoproxy-e2e-' + wire}, 'models': [model]}}})
@@ -327,7 +345,7 @@ def profile(root, wire, protocol, selector, port, key):
                 'includeWorkspaceTree': False, 'memory': {'backend': 'off'},
                 'disabledProviders': ['native', 'claude', 'codex', 'gemini', 'github',
                                       'opencode', 'cursor', 'agents-md']}
-    private_json(home / 'agent/config.yml', settings)
+    private_toml(home / 'agent/config.toml', settings)
     environment = safe_environment(home)
     environment['NEOPROXY_PROOF_KEY'] = key
     return home, role, settings, environment
@@ -375,7 +393,7 @@ def run(args):
     root = scratch_path(args.scratch)
     manifest = json.loads((root / 'setup.json').read_text())
     credentials = json.loads((root / 'private.json').read_text())
-    configuration = json.loads((root / 'proxy-config.yml').read_text())
+    configuration = tomllib.loads((root / 'proxy-config.toml').read_text())
     sensitive = [credentials['operator'], credentials['password']]
     sensitive.extend(configuration['access']['api-keys'])
     sensitive.extend(entry['api-key']
@@ -398,7 +416,7 @@ def run(args):
     (home / 'tmp').mkdir(parents=True, mode=0o700)
     environment = safe_environment(home)
     environment['NEOPROXY_DATA_DIR'] = str(root / 'proxy-data')
-    command = [str(binary), '--config', str(root / 'proxy-config.yml'), '--local-model']
+    command = [str(binary), '--config', str(root / 'proxy-config.toml'), '--local-model']
     receipt['proxy_command'] = command
     api = API(f'http://127.0.0.1:{manifest["proxy_port"]}', credentials['operator'])
     try:

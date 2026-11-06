@@ -6,27 +6,20 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/yaml.v3"
 )
 
-// ParseConfigBytes parses a YAML configuration payload into Config and applies the same
-// in-memory normalizations as LoadConfigOptional, without persisting any changes to disk.
+// ParseConfigBytes parses native TOML and applies the same in-memory
+// normalizations as LoadConfigOptional without modifying a file.
 func ParseConfigBytes(data []byte) (*Config, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("config payload is empty")
 	}
 
-	if errValidate := validateCredentialWeightYAML(data); errValidate != nil {
-		return nil, errValidate
-	}
-
-	var cfg Config
-	// Keep defaults aligned with LoadConfigOptional.
-	applyLoadDefaults(&cfg)
-
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	decoded, err := DecodeConfig(data, ConfigFormatTOML)
+	if err != nil {
 		return nil, fmt.Errorf("parse config payload: %w", err)
 	}
+	cfg := *decoded
 	if errValidate := validateTrustedProxies(cfg.TrustedProxies); errValidate != nil {
 		return nil, errValidate
 	}

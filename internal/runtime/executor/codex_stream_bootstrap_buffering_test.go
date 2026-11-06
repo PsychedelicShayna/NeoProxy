@@ -391,9 +391,9 @@ func TestCodexBootstrapBudgetsStaySmall(t *testing.T) {
 	// Pinned exactly, because the framing tests below express their expectations as multiples of
 	// these constants and so cannot notice the budgets growing.
 	// TestCodexExecutor_BootstrapBuffering_HeartbeatArithmeticPerFraming states the resulting
-	// heartbeat counts in absolute numbers, which is what config.example.yaml quotes to operators.
+	// heartbeat counts in absolute numbers, which is what config.example.toml quotes to operators.
 	if codexBootstrapMaxBufferedFrames != 48 {
-		t.Fatalf("frame budget = %d, want 48; changing it changes how long the headers are held, so update config.example.yaml too", codexBootstrapMaxBufferedFrames)
+		t.Fatalf("frame budget = %d, want 48; changing it changes how long the headers are held, so update config.example.toml too", codexBootstrapMaxBufferedFrames)
 	}
 	if codexBootstrapMaxBufferedBytes != 1<<20 {
 		t.Fatalf("byte budget = %d, want 1MiB", codexBootstrapMaxBufferedBytes)
@@ -818,7 +818,7 @@ func TestCodexExecutor_BootstrapBuffering_CancelDuringBootstrapIsNotAnUpstreamFa
 }
 
 // The frame budget is a line count, so what it is worth to an operator depends on how the upstream
-// frames a heartbeat. These are the numbers config.example.yaml quotes, in absolute form: a test
+// frames a heartbeat. These are the numbers config.example.toml quotes, in absolute form: a test
 // that says "codexBootstrapMaxBufferedFrames heartbeats" would move with the constant and could
 // never catch the documented figure drifting. Each count is one short of the obvious division
 // because the rejection frame's own event: line is charged to the same budget before its data: line
@@ -848,7 +848,7 @@ func TestCodexExecutor_BootstrapBuffering_HeartbeatArithmeticPerFraming(t *testi
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if !failsOver(t, tc.protected, tc.heartbeat, overload) {
-				t.Fatalf("%d heartbeats of the %s framing must still fail over; config.example.yaml documents %d", tc.protected, tc.name, tc.protected)
+				t.Fatalf("%d heartbeats of the %s framing must still fail over; config.example.toml documents %d", tc.protected, tc.name, tc.protected)
 			}
 			if failsOver(t, tc.protected+1, tc.heartbeat, overload) {
 				t.Fatalf("%d heartbeats of the %s framing exceed the budget and must release the stream", tc.protected+1, tc.name)

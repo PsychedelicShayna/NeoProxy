@@ -5,56 +5,52 @@ import (
 	"testing"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"gopkg.in/yaml.v3"
 )
 
-func TestRuntimeConfigYAMLAddsHostDefaultsToRawPluginConfig(t *testing.T) {
-	var node yaml.Node
-	if errDecode := yaml.Unmarshal([]byte("config1: true\nconfig2: value\n"), &node); errDecode != nil {
-		t.Fatalf("yaml.Unmarshal() error = %v", errDecode)
-	}
-	if len(node.Content) != 1 {
-		t.Fatalf("yaml node content length = %d, want 1", len(node.Content))
-	}
+func TestRuntimeConfigTOMLAddsHostDefaultsToRawPluginConfig(t *testing.T) {
 	item := config.PluginInstanceConfig{
 		Priority: 3,
-		Raw:      *node.Content[0],
+		Raw:      map[string]any{"config1": true, "config2": "value"},
 	}
 
-	got := string(runtimeConfigYAML(item, true))
+	raw, errEncode := runtimeConfigTOML(item, true)
+	if errEncode != nil {
+		t.Fatal(errEncode)
+	}
+	got := string(raw)
 	for _, want := range []string{
-		"config1: true",
-		"config2: value",
-		"enabled: true",
-		"priority: 3",
+		"config1 = true",
+		"config2 = 'value'",
+		"enabled = true",
+		"priority = 3",
 	} {
 		if !strings.Contains(got, want) {
-			t.Fatalf("runtimeConfigYAML() missing %q in:\n%s", want, got)
+			t.Fatalf("runtimeConfigTOML() missing %q in:\n%s", want, got)
 		}
 	}
 }
 
-func TestRuntimeConfigYAMLDefaultsEnabledFalse(t *testing.T) {
+func TestRuntimeConfigTOMLDefaultsEnabledFalse(t *testing.T) {
 	item := config.PluginInstanceConfig{
 		Priority: 3,
 	}
 
-	got := string(runtimeConfigYAML(item, false))
+	raw, errEncode := runtimeConfigTOML(item, false)
+	if errEncode != nil {
+		t.Fatal(errEncode)
+	}
+	got := string(raw)
 	for _, want := range []string{
-		"enabled: false",
-		"priority: 3",
+		"enabled = false",
+		"priority = 3",
 	} {
 		if !strings.Contains(got, want) {
-			t.Fatalf("runtimeConfigYAML() missing %q in:\n%s", want, got)
+			t.Fatalf("runtimeConfigTOML() missing %q in:\n%s", want, got)
 		}
 	}
 }
 
 func TestRuntimeConfigFromConfigExtractsStoreVersion(t *testing.T) {
-	var node yaml.Node
-	if errDecode := yaml.Unmarshal([]byte("store:\n  version: 1.0.3\n  release-tag: v1.0.3\n"), &node); errDecode != nil {
-		t.Fatalf("yaml.Unmarshal() error = %v", errDecode)
-	}
 	enabled := true
 	cfg := &config.Config{
 		Plugins: config.PluginsConfig{
@@ -62,7 +58,7 @@ func TestRuntimeConfigFromConfigExtractsStoreVersion(t *testing.T) {
 			Configs: map[string]config.PluginInstanceConfig{
 				"alpha": {
 					Enabled: &enabled,
-					Raw:     *node.Content[0],
+					Raw:     map[string]any{"store": map[string]any{"version": "1.0.3", "release-tag": "v1.0.3"}},
 				},
 			},
 		},
@@ -78,10 +74,6 @@ func TestRuntimeConfigFromConfigExtractsStoreVersion(t *testing.T) {
 }
 
 func TestRuntimeConfigFromConfigDerivesStoreVersionFromReleaseTag(t *testing.T) {
-	var node yaml.Node
-	if errDecode := yaml.Unmarshal([]byte("store:\n  release-tag: v1.0.3\n"), &node); errDecode != nil {
-		t.Fatalf("yaml.Unmarshal() error = %v", errDecode)
-	}
 	enabled := true
 	cfg := &config.Config{
 		Plugins: config.PluginsConfig{
@@ -89,7 +81,7 @@ func TestRuntimeConfigFromConfigDerivesStoreVersionFromReleaseTag(t *testing.T) 
 			Configs: map[string]config.PluginInstanceConfig{
 				"alpha": {
 					Enabled: &enabled,
-					Raw:     *node.Content[0],
+					Raw:     map[string]any{"store": map[string]any{"release-tag": "v1.0.3"}},
 				},
 			},
 		},

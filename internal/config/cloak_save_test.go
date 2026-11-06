@@ -8,15 +8,15 @@ import (
 )
 
 func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `claude-api-key:
-  - api-key: sk-ant-test
-    cloak:
-      mode: always
-      strict-mode: true
-      cache-user-id: true
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	initialTOML := `[[claude-api-key]]
+api-key = "sk-ant-test"
+[claude-api-key.cloak]
+mode = "always"
+strict-mode = true
+cache-user-id = true
 `
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configPath, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -44,16 +44,16 @@ func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
 	}
 	savedText := string(savedBytes)
 
-	// In issue #5935, mode: always, strict-mode: true, and cache-user-id: true remained in config.yaml
+	// In issue #5935, mode: always, strict-mode: true, and cache-user-id: true remained in config.toml
 	// even when strict-mode was set to false, mode was cleared, and cache-user-id was disabled.
-	if strings.Contains(savedText, "mode: always") {
-		t.Errorf("saved YAML still contains 'mode: always' after clearing mode; got:\n%s", savedText)
+	if strings.Contains(savedText, `mode = "always"`) || strings.Contains(savedText, "mode = 'always'") {
+		t.Errorf("saved TOML still contains 'mode: always' after clearing mode; got:\n%s", savedText)
 	}
-	if strings.Contains(savedText, "strict-mode: true") {
-		t.Errorf("saved YAML still contains 'strict-mode: true' after setting strict-mode to false; got:\n%s", savedText)
+	if strings.Contains(savedText, "strict-mode = true") {
+		t.Errorf("saved TOML still contains 'strict-mode: true' after setting strict-mode to false; got:\n%s", savedText)
 	}
-	if strings.Contains(savedText, "cache-user-id: true") {
-		t.Errorf("saved YAML still contains 'cache-user-id: true' after disabling cache-user-id; got:\n%s", savedText)
+	if strings.Contains(savedText, "cache-user-id = true") {
+		t.Errorf("saved TOML still contains 'cache-user-id: true' after disabling cache-user-id; got:\n%s", savedText)
 	}
 
 	// Loading the saved config must reflect the updated false/empty values, while preserving explicit Cloak.
@@ -80,15 +80,15 @@ func TestSaveConfigPreserveComments_ClaudeCloakUpdates(t *testing.T) {
 }
 
 func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalse(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `claude-api-key:
-  - api-key: sk-ant-test
-    cloak:
-      mode: always
-      strict-mode: true
-      cache-user-id: true
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	initialTOML := `[[claude-api-key]]
+api-key = "sk-ant-test"
+[claude-api-key.cloak]
+mode = "always"
+strict-mode = true
+cache-user-id = true
 `
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configPath, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -116,14 +116,14 @@ func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalse(t *testing.T) {
 	}
 	savedText := string(savedBytes)
 
-	if !strings.Contains(savedText, "mode: auto") {
-		t.Errorf("saved YAML missing 'mode: auto'; got:\n%s", savedText)
+	if !strings.Contains(savedText, `mode = "auto"`) && !strings.Contains(savedText, "mode = 'auto'") {
+		t.Errorf("saved TOML missing mode = auto; got:\n%s", savedText)
 	}
-	if strings.Contains(savedText, "strict-mode: true") {
-		t.Errorf("saved YAML still contains 'strict-mode: true'; got:\n%s", savedText)
+	if strings.Contains(savedText, "strict-mode = true") {
+		t.Errorf("saved TOML still contains 'strict-mode: true'; got:\n%s", savedText)
 	}
-	if !strings.Contains(savedText, "cache-user-id: false") {
-		t.Errorf("saved YAML missing explicit 'cache-user-id: false'; got:\n%s", savedText)
+	if !strings.Contains(savedText, "cache-user-id = false") {
+		t.Errorf("saved TOML missing explicit 'cache-user-id: false'; got:\n%s", savedText)
 	}
 
 	loadedCfg, errLoad := LoadConfigOptional(configPath, false)
@@ -146,14 +146,14 @@ func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalse(t *testing.T) {
 }
 
 func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalseWhenFieldPreviouslyAbsent(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	// Initial YAML only has mode: always. cache-user-id is completely absent.
-	initialYAML := `claude-api-key:
-  - api-key: sk-ant-test
-    cloak:
-      mode: always
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	// Initial TOML only has mode: always. cache-user-id is completely absent.
+	initialTOML := `[[claude-api-key]]
+api-key = "sk-ant-test"
+[claude-api-key.cloak]
+mode = "always"
 `
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configPath, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -180,9 +180,9 @@ func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalseWhenFieldPreviouslyA
 	}
 	savedText := string(savedBytes)
 
-	// An explicit pointer false for cache-user-id must be added to YAML even if previously absent.
-	if !strings.Contains(savedText, "cache-user-id: false") {
-		t.Errorf("saved YAML missing newly-added 'cache-user-id: false'; got:\n%s", savedText)
+	// An explicit pointer false for cache-user-id must be added to TOML even if previously absent.
+	if !strings.Contains(savedText, "cache-user-id = false") {
+		t.Errorf("saved TOML missing newly-added 'cache-user-id: false'; got:\n%s", savedText)
 	}
 
 	loadedCfg, errLoad := LoadConfigOptional(configPath, false)
@@ -199,15 +199,15 @@ func TestSaveConfigPreserveComments_ClaudeCloakExplicitFalseWhenFieldPreviouslyA
 }
 
 func TestSaveConfigPreserveComments_ClaudeCloakRemovedWhenNil(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `claude-api-key:
-  - api-key: sk-ant-test
-    cloak:
-      mode: always
-      strict-mode: true
-      cache-user-id: true
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	initialTOML := `[[claude-api-key]]
+api-key = "sk-ant-test"
+[claude-api-key.cloak]
+mode = "always"
+strict-mode = true
+cache-user-id = true
 `
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configPath, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -231,8 +231,8 @@ func TestSaveConfigPreserveComments_ClaudeCloakRemovedWhenNil(t *testing.T) {
 	}
 	savedText := string(savedBytes)
 
-	if strings.Contains(savedText, "cloak:") {
-		t.Errorf("saved YAML still contains 'cloak:' after nil removal; got:\n%s", savedText)
+	if strings.Contains(savedText, ".cloak]") {
+		t.Errorf("saved TOML still contains 'cloak:' after nil removal; got:\n%s", savedText)
 	}
 
 	loadedCfg, errLoad := LoadConfigOptional(configPath, false)
@@ -245,16 +245,16 @@ func TestSaveConfigPreserveComments_ClaudeCloakRemovedWhenNil(t *testing.T) {
 }
 
 func TestSaveConfigPreserveComments_HeadersPrunedAndNonTargetMappingsPreserved(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `remote-management:
-  allow-remote: true
-claude-api-key:
-  - api-key: sk-ant-test
-    headers:
-      Custom-A: valA
-      Custom-B: valB
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	initialTOML := `[remote-management]
+allow-remote = true
+[[claude-api-key]]
+api-key = "sk-ant-test"
+[claude-api-key.headers]
+Custom-A = "valA"
+Custom-B = "valB"
 `
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configPath, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile() error = %v", errWrite)
 	}
 
@@ -284,14 +284,14 @@ claude-api-key:
 
 	// Deleted header Custom-B must be pruned from claude-api-key.headers
 	if strings.Contains(savedText, "Custom-B") {
-		t.Errorf("saved YAML still contains deleted header 'Custom-B'; got:\n%s", savedText)
+		t.Errorf("saved TOML still contains deleted header 'Custom-B'; got:\n%s", savedText)
 	}
-	if !strings.Contains(savedText, "Custom-A: valA") {
-		t.Errorf("saved YAML missing retained header 'Custom-A: valA'; got:\n%s", savedText)
+	if !strings.Contains(savedText, `Custom-A = "valA"`) && !strings.Contains(savedText, "Custom-A = 'valA'") {
+		t.Errorf("saved TOML missing retained header Custom-A = valA; got:\n%s", savedText)
 	}
 
 	// Non-target root mapping (remote-management) must be preserved
-	if !strings.Contains(savedText, "allow-remote: true") {
-		t.Errorf("saved YAML lost 'allow-remote: true'; got:\n%s", savedText)
+	if !strings.Contains(savedText, "allow-remote = true") {
+		t.Errorf("saved TOML lost 'allow-remote: true'; got:\n%s", savedText)
 	}
 }

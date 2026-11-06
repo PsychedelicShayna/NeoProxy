@@ -111,13 +111,17 @@ func TestPatchPriorityForEveryProvider(t *testing.T) {
 				t.Fatalf("priority = %d, want 7", got)
 			}
 
-			// Verify priority persisted to YAML
+			// Verify priority persisted through the native TOML codec.
 			savedBytes, errRead := os.ReadFile(configFile)
 			if errRead != nil {
 				t.Fatalf("os.ReadFile() error = %v", errRead)
 			}
-			if !strings.Contains(string(savedBytes), "priority: 7") {
-				t.Fatalf("saved YAML missing 'priority: 7':\n%s", string(savedBytes))
+			savedConfig, errDecode := config.DecodeConfig(savedBytes, config.ConfigFormatTOML)
+			if errDecode != nil {
+				t.Fatalf("decode saved TOML: %v", errDecode)
+			}
+			if test.get(savedConfig) != 7 {
+				t.Fatal("saved TOML did not retain priority 7")
 			}
 
 			// Omitting priority preserves existing priority

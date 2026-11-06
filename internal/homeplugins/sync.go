@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/util"
 	sdkconfig "github.com/router-for-me/CLIProxyAPI/v8/sdk/config"
 	sdkpluginstore "github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginstore"
-	"gopkg.in/yaml.v3"
 )
 
 type Platform struct {
@@ -766,15 +766,16 @@ func pluginStatusFromManifest(manifest sdkpluginstore.Manifest) PluginInstallSta
 }
 
 func storeManifestFromPluginConfig(id string, item config.PluginInstanceConfig) (sdkpluginstore.Manifest, bool, error) {
-	if item.Raw.Kind == 0 {
+	store, ok := item.Raw["store"]
+	if !ok {
 		return sdkpluginstore.Manifest{}, false, nil
 	}
-	storeNode := yamlMappingValue(&item.Raw, "store")
-	if storeNode == nil || storeNode.Kind == 0 {
-		return sdkpluginstore.Manifest{}, false, nil
+	raw, errEncode := toml.Marshal(store)
+	if errEncode != nil {
+		return sdkpluginstore.Manifest{}, false, fmt.Errorf("home plugins: encode store manifest for %s: %w", id, errEncode)
 	}
 	var manifest sdkpluginstore.Manifest
-	if errDecode := storeNode.Decode(&manifest); errDecode != nil {
+	if errDecode := toml.Unmarshal(raw, &manifest); errDecode != nil {
 		return sdkpluginstore.Manifest{}, false, fmt.Errorf("home plugins: decode store manifest for %s: %w", id, errDecode)
 	}
 	if strings.TrimSpace(manifest.ID) == "" {
@@ -784,20 +785,6 @@ func storeManifestFromPluginConfig(id string, item config.PluginInstanceConfig) 
 		return sdkpluginstore.Manifest{}, false, fmt.Errorf("home plugins: invalid store manifest for %s: %w", id, errValidate)
 	}
 	return manifest, true, nil
-}
-
-func yamlMappingValue(node *yaml.Node, key string) *yaml.Node {
-	if node == nil || node.Kind != yaml.MappingNode {
-		return nil
-	}
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		keyNode := node.Content[i]
-		if keyNode == nil || keyNode.Value != key {
-			continue
-		}
-		return node.Content[i+1]
-	}
-	return nil
 }
 
 var newPluginStoreClient = func(cfg *config.Config) sdkpluginstore.Client {

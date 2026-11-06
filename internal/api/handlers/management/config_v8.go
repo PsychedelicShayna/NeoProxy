@@ -1,6 +1,7 @@
 package management
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/clienterror"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"gopkg.in/yaml.v3"
 )
 
 // ConfigV8ContextKey marks operations registered by the v8 API that save configuration.
@@ -20,9 +20,8 @@ const ConfigV8ContextKey = "management.config-v8"
 // ConfigV8 serves the persisted configuration using v8 names. GET is a view;
 // only a successful configuration mutation migrates the stored document.
 //
-// /config.yaml and /config.toml exchange the whole document in that syntax,
-// whichever format the config file uses: a write is converted to and saved in
-// the config file's format, reported in the X-Config-Format response header.
+// /config.toml exchanges the whole document as TOML. All writes use the
+// canonical native TOML configuration, reported in X-Config-Format.
 //
 // Reads return an ETag holding the SHA-256 of the on-disk config bytes.
 // Writes honour an optional If-Match against that token, so a client can
@@ -31,6 +30,12 @@ const ConfigV8ContextKey = "management.config-v8"
 func (h *Handler) ConfigV8(c *gin.Context) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	resolvedPath, err := config.ResolveConfigPath(h.configFilePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "read_failed"})
+		return
+	}
+	h.configFilePath = resolvedPath
 	source, raw, fileFormat, err := config.ReadConfigFile(h.configFilePath)
 	if raw == nil && err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "read_failed"})
@@ -52,31 +57,22 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid_config", "message": err.Error()})
 		return
 	}
-	var doc yaml.Node
-	if err = yaml.Unmarshal(data, &doc); err != nil {
+	root, err := config.ParseConfigDocument(data)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid_config"})
 		return
 	}
-	root := doc.Content[0]
 	path := strings.Trim(c.Param("path"), "/")
 	parts := []string{}
 	if path != "" {
 		parts = strings.Split(path, "/")
 	}
-	// A document request names the syntax of the whole-document body: YAML or TOML.
-	var documentFormat config.ConfigFormat
-	switch {
-	case strings.HasSuffix(c.FullPath(), "/config.yaml"):
-		documentFormat = config.ConfigFormatYAML
-	case strings.HasSuffix(c.FullPath(), "/config.toml"):
-		documentFormat = config.ConfigFormatTOML
-	}
-	documentRequest := documentFormat != ""
+	documentRequest := strings.HasSuffix(c.FullPath(), "/config.toml")
 	if c.Request.Method == http.MethodGet {
 		config.ProjectV8ConfigAliases(root, strings.Join(parts, "."))
 		if !documentRequest {
-			if servers := configV8Node(root, v8ICEServersPath); servers != nil && servers.Kind == yaml.SequenceNode {
-				for _, server := range servers.Content {
+			if servers, ok := configV8Node(root, v8ICEServersPath).([]any); ok {
+				for _, server := range servers {
 					deleteConfigV8Path(server, []string{"username"})
 					deleteConfigV8Path(server, []string{"credential"})
 				}
@@ -91,23 +87,19 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 		c.Header("Cache-Control", "no-store")
 		c.Header("ETag", configV8ETag(diskHash))
 		if documentRequest {
-			document, errConvert := config.ConfigFromYAML(data, documentFormat)
+			document, errConvert := config.RenderConfigDocumentPreserve(root, data)
 			if errConvert != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "convert_failed", "message": errConvert.Error()})
 				return
 			}
-			c.Data(http.StatusOK, documentFormat.ContentType(), document)
+			c.Data(http.StatusOK, config.ConfigFormatTOML.ContentType(), document)
 			return
 		}
-		var result any
-		if err = value.Decode(&result); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "decode_failed"})
-			return
-		}
-		c.JSON(http.StatusOK, result)
+		c.JSON(http.StatusOK, value)
 		return
 	}
-	before := cloneConfigV8Node(root)
+	commentSource := data
+	before := cloneConfigV8Value(root).(map[string]any)
 	config.ProjectV8ConfigAliases(root, strings.Join(parts, "."))
 	if c.Request.Method == http.MethodDelete {
 		if len(parts) == 0 {
@@ -128,56 +120,68 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_json"})
 			return
 		}
-		if documentFormat == config.ConfigFormatTOML {
-			// Decode exactly as the loader decodes a TOML config file.
-			if body, err = config.ConfigToYAML(body, config.ConfigFormatTOML); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body", "message": err.Error()})
+		var update any
+		if documentRequest {
+			update, err = config.ParseConfigDocument(body)
+			if err == nil {
+				commentSource = body
+			}
+		} else {
+			decoder := json.NewDecoder(bytes.NewReader(body))
+			decoder.UseNumber()
+			err = decoder.Decode(&update)
+			if err == nil {
+				update, err = normalizePluginJSONValue(update)
+			}
+		}
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body", "message": err.Error()})
+			return
+		}
+		stripAPIKeysAuthIndexesFromUpdate(parts, update)
+		if len(parts) == 0 {
+			object, ok := update.(map[string]any)
+			if !ok {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "config_must_be_object"})
 				return
 			}
-		}
-		var update yaml.Node
-		if err = yaml.Unmarshal(body, &update); err != nil || len(update.Content) == 0 {
-			response := gin.H{"error": "invalid_body"}
-			if err != nil {
-				response["message"] = err.Error()
-			}
-			c.JSON(http.StatusBadRequest, response)
-			return
-		}
-		stripAPIKeysAuthIndexesFromUpdate(parts, &update)
-		if len(parts) == 0 && update.Content[0].Kind != yaml.MappingNode {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "config_must_be_object"})
-			return
-		}
-		if len(parts) == 0 {
-			if err = config.NormalizeV8ConfigAliases(update.Content[0]); err != nil {
+			if err = config.NormalizeV8ConfigAliases(object); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_config", "message": err.Error()})
 				return
 			}
-		}
-		// Paths identify YAML keys, never array indexes. Lists are replaced whole.
-		dst := root
-		for _, part := range parts {
-			if part == "" || dst.Kind != yaml.MappingNode {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_path"})
-				return
+			if c.Request.Method == http.MethodPatch {
+				root = mergeConfigV8Patch(root, object).(map[string]any)
+			} else {
+				root = object
 			}
-			next := configV8Node(dst, []string{part})
-			if next == nil {
-				next = &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
-				dst.Content = append(dst.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: part}, next)
-			}
-			dst = next
-		}
-		if c.Request.Method == http.MethodPatch {
-			mergeConfigV8Patch(dst, update.Content[0])
 		} else {
-			if dst.Kind == yaml.ScalarNode && update.Content[0].Kind == yaml.ScalarNode {
-				update.Content[0].HeadComment = dst.HeadComment
-				update.Content[0].LineComment = dst.LineComment
-				update.Content[0].FootComment = dst.FootComment
+			// Paths identify table keys, never array indexes. Lists are replaced whole.
+			dst := root
+			for index, part := range parts {
+				if part == "" {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_path"})
+					return
+				}
+				if index == len(parts)-1 {
+					if c.Request.Method == http.MethodPatch {
+						dst[part] = mergeConfigV8Patch(dst[part], update)
+					} else {
+						dst[part] = update
+					}
+					break
+				}
+				next, exists := dst[part]
+				if !exists {
+					next = map[string]any{}
+					dst[part] = next
+				}
+				object, ok := next.(map[string]any)
+				if !ok {
+					c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_path"})
+					return
+				}
+				dst = object
 			}
-			*dst = *update.Content[0]
 		}
 	}
 	if err = config.NormalizeV8ConfigAliases(root); err != nil {
@@ -191,21 +195,14 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 	for _, field := range []string{"credentials/concurrency/lifecycle-config-revision", "credentials/concurrency/observation-barrier-revision", "plugins/auth-revision"} {
 		old := configV8Node(before, strings.Split(field, "/"))
 		next := configV8Node(root, strings.Split(field, "/"))
-		var a, b any
-		if old != nil {
-			_ = old.Decode(&a)
-		}
-		if next != nil {
-			_ = next.Decode(&b)
-		}
+		a, b := old, next
 		if !reflect.DeepEqual(a, b) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "read_only_field", "field": field})
 			return
 		}
 	}
 	stripAPIKeysAuthIndexesFromRoot(root)
-	config.NormalizeCollectionNodeStyles(root)
-	data, err = yaml.Marshal(&doc)
+	data, err = config.RenderConfigDocumentPreserve(root, commentSource)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_config", "message": err.Error()})
 		return
@@ -238,7 +235,7 @@ func (h *Handler) ConfigV8(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "write_failed", "message": err.Error()})
 		return
 	}
-	// Runtime-only ownership state is never sourced from an uploaded YAML document.
+	// Runtime-only ownership state is never sourced from an uploaded document.
 	next.Home = h.cfg.Home
 	// WriteConfig may normalize the bytes, so report the version actually on
 	// disk. If it cannot be read back, omit the ETag instead of guessing one.
@@ -303,39 +300,31 @@ func splitEntityTagList(field string) []string {
 var v8ICEServersPath = []string{"oauth", "providers", "codex", "live-media-relay", "ice-servers"}
 
 // JSON reads redact TURN secrets. Preserve omitted credentials when a client
-// writes that JSON back, matching by endpoint rather than array position so a
-// changed URL cannot inherit credentials for a different server. Explicit empty
-// strings/null clear a secret; YAML writes retain full replacement semantics.
-func preserveV8TURNSecrets(root, before *yaml.Node) {
-	next := configV8Node(root, v8ICEServersPath)
-	previous := configV8Node(before, v8ICEServersPath)
-	if next == nil || previous == nil || next.Kind != yaml.SequenceNode || previous.Kind != yaml.SequenceNode {
-		return
-	}
-	matched := make([]bool, len(previous.Content))
-	for _, server := range next.Content {
-		urls := configV8Node(server, []string{"urls"})
-		if urls == nil {
+// writes that JSON back, matching endpoints rather than array positions.
+// Whole-document TOML writes retain full replacement semantics.
+func preserveV8TURNSecrets(root, before map[string]any) {
+	next, _ := configV8Node(root, v8ICEServersPath).([]any)
+	previous, _ := configV8Node(before, v8ICEServersPath).([]any)
+	matched := make([]bool, len(previous))
+	for _, entry := range next {
+		server, ok := entry.(map[string]any)
+		if !ok {
 			continue
 		}
-		var newURLs []string
-		if urls.Decode(&newURLs) != nil {
+		urls, exists := server["urls"]
+		if !exists {
 			continue
 		}
-		for i, old := range previous.Content {
-			if matched[i] {
+		for index, oldEntry := range previous {
+			old, ok := oldEntry.(map[string]any)
+			if !ok || matched[index] || !reflect.DeepEqual(urls, old["urls"]) {
 				continue
 			}
-			oldURLs := configV8Node(old, []string{"urls"})
-			var previousURLs []string
-			if oldURLs == nil || oldURLs.Decode(&previousURLs) != nil || !reflect.DeepEqual(newURLs, previousURLs) {
-				continue
-			}
-			matched[i] = true
+			matched[index] = true
 			for _, name := range []string{"username", "credential"} {
-				if configV8Node(server, []string{name}) == nil {
-					if secret := configV8Node(old, []string{name}); secret != nil {
-						server.Content = append(server.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: name}, cloneConfigV8Node(secret))
+				if _, exists := server[name]; !exists {
+					if secret, exists := old[name]; exists {
+						server[name] = cloneConfigV8Value(secret)
 					}
 				}
 			}
@@ -344,76 +333,66 @@ func preserveV8TURNSecrets(root, before *yaml.Node) {
 	}
 }
 
-func configV8Node(root *yaml.Node, parts []string) *yaml.Node {
+func configV8Node(root any, parts []string) any {
 	for _, part := range parts {
-		if root == nil || root.Kind != yaml.MappingNode {
+		object, ok := root.(map[string]any)
+		if !ok {
 			return nil
 		}
-		var next *yaml.Node
-		for i := 0; i < len(root.Content); i += 2 {
-			if root.Content[i].Value == part {
-				next = root.Content[i+1]
-				break
-			}
-		}
-		root = next
+		root = object[part]
 	}
 	return root
 }
 
-// deleteConfigV8Path prunes only empty ancestors of the removed field. Other
-// explicit empty maps can carry inheritance or plugin semantics and stay intact.
-func deleteConfigV8Path(root *yaml.Node, parts []string) bool {
-	if root == nil || root.Kind != yaml.MappingNode || len(parts) == 0 {
+// deleteConfigV8Path prunes only empty ancestors of the removed field.
+func deleteConfigV8Path(root any, parts []string) bool {
+	object, ok := root.(map[string]any)
+	if !ok || len(parts) == 0 {
 		return false
 	}
-	for i := 0; i < len(root.Content); i += 2 {
-		if root.Content[i].Value != parts[0] {
-			continue
-		}
-		if len(parts) > 1 {
-			child := root.Content[i+1]
-			if !deleteConfigV8Path(child, parts[1:]) {
-				return false
-			}
-			if len(child.Content) > 0 {
-				return true
-			}
-		}
-		root.Content = append(root.Content[:i], root.Content[i+2:]...)
-		return true
+	child, exists := object[parts[0]]
+	if !exists {
+		return false
 	}
-	return false
+	if len(parts) > 1 {
+		if !deleteConfigV8Path(child, parts[1:]) {
+			return false
+		}
+		if nested, ok := child.(map[string]any); !ok || len(nested) != 0 {
+			return true
+		}
+	}
+	delete(object, parts[0])
+	return true
 }
 
-func cloneConfigV8Node(node *yaml.Node) *yaml.Node {
-	copy := *node
-	copy.Content = make([]*yaml.Node, len(node.Content))
-	for i, child := range node.Content {
-		copy.Content[i] = cloneConfigV8Node(child)
+func cloneConfigV8Value(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(value))
+		for key, child := range value {
+			out[key] = cloneConfigV8Value(child)
+		}
+		return out
+	case []any:
+		out := make([]any, len(value))
+		for index, child := range value {
+			out[index] = cloneConfigV8Value(child)
+		}
+		return out
+	default:
+		return value
 	}
-	return &copy
 }
 
-// Unlike JSON merge-patch, null is retained: optional key overrides use it to
-// inherit the group value. DELETE is the explicit field-removal operation.
-func mergeConfigV8Patch(dst, src *yaml.Node) {
-	if dst.Kind != yaml.MappingNode || src.Kind != yaml.MappingNode {
-		if dst.Kind == yaml.ScalarNode && src.Kind == yaml.ScalarNode {
-			copy := *src
-			copy.HeadComment, copy.LineComment, copy.FootComment = dst.HeadComment, dst.LineComment, dst.FootComment
-			*dst = copy
-			return
-		}
-		*dst = *src
-		return
+func mergeConfigV8Patch(dst, src any) any {
+	target, targetOK := dst.(map[string]any)
+	update, updateOK := src.(map[string]any)
+	if !targetOK || !updateOK {
+		return src
 	}
-	for i := 0; i < len(src.Content); i += 2 {
-		key, value := src.Content[i], src.Content[i+1]
-		if old := configV8Node(dst, []string{key.Value}); old != nil {
-			mergeConfigV8Patch(old, value)
-		} else {
-			dst.Content = append(dst.Content, key, value)
-		}
+	for key, value := range update {
+		target[key] = mergeConfigV8Patch(target[key], value)
 	}
+	return target
 }

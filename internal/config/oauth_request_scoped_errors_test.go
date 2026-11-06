@@ -5,55 +5,10 @@ import (
 )
 
 func TestParseConfigOAuthRequestScopedErrors(t *testing.T) {
-	const yamlConfig = `
-oauth-request-scoped-errors:
-  vertex:
-    - status: 400
-      match:
-        - "maximum_context_length"
-        - "context_length_exceeded"
-      match-regexr:
-        - "maximum_context_length$"
-        - "^context_length_exceeded"
-      action: "stop"
-  aistudio:
-    - status: 400
-      match:
-        - "invalid_argument"
-      action: "continue"
-  antigravity:
-    - status: 500
-      match:
-        - "internal_server_error"
-      action: "stop-and-cooldown"
-  claude:
-    - status: 429
-      match:
-        - "rate_limit"
-      action: "continue-and-cooldown"
-  codex:
-    - status: 400
-      match:
-        - "context_window_exceeded"
-      action: "stop"
-  kimi:
-    - status: 400
-      match:
-        - "length_limit"
-      action: "stop"
-  xai:
-    - status: 400
-      match:
-        - "max_tokens_exceeded"
-      action: "stop"
-  meta:
-    - status: 400
-      match:
-        - "context_length_exceeded"
-      action: "stop"
+	const tomlConfig = `"oauth-request-scoped-errors" = {"vertex" = [{"status" = 400, "match" = ["maximum_context_length", "context_length_exceeded"], "match-regexr" = ["maximum_context_length$", "^context_length_exceeded"], "action" = "stop"}], "aistudio" = [{"status" = 400, "match" = ["invalid_argument"], "action" = "continue"}], "antigravity" = [{"status" = 500, "match" = ["internal_server_error"], "action" = "stop-and-cooldown"}], "claude" = [{"status" = 429, "match" = ["rate_limit"], "action" = "continue-and-cooldown"}], "codex" = [{"status" = 400, "match" = ["context_window_exceeded"], "action" = "stop"}], "kimi" = [{"status" = 400, "match" = ["length_limit"], "action" = "stop"}], "xai" = [{"status" = 400, "match" = ["max_tokens_exceeded"], "action" = "stop"}], "meta" = [{"status" = 400, "match" = ["context_length_exceeded"], "action" = "stop"}]}
 `
 
-	cfg, err := ParseConfigBytes([]byte(yamlConfig))
+	cfg, err := ParseConfigBytes([]byte(tomlConfig))
 	if err != nil {
 		t.Fatalf("ParseConfigFromBytes failed: %v", err)
 	}

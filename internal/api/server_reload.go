@@ -19,7 +19,6 @@ import (
 	sdkAuth "github.com/router-for-me/CLIProxyAPI/v8/sdk/auth"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 )
 
 func (s *Server) applyAccessConfig(oldCfg, newCfg *config.Config) bool {
@@ -55,13 +54,13 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 		return false
 	}
 	cfg = cfg.CloneForRuntime()
-	// Reconstruct old config from YAML snapshot to avoid reference sharing issues
+	// Reconstruct old config from TOML snapshot to avoid reference sharing issues.
 	var oldCfg *config.Config
 	s.cfgMu.RLock()
-	oldConfigYaml := append([]byte(nil), s.oldConfigYaml...)
+	oldConfigTOML := append([]byte(nil), s.oldConfigTOML...)
 	s.cfgMu.RUnlock()
-	if len(oldConfigYaml) > 0 {
-		_ = yaml.Unmarshal(oldConfigYaml, &oldCfg)
+	if len(oldConfigTOML) > 0 {
+		oldCfg, _ = config.DecodeConfig(oldConfigTOML, config.ConfigFormatTOML)
 	}
 
 	// Update request logger enabled state if it has changed
@@ -191,10 +190,10 @@ func (s *Server) UpdateClientsContext(ctx context.Context, cfg *config.Config) b
 	if errContext := ctx.Err(); errContext != nil {
 		return false
 	}
-	// Save YAML snapshot for next comparison
-	marshaledCfg, _ := yaml.Marshal(cfg)
+	// Save TOML snapshot for next comparison.
+	marshaledCfg, _ := config.EncodeConfig(cfg)
 	s.cfgMu.Lock()
-	s.oldConfigYaml = marshaledCfg
+	s.oldConfigTOML = marshaledCfg
 	s.cfgMu.Unlock()
 
 	s.handlers.UpdateClients(effectiveSDKConfig(cfg))

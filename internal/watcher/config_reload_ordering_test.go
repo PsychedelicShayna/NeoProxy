@@ -19,13 +19,13 @@ func newIssue6631ConfigFile(t *testing.T) (configPath, authDir string) {
 	if errMkdir := os.MkdirAll(authDir, 0o755); errMkdir != nil {
 		t.Fatal(errMkdir)
 	}
-	return filepath.Join(tmpDir, "config.yaml"), authDir
+	return filepath.Join(tmpDir, "config.toml"), authDir
 }
 
 // writeIssue6631Config returns an error instead of failing the test so reload
 // callbacks running on other goroutines can use it.
 func writeIssue6631Config(configPath, authDir string, requestRetry int) error {
-	raw := fmt.Sprintf("auth-dir: %q\nrequest-retry: %d\n", filepath.ToSlash(authDir), requestRetry)
+	raw := fmt.Sprintf("auth-dir = %q\nrequest-retry = %d\n", filepath.ToSlash(authDir), requestRetry)
 	return os.WriteFile(configPath, []byte(raw), 0o600)
 }
 

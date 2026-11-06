@@ -33,27 +33,33 @@ Most standard capability examples contain `go/`, `c/`, and `rust/` subdirectorie
 
 `codex-service-tier` declares the request normalization capability. When `fast` is `true`, it sets `service_tier` to `priority` for requests where `req.ToFormat` is `codex` and `req.Model` is `gpt-5.5`.
 
-```yaml
-plugins:
-  configs:
-    codex-service-tier:
-      enabled: true
-      priority: 1
-      fast: false
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.codex-service-tier]
+enabled = true
+priority = 1
+fast = false
 ```
 
 ## Request Lifecycle
 
 `request-lifecycle` combines `request_interceptor` with `request_lifecycle_plugin`. It acquires a concurrency slot before auth selection, can return a custom `403` or `429` response without contacting an upstream model, and releases admitted slots from `request.complete` on success, failure, rejection, or cancellation.
 
-```yaml
-plugins:
-  configs:
-    request-lifecycle:
-      enabled: true
-      priority: 100
-      max_concurrency: 2
-      reject_keyword: "blocked"
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.request-lifecycle]
+enabled = true
+priority = 100
+max_concurrency = 2
+reject_keyword = "blocked"
 ```
 
 See `request-lifecycle/README.md` for build instructions and lifecycle semantics.
@@ -62,12 +68,15 @@ See `request-lifecycle/README.md` for build instructions and lifecycle semantics
 
 `host-callback-auth-files` declares the Management API capability and exposes a browser resource named `Host Auth Files`. The resource demonstrates `host.auth.list`, `host.auth.get` (physical JSON file), `host.auth.get_runtime`, and `host.auth.save`.
 
-```yaml
-plugins:
-  configs:
-    host-callback-auth-files:
-      enabled: true
-      priority: 1
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.host-callback-auth-files]
+enabled = true
+priority = 1
 ```
 
 See `host-callback-auth-files/README.md` for URL examples.
@@ -78,12 +87,15 @@ See `host-callback-auth-files/README.md` for URL examples.
 
 When the resource forwards its `host_callback_id`, CPA identifies the plugin that initiated the host model callback and skips that same plugin's interceptors for the nested execution. This makes host model callbacks non-recursive for the caller while allowing other plugins to intercept the nested request.
 
-```yaml
-plugins:
-  configs:
-    host-model-callback:
-      enabled: true
-      priority: 1
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.host-model-callback]
+enabled = true
+priority = 1
 ```
 
 The default example model is `gpt-5.5`, but the request succeeds only when the current CPA model and auth configuration can route that model.
@@ -102,15 +114,18 @@ Each operation ID can be claimed by one HTTP callback. HTTP stream IDs are also 
 
 `scheduler` declares the scheduler capability. It can select a configured auth ID from the candidate list, delegate to the built-in `fill-first` or `round-robin` scheduler, or reject picks when `deny` is `true`.
 
-```yaml
-plugins:
-  configs:
-    scheduler:
-      enabled: true
-      priority: 1
-      auth_id: ""
-      delegate: ""
-      deny: false
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.scheduler]
+enabled = true
+priority = 1
+auth_id = ""
+delegate = ""
+deny = false
 ```
 
 `auth_id` selects a matching candidate when `delegate` is empty. `delegate` accepts `""`, `fill-first`, or `round-robin`; other non-empty values leave the pick unhandled. `deny` returns a scheduler error.

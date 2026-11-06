@@ -2,50 +2,19 @@ package config
 
 import (
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestAPIKeyModelIsCompatConfigDecoding(t *testing.T) {
-	const yamlConfig = `gemini-api-key:
-  - models:
-      - name: gemini-upstream
-        alias: gemini-alias
-        is-compat: true
-      - name: gemini-native
-        alias: gemini-native
-interactions-api-key:
-  - models:
-      - name: interactions-upstream
-        alias: interactions-alias
-        is-compat: true
-xai-api-key:
-  - models:
-      - name: xai-upstream
-        alias: xai-alias
-        is-compat: true
-claude-api-key:
-  - models:
-      - name: claude-upstream
-        alias: claude-alias
-        is-compat: true
-codex-api-key:
-  - models:
-      - name: codex-upstream
-        alias: codex-alias
-        is-compat: true
-openai-compatibility:
-  - name: deepseek
-    models:
-      - name: deepseek-upstream
-        alias: deepseek-alias
-        is-compat: true
-      - name: openai-native
-        alias: openai-native
+	const tomlConfig = `"gemini-api-key" = [{"models" = [{"name" = "gemini-upstream", "alias" = "gemini-alias", "is-compat" = true}, {"name" = "gemini-native", "alias" = "gemini-native"}]}]
+"interactions-api-key" = [{"models" = [{"name" = "interactions-upstream", "alias" = "interactions-alias", "is-compat" = true}]}]
+"xai-api-key" = [{"models" = [{"name" = "xai-upstream", "alias" = "xai-alias", "is-compat" = true}]}]
+"claude-api-key" = [{"models" = [{"name" = "claude-upstream", "alias" = "claude-alias", "is-compat" = true}]}]
+"codex-api-key" = [{"models" = [{"name" = "codex-upstream", "alias" = "codex-alias", "is-compat" = true}]}]
+"openai-compatibility" = [{"name" = "deepseek", "models" = [{"name" = "deepseek-upstream", "alias" = "deepseek-alias", "is-compat" = true}, {"name" = "openai-native", "alias" = "openai-native"}]}]
 `
 
 	var cfg Config
-	if errDecode := yaml.Unmarshal([]byte(yamlConfig), &cfg); errDecode != nil {
+	if errDecode := decodeTOMLTestConfig([]byte(tomlConfig), &cfg); errDecode != nil {
 		t.Fatalf("decode error: %v", errDecode)
 	}
 

@@ -9,8 +9,8 @@ import (
 // CatalogSources overrides the source of each model catalog independently.
 // Empty values retain the process default (embedded or official remote catalogs).
 type CatalogSources struct {
-	Catalog      string `yaml:"catalog" json:"catalog,omitempty"`
-	CodexCatalog string `yaml:"codex-catalog" json:"codex-catalog,omitempty"`
+	Catalog      string `toml:"catalog" yaml:"catalog" json:"catalog,omitempty"`
+	CodexCatalog string `toml:"codex-catalog" yaml:"codex-catalog" json:"codex-catalog,omitempty"`
 }
 
 // Validate rejects relative paths and unsupported URL schemes.

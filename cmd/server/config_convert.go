@@ -13,14 +13,13 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 )
 
-const configCommandUsage = `usage: neoproxy config convert --to toml|yaml [--force] [input] [output]
+const configCommandUsage = `usage: neoproxy config convert --to toml [--force] [input] [output]
 
-Converts a configuration file between YAML and TOML. TOML is the preferred
-format; YAML keeps loading unchanged.
+Imports a legacy YAML configuration as TOML without changing the source file.
+Startup also imports legacy YAML automatically when no sibling TOML exists.
 
-  input   defaults to config.yaml (--to toml) or config.toml (--to yaml) in the
-          working directory
-  output  defaults to input with the target extension; "-" writes to stdout
+  input   defaults to config.yaml in the working directory
+  output  defaults to input with the .toml extension; "-" writes to stdout
 `
 
 // runConfigCommand runs `neoproxy config <subcommand>` and returns the exit code.
@@ -32,13 +31,13 @@ func runConfigCommand(args []string, stdout, stderr io.Writer) int {
 	flags := flag.NewFlagSet("config convert", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.Usage = func() { fmt.Fprint(stderr, configCommandUsage) }
-	to := flags.String("to", "", "Target format: toml or yaml")
+	to := flags.String("to", "", "Target format: toml")
 	force := flags.Bool("force", false, "Overwrite an existing output file")
 	if errParse := flags.Parse(args[1:]); errParse != nil {
 		return 2
 	}
 	target, errFormat := config.ParseConfigFormat(*to)
-	if errFormat != nil || flags.NArg() > 2 {
+	if errFormat != nil || target != config.ConfigFormatTOML || flags.NArg() > 2 {
 		fmt.Fprint(stderr, configCommandUsage)
 		return 2
 	}
@@ -50,9 +49,6 @@ func runConfigCommand(args []string, stdout, stderr io.Writer) int {
 			return 1
 		}
 		input = filepath.Join(wd, "config.yaml")
-		if target == config.ConfigFormatYAML {
-			input = filepath.Join(wd, "config.toml")
-		}
 	}
 	if output == "" {
 		output = strings.TrimSuffix(input, filepath.Ext(input)) + target.Extension()

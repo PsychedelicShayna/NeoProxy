@@ -7,23 +7,21 @@ import (
 	"testing"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"gopkg.in/yaml.v3"
 )
 
 func TestOAuthSettingsConfigDecoding_V8(t *testing.T) {
-	const rawYAML = `
-config-version: 8
-oauth:
-  settings:
-    codex:
-      - name: "gpt-6-sol"
-        max-context-length: 524288
-      - name: "deepseek-v4-flash"
-        max-context-length: 1048576
+	const rawTOML = `
+config-version = 8
+[[oauth.settings.codex]]
+name = "gpt-6-sol"
+max-context-length = 524288
+[[oauth.settings.codex]]
+name = "deepseek-v4-flash"
+max-context-length = 1048576
 `
-	var cfg config.Config
-	if err := yaml.Unmarshal([]byte(rawYAML), &cfg); err != nil {
-		t.Fatalf("Unmarshal error: %v", err)
+	cfg, err := config.DecodeConfig([]byte(rawTOML), config.ConfigFormatTOML)
+	if err != nil {
+		t.Fatalf("DecodeConfig error: %v", err)
 	}
 
 	cfg.SanitizeOAuthSettings()
@@ -44,15 +42,14 @@ oauth:
 }
 
 func TestOAuthSettingsConfigDecoding_Legacy(t *testing.T) {
-	const rawYAML = `
-oauth-settings:
-  codex:
-    - name: "gpt-6-sol"
-      max-context-length: 524288
+	const rawTOML = `
+[[oauth-settings.codex]]
+name = "gpt-6-sol"
+max-context-length = 524288
 `
-	var cfg config.Config
-	if err := yaml.Unmarshal([]byte(rawYAML), &cfg); err != nil {
-		t.Fatalf("Unmarshal error: %v", err)
+	cfg, err := config.DecodeConfig([]byte(rawTOML), config.ConfigFormatTOML)
+	if err != nil {
+		t.Fatalf("DecodeConfig error: %v", err)
 	}
 
 	cfg.SanitizeOAuthSettings()
@@ -106,17 +103,16 @@ func TestSanitizeOAuthSettings(t *testing.T) {
 }
 
 func TestParseConfigBytes_DuplicateOAuthSettingsLaterWins(t *testing.T) {
-	const rawYAML = `
-config-version: 8
-oauth:
-  settings:
-    codex:
-      - name: "gpt-6-sol"
-        max-context-length: 524288
-      - name: "gpt-6-sol"
-        max-context-length: 1048576
+	const rawTOML = `
+config-version = 8
+[[oauth.settings.codex]]
+name = "gpt-6-sol"
+max-context-length = 524288
+[[oauth.settings.codex]]
+name = "gpt-6-sol"
+max-context-length = 1048576
 `
-	cfg, err := config.ParseConfigBytes([]byte(rawYAML))
+	cfg, err := config.ParseConfigBytes([]byte(rawTOML))
 	if err != nil {
 		t.Fatalf("ParseConfigBytes error = %v", err)
 	}
@@ -165,16 +161,14 @@ func TestSanitizeOAuthSettings_PreservesLastOccurrenceOrderWithInterleavedRules(
 }
 
 func TestSaveConfigPreserveComments_OAuthSettings(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `config-version: 8
-oauth:
-  # Provider model settings
-  settings:
-    codex:
-      - name: "gpt-6-sol"
-        max-context-length: 524288
+	configPath := filepath.Join(t.TempDir(), "config.toml")
+	initialTOML := `config-version = 8
+# Provider model settings
+[[oauth.settings.codex]]
+name = "gpt-6-sol"
+max-context-length = 524288
 `
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(configPath, []byte(initialTOML), 0o600); errWrite != nil {
 		t.Fatalf("os.WriteFile error = %v", errWrite)
 	}
 

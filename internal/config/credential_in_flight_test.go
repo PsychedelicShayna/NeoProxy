@@ -14,7 +14,7 @@ import (
 )
 
 func TestLoadConfigOptionalMissingFallbackAppliesCredentialInFlightDefaults(t *testing.T) {
-	cfg, errLoad := LoadConfigOptional(filepath.Join(t.TempDir(), "missing.yaml"), true)
+	cfg, errLoad := LoadConfigOptional(filepath.Join(t.TempDir(), "missing.toml"), true)
 	if errLoad != nil {
 		t.Fatalf("LoadConfigOptional() error = %v", errLoad)
 	}
@@ -22,7 +22,7 @@ func TestLoadConfigOptionalMissingFallbackAppliesCredentialInFlightDefaults(t *t
 }
 
 func TestLoadConfigOptionalEmptyFallbackAppliesCredentialInFlightDefaults(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	configPath := filepath.Join(t.TempDir(), "config.toml")
 	if errWrite := os.WriteFile(configPath, nil, 0o600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -34,7 +34,7 @@ func TestLoadConfigOptionalEmptyFallbackAppliesCredentialInFlightDefaults(t *tes
 }
 
 func TestLoadConfigOptionalWhitespaceFallbackAppliesCredentialInFlightDefaults(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	configPath := filepath.Join(t.TempDir(), "config.toml")
 	if errWrite := os.WriteFile(configPath, []byte(" \t\n\r "), 0o600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -46,7 +46,7 @@ func TestLoadConfigOptionalWhitespaceFallbackAppliesCredentialInFlightDefaults(t
 }
 
 func TestLoadConfigOptionalInvalidFallbackAppliesCredentialInFlightDefaults(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	configPath := filepath.Join(t.TempDir(), "config.toml")
 	if errWrite := os.WriteFile(configPath, []byte(":"), 0o600); errWrite != nil {
 		t.Fatal(errWrite)
 	}
@@ -100,7 +100,7 @@ func TestCredentialInFlightConfigFixtureRejectsInvalidJSON(t *testing.T) {
 		raw  []byte
 	}{
 		{name: "unknown config field", raw: bytes.Replace(raw, []byte(`"snapshot-interval": "2s"`), []byte(`"snapshot-interval": "2s", "secret": "secret"`), 1)},
-		{name: "trailing JSON", raw: append(append([]byte{}, raw...), []byte(` {"config": {}}`)...)},
+		{name: "trailing JSON", raw: append(append([]byte{}, raw...), []byte(`{"config":{}}`)...)},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if _, errDecode := decodeCredentialInFlightConfigFixture(test.raw); errDecode == nil {

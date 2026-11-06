@@ -41,7 +41,7 @@ func runKiloSignIn(t *testing.T, h *Handler, state string, status int, body stri
 // gateway, with no stored model list; a second sign-in of the same token is
 // refused rather than duplicated.
 func TestCompleteKiloSignInAddsGatewayKey(t *testing.T) {
-	h, cfgPath, _, bound := newZaiTestHandler(t, "port: 8317\n")
+	h, cfgPath, _, bound := newZaiTestHandler(t, "port = 8317\n")
 	approved := `{"status":"approved","token":"kilo-gateway-token"}`
 	if status, _ := runKiloSignIn(t, h, "kilo-ok", http.StatusOK, approved); status != "" {
 		t.Fatalf("session status = %q, want completed", status)
@@ -70,7 +70,7 @@ func TestCompleteKiloSignInAddsGatewayKey(t *testing.T) {
 }
 
 func TestCompleteKiloSignInDenied(t *testing.T) {
-	h, cfgPath, _, bound := newZaiTestHandler(t, "port: 8317\n")
+	h, cfgPath, _, bound := newZaiTestHandler(t, "port = 8317\n")
 	status, ok := runKiloSignIn(t, h, "kilo-denied", http.StatusForbidden, `{}`)
 	if !ok || status != "Authorization was denied" {
 		t.Fatalf("status = %q (exists %v)", status, ok)

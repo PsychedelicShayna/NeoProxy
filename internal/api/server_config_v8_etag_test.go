@@ -17,7 +17,7 @@ func TestConfigV8ETagExposedForCORS(t *testing.T) {
 	t.Setenv("MANAGEMENT_PASSWORD", "test-management-key")
 
 	server := newTestServer(t)
-	if err := os.WriteFile(server.configFilePath, []byte("config-version: 8\nserver: {port: 8317}\n"), 0600); err != nil {
+	if err := os.WriteFile(server.configFilePath, []byte("config-version = 8\n[server]\nport = 8317\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := proxyconfig.LoadConfig(server.configFilePath)
@@ -31,7 +31,7 @@ func TestConfigV8ETagExposedForCORS(t *testing.T) {
 
 	do := func(method, body, ifMatch string) *httptest.ResponseRecorder {
 		t.Helper()
-		req := httptest.NewRequest(method, "/v8/management/config.yaml", strings.NewReader(body))
+		req := httptest.NewRequest(method, "/v8/management/config.toml", strings.NewReader(body))
 		req.Header.Set("Origin", "http://127.0.0.1:5173")
 		req.Header.Set("Authorization", "Bearer test-management-key")
 		if ifMatch != "" {
@@ -64,7 +64,7 @@ func TestConfigV8ETagExposedForCORS(t *testing.T) {
 
 	etag := wantETagExposed(do(http.MethodGet, "", ""), http.StatusOK)
 	// A stale precondition reports the current version, still CORS-readable.
-	wantETagExposed(do(http.MethodPut, "config-version: 8\n", `"stale"`), http.StatusPreconditionFailed)
+	wantETagExposed(do(http.MethodPut, "config-version = 8\n", `"stale"`), http.StatusPreconditionFailed)
 	// A successful conditional write chains through its exposed new ETag.
-	wantETagExposed(do(http.MethodPut, "config-version: 8\nserver: {port: 8318}\n", etag), http.StatusOK)
+	wantETagExposed(do(http.MethodPut, "config-version = 8\n[server]\nport = 8318\n", etag), http.StatusOK)
 }

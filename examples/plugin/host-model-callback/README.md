@@ -37,14 +37,17 @@ Use the platform extension expected by your target system:
 
 Build the dynamic library and place it under the configured plugin directory with a basename that matches the plugin ID. For example, `plugins/host-model-callback.dylib` maps to `plugins.configs.host-model-callback`.
 
-```yaml
-plugins:
-  enabled: true
-  dir: "plugins"
-  configs:
-    host-model-callback:
-      enabled: true
-      priority: 1
+```toml
+
+[plugins]
+enabled = true
+dir = "plugins"
+
+[plugins.configs]
+
+[plugins.configs.host-model-callback]
+enabled = true
+priority = 1
 ```
 
 This plugin does not define plugin-specific configuration fields.

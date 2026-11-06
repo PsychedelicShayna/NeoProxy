@@ -34,122 +34,137 @@ Plugin config lives under `plugins.configs.claude-web-search-router` (key must m
 
 Tries **antigravity → codex → xai → tavily**; configure `tavily_api_keys` so the last step can succeed when built-in providers are missing or unavailable.
 
-```yaml
-plugins:
-  path:
-    - /absolute/path/to/examples/plugin/bin/claude-web-search-router-go.dylib
-  configs:
-    claude-web-search-router:
-      enabled: true
-      priority: 20
-      route: fallback
-      antigravity_model: "" # empty: registry lookup, then first supports_web_search
-      codex_model: "gpt-5.4-mini"
-      xai_model: "grok-4.3"
-      tavily_api_keys:
-        - "tvly-xxxxxxxx"
-        # - "tvly-yyyyyyyy" # optional: round-robin
-      require_web_search_only: true
+```toml
+
+[plugins]
+path = ["/absolute/path/to/examples/plugin/bin/claude-web-search-router-go.dylib"]
+
+[plugins.configs]
+
+[plugins.configs.claude-web-search-router]
+enabled = true
+priority = 20
+route = "fallback"
+antigravity_model = ""
+codex_model = "gpt-5.4-mini"
+xai_model = "grok-4.3"
+tavily_api_keys = ["tvly-xxxxxxxx"]
+require_web_search_only = true
 ```
 
 Omit `route` to use the same default (`fallback`).
 
 ### Minimal fallback (Tavily as last resort only)
 
-```yaml
-plugins:
-  configs:
-    claude-web-search-router:
-      enabled: true
-      priority: 20
-      route: fallback
-      tavily_api_keys:
-        - "tvly-xxxxxxxx"
-      require_web_search_only: true
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.claude-web-search-router]
+enabled = true
+priority = 20
+route = "fallback"
+tavily_api_keys = ["tvly-xxxxxxxx"]
+require_web_search_only = true
 ```
 
 ### Single backend (no fallback)
 
 **Antigravity only:**
 
-```yaml
-plugins:
-  configs:
-    claude-web-search-router:
-      enabled: true
-      priority: 20
-      route: antigravity_google
-      antigravity_model: "gemini-3.1-flash-lite"
-      require_web_search_only: true
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.claude-web-search-router]
+enabled = true
+priority = 20
+route = "antigravity_google"
+antigravity_model = "gemini-3.1-flash-lite"
+require_web_search_only = true
 ```
 
 **Codex only:**
 
-```yaml
-plugins:
-  configs:
-    claude-web-search-router:
-      enabled: true
-      priority: 20
-      route: codex_web_search
-      codex_model: "gpt-5.4-mini"
-      require_web_search_only: true
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.claude-web-search-router]
+enabled = true
+priority = 20
+route = "codex_web_search"
+codex_model = "gpt-5.4-mini"
+require_web_search_only = true
 ```
 
 **xAI only:**
 
-```yaml
-plugins:
-  configs:
-    claude-web-search-router:
-      enabled: true
-      priority: 20
-      route: xai_web_search
-      xai_model: "grok-4.3"
-      require_web_search_only: true
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.claude-web-search-router]
+enabled = true
+priority = 20
+route = "xai_web_search"
+xai_model = "grok-4.3"
+require_web_search_only = true
 ```
 
 **Tavily only (plugin executor):**
 
-```yaml
-plugins:
-  configs:
-    claude-web-search-router:
-      enabled: true
-      priority: 20
-      route: tavily
-      tavily_api_keys:
-        - "tvly-xxxxxxxx"
-      require_web_search_only: true
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.claude-web-search-router]
+enabled = true
+priority = 20
+route = "tavily"
+tavily_api_keys = ["tvly-xxxxxxxx"]
+require_web_search_only = true
 ```
 
 **Built-in provider via `default_provider`:**
 
-```yaml
-plugins:
-  configs:
-    claude-web-search-router:
-      enabled: true
-      priority: 20
-      route: default_provider
-      default_provider: claude
-      default_provider_model: ""
-      require_web_search_only: true
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.claude-web-search-router]
+enabled = true
+priority = 20
+route = "default_provider"
+default_provider = "claude"
+default_provider_model = ""
+require_web_search_only = true
 ```
 
 ### Disable or relax detection
 
-```yaml
-plugins:
-  configs:
-    claude-web-search-router:
-      enabled: false # plugin declines; host may use default Claude path
+```toml
 
-# Or keep enabled but allow mixed tool lists:
-    claude-web-search-router:
-      enabled: true
-      route: fallback
-      require_web_search_only: false
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.claude-web-search-router]
+enabled = true
+route = "fallback"
+require_web_search_only = false
 ```
 
 ### Config field reference

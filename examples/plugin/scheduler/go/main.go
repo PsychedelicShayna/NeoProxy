@@ -39,9 +39,9 @@ import (
 	"sync/atomic"
 	"unsafe"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
-	"gopkg.in/yaml.v3"
 )
 
 var currentConfig atomic.Value
@@ -58,13 +58,13 @@ type envelopeError struct {
 }
 
 type lifecycleRequest struct {
-	ConfigYAML []byte `json:"config_yaml"`
+	ConfigTOML []byte `json:"config_toml"`
 }
 
 type pluginConfig struct {
-	AuthID   string `yaml:"auth_id"`
-	Delegate string `yaml:"delegate"`
-	Deny     bool   `yaml:"deny"`
+	AuthID   string `toml:"auth_id"`
+	Delegate string `toml:"delegate"`
+	Deny     bool   `toml:"deny"`
 }
 
 type registration struct {
@@ -147,8 +147,8 @@ func configure(raw []byte) error {
 	}
 
 	cfg := pluginConfig{}
-	if len(req.ConfigYAML) > 0 {
-		decoded, errDecode := decodeConfig(req.ConfigYAML)
+	if len(req.ConfigTOML) > 0 {
+		decoded, errDecode := decodeConfig(req.ConfigTOML)
 		if errDecode != nil {
 			return errDecode
 		}
@@ -162,7 +162,7 @@ func configure(raw []byte) error {
 
 func decodeConfig(raw []byte) (pluginConfig, error) {
 	var cfg pluginConfig
-	if errUnmarshal := yaml.Unmarshal(raw, &cfg); errUnmarshal != nil {
+	if errUnmarshal := toml.Unmarshal(raw, &cfg); errUnmarshal != nil {
 		return pluginConfig{}, errUnmarshal
 	}
 	return cfg, nil

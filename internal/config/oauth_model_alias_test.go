@@ -56,25 +56,12 @@ func TestSanitizeOAuthModelAlias_AllowsMultipleAliasesForSameName(t *testing.T) 
 }
 
 func TestParseConfigOAuthMetaChannel(t *testing.T) {
-	const yamlConfig = `
-oauth-model-alias:
-  meta:
-    - name: "muse-spark-1.3"
-      alias: "muse-latest"
-      fork: true
-      force-mapping: true
-oauth-excluded-models:
-  meta:
-    - "muse-spark-1.1"
-oauth-request-scoped-errors:
-  meta:
-    - status: 400
-      match:
-        - "context_length_exceeded"
-      action: "stop"
+	const tomlConfig = `"oauth-model-alias" = {"meta" = [{"name" = "muse-spark-1.3", "alias" = "muse-latest", "fork" = true, "force-mapping" = true}]}
+"oauth-excluded-models" = {"meta" = ["muse-spark-1.1"]}
+"oauth-request-scoped-errors" = {"meta" = [{"status" = 400, "match" = ["context_length_exceeded"], "action" = "stop"}]}
 `
 
-	cfg, err := ParseConfigBytes([]byte(yamlConfig))
+	cfg, err := ParseConfigBytes([]byte(tomlConfig))
 	if err != nil {
 		t.Fatalf("ParseConfigBytes failed: %v", err)
 	}

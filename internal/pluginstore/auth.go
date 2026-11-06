@@ -25,15 +25,15 @@ const (
 )
 
 type AuthConfig struct {
-	Match          string   `yaml:"match,omitempty" json:"match,omitempty"`
-	ApplyTo        []string `yaml:"apply-to,omitempty" json:"apply_to,omitempty"`
-	Type           string   `yaml:"type,omitempty" json:"type,omitempty"`
-	TokenEnv       string   `yaml:"token-env,omitempty" json:"token_env,omitempty"`
-	UsernameEnv    string   `yaml:"username-env,omitempty" json:"username_env,omitempty"`
-	PasswordEnv    string   `yaml:"password-env,omitempty" json:"password_env,omitempty"`
-	HeaderName     string   `yaml:"header-name,omitempty" json:"header_name,omitempty"`
-	HeaderValueEnv string   `yaml:"header-value-env,omitempty" json:"header_value_env,omitempty"`
-	AllowInsecure  bool     `yaml:"allow-insecure,omitempty" json:"allow_insecure,omitempty"`
+	Match          string   `toml:"match,omitempty" yaml:"match,omitempty" json:"match,omitempty"`
+	ApplyTo        []string `toml:"apply-to,omitempty" yaml:"apply-to,omitempty" json:"apply_to,omitempty"`
+	Type           string   `toml:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
+	TokenEnv       string   `toml:"token-env,omitempty" yaml:"token-env,omitempty" json:"token_env,omitempty"`
+	UsernameEnv    string   `toml:"username-env,omitempty" yaml:"username-env,omitempty" json:"username_env,omitempty"`
+	PasswordEnv    string   `toml:"password-env,omitempty" yaml:"password-env,omitempty" json:"password_env,omitempty"`
+	HeaderName     string   `toml:"header-name,omitempty" yaml:"header-name,omitempty" json:"header_name,omitempty"`
+	HeaderValueEnv string   `toml:"header-value-env,omitempty" yaml:"header-value-env,omitempty" json:"header_value_env,omitempty"`
+	AllowInsecure  bool     `toml:"allow-insecure,omitempty" yaml:"allow-insecure,omitempty" json:"allow_insecure,omitempty"`
 }
 
 // Secret holds short-lived credential material that can be overwritten after use.
@@ -51,14 +51,14 @@ func (s *Secret) Clear() {
 }
 
 type ResolvedAuthConfig struct {
-	Match       string   `yaml:"match,omitempty" json:"match,omitempty"`
-	ApplyTo     []string `yaml:"apply-to,omitempty" json:"apply_to,omitempty"`
-	Type        string   `yaml:"type,omitempty" json:"type,omitempty"`
-	Token       Secret   `yaml:"token,omitempty" json:"token,omitempty"`
-	Username    Secret   `yaml:"username,omitempty" json:"username,omitempty"`
-	Password    Secret   `yaml:"password,omitempty" json:"password,omitempty"`
-	HeaderName  string   `yaml:"header-name,omitempty" json:"header_name,omitempty"`
-	HeaderValue Secret   `yaml:"header-value,omitempty" json:"header_value,omitempty"`
+	Match       string   `toml:"match,omitempty" yaml:"match,omitempty" json:"match,omitempty"`
+	ApplyTo     []string `toml:"apply-to,omitempty" yaml:"apply-to,omitempty" json:"apply_to,omitempty"`
+	Type        string   `toml:"type,omitempty" yaml:"type,omitempty" json:"type,omitempty"`
+	Token       Secret   `toml:"token,omitempty" yaml:"token,omitempty" json:"token,omitempty"`
+	Username    Secret   `toml:"username,omitempty" yaml:"username,omitempty" json:"username,omitempty"`
+	Password    Secret   `toml:"password,omitempty" yaml:"password,omitempty" json:"password,omitempty"`
+	HeaderName  string   `toml:"header-name,omitempty" yaml:"header-name,omitempty" json:"header_name,omitempty"`
+	HeaderValue Secret   `toml:"header-value,omitempty" yaml:"header-value,omitempty" json:"header_value,omitempty"`
 }
 
 func (c *ResolvedAuthConfig) Clear() {

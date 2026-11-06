@@ -532,8 +532,8 @@ func TestAntigravityColdStart_RefreshesExpiredTokenUsingAuthProxy(t *testing.T) 
 
 	authDir := t.TempDir()
 	configDir := t.TempDir()
-	configPath := filepath.Join(configDir, "config.yaml")
-	_ = os.WriteFile(configPath, []byte("port: 0\n"), 0o600)
+	configPath := filepath.Join(configDir, "config.toml")
+	_ = os.WriteFile(configPath, []byte("port = 0\n"), 0o600)
 
 	// Write an expired Antigravity auth file with a specific proxy_url
 	authJSON := []byte(`{

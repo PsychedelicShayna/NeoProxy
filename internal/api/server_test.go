@@ -42,7 +42,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
 	log "github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
-	"gopkg.in/yaml.v3"
 )
 
 type codexSearchCaptureExecutor struct {
@@ -640,7 +639,7 @@ func newTestServerWithConfig(t *testing.T, cfg *proxyconfig.Config, opts ...Serv
 	authManager := auth.NewManager(nil, nil, nil)
 	accessManager := sdkaccess.NewManager()
 
-	configPath := filepath.Join(tmpDir, "config.yaml")
+	configPath := filepath.Join(tmpDir, "config.toml")
 	return NewServer(cfg, authManager, accessManager, configPath, opts...)
 }
 
@@ -1721,7 +1720,7 @@ func TestManagementPluginsRouteRegistered(t *testing.T) {
 		"sample": {Enabled: &enabled, Priority: 4},
 	}
 	server.mgmt.SetConfig(server.cfg)
-	if errWrite := os.WriteFile(server.configFilePath, []byte("{}\n"), 0o600); errWrite != nil {
+	if errWrite := os.WriteFile(server.configFilePath, []byte("config-version = 8\n"), 0o600); errWrite != nil {
 		t.Fatalf("failed to write config file: %v", errWrite)
 	}
 
@@ -2633,7 +2632,7 @@ func TestDefaultRequestLoggerFactory_UsesResolvedLogDirectory(t *testing.T) {
 	if errMkdirConfig := os.MkdirAll(configDir, 0o755); errMkdirConfig != nil {
 		t.Fatalf("failed to create config dir: %v", errMkdirConfig)
 	}
-	configPath := filepath.Join(configDir, "config.yaml")
+	configPath := filepath.Join(configDir, "config.toml")
 
 	authDir := filepath.Join(tmpDir, "auth")
 	if errMkdirAuth := os.MkdirAll(authDir, 0o700); errMkdirAuth != nil {
@@ -2940,7 +2939,7 @@ func TestUpdateClientsContext_AntigravityConnectionPoolPurgesTransports(t *testi
 	cfg1 := *server.cfg
 	cfg1.Antigravity.ConnectionPool.Enabled = &enabled
 	cfg1.Antigravity.ConnectionPool.IdleConnTimeout = "30s"
-	server.oldConfigYaml, _ = yaml.Marshal(&cfg1)
+	server.oldConfigTOML, _ = proxyconfig.EncodeConfig(&cfg1)
 
 	// Pre-populate the cache before reload
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

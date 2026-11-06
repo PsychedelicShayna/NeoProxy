@@ -9,7 +9,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/watcher/synthesizer"
 	coreauth "github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/auth"
-	"gopkg.in/yaml.v3"
 )
 
 type geminiKeyWithAuthIndex struct {
@@ -99,166 +98,134 @@ func (h *Handler) liveAuthIndexByID() map[string]string {
 	return liveAuthIndexFromManager(manager)
 }
 
-func yamlMapScalar(node *yaml.Node, key string) string {
-	if node == nil || node.Kind != yaml.MappingNode {
-		return ""
-	}
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		if node.Content[i].Value == key {
-			return strings.TrimSpace(node.Content[i+1].Value)
-		}
-	}
-	return ""
+func configMapScalar(node any, key string) string {
+	value, _ := configMapScalarPresent(node, key)
+	return value
 }
 
-func setMapScalar(mapping *yaml.Node, key, value string) {
-	if mapping == nil || mapping.Kind != yaml.MappingNode {
-		return
+func setMapScalar(node any, key, value string) {
+	if mapping, ok := node.(map[string]any); ok && mapping != nil {
+		mapping[key] = value
 	}
-	for i := 0; i+1 < len(mapping.Content); i += 2 {
-		if mapping.Content[i].Value == key {
-			mapping.Content[i+1].Value = value
-			mapping.Content[i+1].Tag = "!!str"
-			mapping.Content[i+1].Kind = yaml.ScalarNode
-			return
-		}
-	}
-	mapping.Content = append(mapping.Content,
-		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: key},
-		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: value},
-	)
 }
 
-func deleteMapKey(mapping *yaml.Node, key string) bool {
-	if mapping == nil || mapping.Kind != yaml.MappingNode {
+func deleteMapKey(node any, key string) bool {
+	mapping, ok := node.(map[string]any)
+	if !ok {
 		return false
 	}
-	for i := 0; i+1 < len(mapping.Content); i += 2 {
-		if mapping.Content[i].Value == key {
-			mapping.Content = append(mapping.Content[:i], mapping.Content[i+2:]...)
-			return true
-		}
-	}
-	return false
+	_, present := mapping[key]
+	delete(mapping, key)
+	return present
 }
 
-func stripAPIKeysAuthIndexesFromGroup(group *yaml.Node) {
-	if group == nil || group.Kind != yaml.MappingNode {
+func stripAPIKeysAuthIndexesFromGroup(group any) {
+	mapping, ok := group.(map[string]any)
+	if !ok {
 		return
 	}
-	deleteMapKey(group, "auth_index")
-	deleteMapKey(group, "auth-index")
-	keysNode := configV8Node(group, []string{"keys"})
-	if keysNode != nil && keysNode.Kind == yaml.SequenceNode {
-		for _, keyNode := range keysNode.Content {
-			if keyNode != nil && keyNode.Kind == yaml.MappingNode {
-				deleteMapKey(keyNode, "auth_index")
-				deleteMapKey(keyNode, "auth-index")
-			}
-		}
+	deleteMapKey(mapping, "auth_index")
+	deleteMapKey(mapping, "auth-index")
+	keys, _ := mapping["keys"].([]any)
+	for _, key := range keys {
+		deleteMapKey(key, "auth_index")
+		deleteMapKey(key, "auth-index")
 	}
 }
 
-func stripAPIKeysAuthIndexesFromGroups(groupsNode *yaml.Node) {
-	if groupsNode == nil {
-		return
-	}
-	if groupsNode.Kind == yaml.SequenceNode {
-		for _, group := range groupsNode.Content {
+func stripAPIKeysAuthIndexesFromGroups(groups any) {
+	switch value := groups.(type) {
+	case []any:
+		for _, group := range value {
 			stripAPIKeysAuthIndexesFromGroup(group)
 		}
-	} else if groupsNode.Kind == yaml.MappingNode {
-		stripAPIKeysAuthIndexesFromGroup(groupsNode)
+	case map[string]any:
+		stripAPIKeysAuthIndexesFromGroup(value)
 	}
 }
 
-func stripAPIKeysAuthIndexesFromProvidersMap(apiKeysNode *yaml.Node) {
-	if apiKeysNode == nil || apiKeysNode.Kind != yaml.MappingNode {
-		return
-	}
-	for i := 0; i+1 < len(apiKeysNode.Content); i += 2 {
-		stripAPIKeysAuthIndexesFromGroups(apiKeysNode.Content[i+1])
+func stripAPIKeysAuthIndexesFromProvidersMap(node any) {
+	providers, _ := node.(map[string]any)
+	for _, groups := range providers {
+		stripAPIKeysAuthIndexesFromGroups(groups)
 	}
 }
 
-func stripAPIKeysAuthIndexesFromRoot(root *yaml.Node) {
-	if root == nil || root.Kind != yaml.MappingNode {
-		return
-	}
-	apiKeysNode := configV8Node(root, []string{"api-keys"})
-	if apiKeysNode != nil {
-		stripAPIKeysAuthIndexesFromProvidersMap(apiKeysNode)
-	}
+func stripAPIKeysAuthIndexesFromRoot(root map[string]any) {
+	stripAPIKeysAuthIndexesFromProvidersMap(root["api-keys"])
 }
 
-func stripAPIKeysAuthIndexesFromUpdate(parts []string, update *yaml.Node) {
-	if update == nil || len(update.Content) == 0 {
-		return
-	}
-	node := update.Content[0]
+func stripAPIKeysAuthIndexesFromUpdate(parts []string, update any) {
 	if len(parts) == 0 {
-		stripAPIKeysAuthIndexesFromRoot(node)
+		root, _ := update.(map[string]any)
+		stripAPIKeysAuthIndexesFromRoot(root)
 		return
 	}
 	if parts[0] != "api-keys" {
 		return
 	}
 	if len(parts) == 1 {
-		stripAPIKeysAuthIndexesFromProvidersMap(node)
+		stripAPIKeysAuthIndexesFromProvidersMap(update)
 		return
 	}
-	stripAPIKeysAuthIndexesFromGroups(node)
+	stripAPIKeysAuthIndexesFromGroups(update)
 }
 
-func yamlMapScalarPresent(node *yaml.Node, key string) (string, bool) {
-	if node == nil || node.Kind != yaml.MappingNode {
+func configMapScalarPresent(node any, key string) (string, bool) {
+	mapping, ok := node.(map[string]any)
+	if !ok {
 		return "", false
 	}
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		if node.Content[i].Value == key {
-			if node.Content[i+1].Tag == "!!null" {
-				return "", false
-			}
-			return strings.TrimSpace(node.Content[i+1].Value), true
-		}
+	value, present := mapping[key]
+	if !present || value == nil {
+		return "", false
 	}
-	return "", false
+	switch value.(type) {
+	case map[string]any, []any:
+		return "", true
+	default:
+		return strings.TrimSpace(fmt.Sprint(value)), true
+	}
 }
 
-func yamlMapHeadersPresent(node *yaml.Node, key string) (map[string]string, bool) {
-	if node == nil || node.Kind != yaml.MappingNode {
+func configMapHeadersPresent(node any, key string) (map[string]string, bool) {
+	mapping, ok := node.(map[string]any)
+	if !ok {
 		return nil, false
 	}
-	for i := 0; i+1 < len(node.Content); i += 2 {
-		if node.Content[i].Value == key {
-			if node.Content[i+1].Tag == "!!null" {
-				return nil, false
-			}
-			var h map[string]string
-			if errDecode := node.Content[i+1].Decode(&h); errDecode == nil {
-				return h, true
-			}
+	headers, ok := mapping[key].(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	out := make(map[string]string, len(headers))
+	for name, value := range headers {
+		switch value.(type) {
+		case map[string]any, []any:
 			return nil, false
+		case nil:
+			out[name] = ""
+		default:
+			out[name] = fmt.Sprint(value)
 		}
 	}
-	return nil, false
+	return out, true
 }
 
-func resolveInheritedScalar(keyNode, groupNode *yaml.Node, field string) string {
-	if val, ok := yamlMapScalarPresent(keyNode, field); ok {
+func resolveInheritedScalar(keyNode, groupNode any, field string) string {
+	if val, ok := configMapScalarPresent(keyNode, field); ok {
 		return val
 	}
-	if val, ok := yamlMapScalarPresent(groupNode, field); ok {
+	if val, ok := configMapScalarPresent(groupNode, field); ok {
 		return val
 	}
 	return ""
 }
 
-func resolveInheritedHeaders(keyNode, groupNode *yaml.Node, field string) map[string]string {
-	if h, ok := yamlMapHeadersPresent(keyNode, field); ok {
+func resolveInheritedHeaders(keyNode, groupNode any, field string) map[string]string {
+	if h, ok := configMapHeadersPresent(keyNode, field); ok {
 		return h
 	}
-	if h, ok := yamlMapHeadersPresent(groupNode, field); ok {
+	if h, ok := configMapHeadersPresent(groupNode, field); ok {
 		return h
 	}
 	return nil
@@ -287,12 +254,12 @@ func formatCredentialDedupKey(key, base, proxyURL, prefix string, headers map[st
 	return b.String()
 }
 
-func (h *Handler) injectV8APIKeyAuthIndexesLocked(root *yaml.Node, data []byte) {
-	if h == nil || root == nil || root.Kind != yaml.MappingNode {
+func (h *Handler) injectV8APIKeyAuthIndexesLocked(root map[string]any, data []byte) {
+	if h == nil || root == nil {
 		return
 	}
-	apiKeysNode := configV8Node(root, []string{"api-keys"})
-	if apiKeysNode == nil || apiKeysNode.Kind != yaml.MappingNode {
+	apiKeysNode, ok := configV8Node(root, []string{"api-keys"}).(map[string]any)
+	if !ok {
 		return
 	}
 
@@ -385,20 +352,21 @@ func (h *Handler) injectV8APIKeyAuthIndexesLocked(root *yaml.Node, data []byte) 
 		}
 	}
 
-	for i := 0; i+1 < len(apiKeysNode.Content); i += 2 {
-		providerName := strings.TrimSpace(apiKeysNode.Content[i].Value)
-		groupsNode := apiKeysNode.Content[i+1]
-		if groupsNode == nil || groupsNode.Kind != yaml.SequenceNode {
+	for provider, value := range apiKeysNode {
+		providerName := strings.TrimSpace(provider)
+		groupsNode, ok := value.([]any)
+		if !ok {
 			continue
 		}
 
 		if providerName == "openai-compatibility" {
 			validGroupIdx := 0
-			for _, group := range groupsNode.Content {
-				if group == nil || group.Kind != yaml.MappingNode {
+			for _, value := range groupsNode {
+				group, ok := value.(map[string]any)
+				if !ok {
 					continue
 				}
-				groupBase := strings.TrimSpace(yamlMapScalar(group, "base-url"))
+				groupBase := strings.TrimSpace(configMapScalar(group, "base-url"))
 				if groupBase == "" {
 					continue
 				}
@@ -415,8 +383,8 @@ func (h *Handler) injectV8APIKeyAuthIndexesLocked(root *yaml.Node, data []byte) 
 					return a.Provider == "openai-compatibility" || strings.HasPrefix(a.Provider, "openai-compatible-")
 				}
 
-				keysNode := configV8Node(group, []string{"keys"})
-				if keysNode == nil || keysNode.Kind != yaml.SequenceNode || len(keysNode.Content) == 0 {
+				keysNode, _ := configV8Node(group, []string{"keys"}).([]any)
+				if len(keysNode) == 0 {
 					for _, a := range auths {
 						if isOpenAICompatAuth(a) && a.Attributes["api_key"] == "" {
 							if idx := resolveAuthIndex(a); idx != "" {
@@ -435,8 +403,9 @@ func (h *Handler) injectV8APIKeyAuthIndexesLocked(root *yaml.Node, data []byte) 
 					}
 				}
 
-				for kIdx, keyNode := range keysNode.Content {
-					if keyNode == nil || keyNode.Kind != yaml.MappingNode {
+				for kIdx, value := range keysNode {
+					keyNode, ok := value.(map[string]any)
+					if !ok {
 						continue
 					}
 					if kIdx < len(groupAuths) {
@@ -451,20 +420,22 @@ func (h *Handler) injectV8APIKeyAuthIndexesLocked(root *yaml.Node, data []byte) 
 
 		if providerName == "claude" {
 			rawIdx := 0
-			for _, group := range groupsNode.Content {
-				if group == nil || group.Kind != yaml.MappingNode {
+			for _, value := range groupsNode {
+				group, ok := value.(map[string]any)
+				if !ok {
 					continue
 				}
-				groupBase := strings.TrimSpace(yamlMapScalar(group, "base-url"))
-				keysNode := configV8Node(group, []string{"keys"})
-				if keysNode == nil || keysNode.Kind != yaml.SequenceNode {
+				groupBase := strings.TrimSpace(configMapScalar(group, "base-url"))
+				keysNode, ok := configV8Node(group, []string{"keys"}).([]any)
+				if !ok {
 					continue
 				}
-				for _, keyNode := range keysNode.Content {
-					if keyNode == nil || keyNode.Kind != yaml.MappingNode {
+				for _, value := range keysNode {
+					keyNode, ok := value.(map[string]any)
+					if !ok {
 						continue
 					}
-					apiKey := strings.TrimSpace(yamlMapScalar(keyNode, "api-key"))
+					apiKey := strings.TrimSpace(configMapScalar(keyNode, "api-key"))
 					targetIdx := strconv.Itoa(rawIdx)
 					rawIdx++
 					if apiKey == "" && groupBase == "" {
@@ -482,20 +453,22 @@ func (h *Handler) injectV8APIKeyAuthIndexesLocked(root *yaml.Node, data []byte) 
 
 		if providerName == "codex" || providerName == "xai" {
 			validIdx := 0
-			for _, group := range groupsNode.Content {
-				if group == nil || group.Kind != yaml.MappingNode {
+			for _, value := range groupsNode {
+				group, ok := value.(map[string]any)
+				if !ok {
 					continue
 				}
-				groupBase := strings.TrimSpace(yamlMapScalar(group, "base-url"))
+				groupBase := strings.TrimSpace(configMapScalar(group, "base-url"))
 				if groupBase == "" {
 					continue
 				}
-				keysNode := configV8Node(group, []string{"keys"})
-				if keysNode == nil || keysNode.Kind != yaml.SequenceNode {
+				keysNode, ok := configV8Node(group, []string{"keys"}).([]any)
+				if !ok {
 					continue
 				}
-				for _, keyNode := range keysNode.Content {
-					if keyNode == nil || keyNode.Kind != yaml.MappingNode {
+				for _, value := range keysNode {
+					keyNode, ok := value.(map[string]any)
+					if !ok {
 						continue
 					}
 					targetIdx := strconv.Itoa(validIdx)
@@ -512,19 +485,21 @@ func (h *Handler) injectV8APIKeyAuthIndexesLocked(root *yaml.Node, data []byte) 
 
 		if providerName == "meta" {
 			validIdx := 0
-			for _, group := range groupsNode.Content {
-				if group == nil || group.Kind != yaml.MappingNode {
+			for _, value := range groupsNode {
+				group, ok := value.(map[string]any)
+				if !ok {
 					continue
 				}
-				keysNode := configV8Node(group, []string{"keys"})
-				if keysNode == nil || keysNode.Kind != yaml.SequenceNode {
+				keysNode, ok := configV8Node(group, []string{"keys"}).([]any)
+				if !ok {
 					continue
 				}
-				for _, keyNode := range keysNode.Content {
-					if keyNode == nil || keyNode.Kind != yaml.MappingNode {
+				for _, value := range keysNode {
+					keyNode, ok := value.(map[string]any)
+					if !ok {
 						continue
 					}
-					apiKey := strings.TrimSpace(yamlMapScalar(keyNode, "api-key"))
+					apiKey := strings.TrimSpace(configMapScalar(keyNode, "api-key"))
 					if apiKey == "" || strings.HasPrefix(apiKey, "dca:") {
 						continue
 					}
@@ -540,20 +515,22 @@ func (h *Handler) injectV8APIKeyAuthIndexesLocked(root *yaml.Node, data []byte) 
 			continue
 		}
 
-		for _, group := range groupsNode.Content {
-			if group == nil || group.Kind != yaml.MappingNode {
+		for _, value := range groupsNode {
+			group, ok := value.(map[string]any)
+			if !ok {
 				continue
 			}
-			groupBase := strings.TrimSpace(yamlMapScalar(group, "base-url"))
-			keysNode := configV8Node(group, []string{"keys"})
-			if keysNode == nil || keysNode.Kind != yaml.SequenceNode {
+			groupBase := strings.TrimSpace(configMapScalar(group, "base-url"))
+			keysNode, ok := configV8Node(group, []string{"keys"}).([]any)
+			if !ok {
 				continue
 			}
-			for _, keyNode := range keysNode.Content {
-				if keyNode == nil || keyNode.Kind != yaml.MappingNode {
+			for _, value := range keysNode {
+				keyNode, ok := value.(map[string]any)
+				if !ok {
 					continue
 				}
-				apiKey := strings.TrimSpace(yamlMapScalar(keyNode, "api-key"))
+				apiKey := strings.TrimSpace(configMapScalar(keyNode, "api-key"))
 				if providerName == "vertex" {
 					if idx, ok := providerAuthMap["vertex"][apiKey+"|"+groupBase]; ok {
 						setMapScalar(keyNode, "auth_index", idx)

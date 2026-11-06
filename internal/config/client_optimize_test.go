@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
+	"reflect"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestClientCodexOptimizeMultiAgentV2(t *testing.T) {
@@ -17,10 +15,10 @@ func TestClientCodexOptimizeMultiAgentV2(t *testing.T) {
 		raw  string
 		want bool
 	}{
-		{"omitted", "config-version: 8\n", false},
-		{"disabled", "client: {codex: {optimize-multi-agent-v2: false}}\n", false},
-		{"enabled", "client: {codex: {optimize-multi-agent-v2: true, enable-apply-patch: true}}\n", true},
-		{"null", "client: {codex: {optimize-multi-agent-v2: null}}\n", false},
+		{"omitted", "config-version = 8\n", false},
+		{"disabled", "client.codex.optimize-multi-agent-v2 = false\n", false},
+		{"enabled", "client.codex.optimize-multi-agent-v2 = true\nclient.codex.enable-apply-patch = true\n", true},
+		{"empty client", "client.codex = {}\n", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if errValidate := ValidateV8Config([]byte(tc.raw)); errValidate != nil {
@@ -34,7 +32,7 @@ func TestClientCodexOptimizeMultiAgentV2(t *testing.T) {
 				t.Fatalf("OptimizeMultiAgentV2 = %t, want %t", cfg.Client.Codex.OptimizeMultiAgentV2, tc.want)
 			}
 			var sdkCfg SDKConfig
-			if errUnmarshal := yaml.Unmarshal([]byte(tc.raw), &sdkCfg); errUnmarshal != nil {
+			if errUnmarshal := decodeNativeValue(reflect.ValueOf(&sdkCfg).Elem(), testV8Document(t, []byte(tc.raw)), "", false); errUnmarshal != nil {
 				t.Fatalf("decode SDK config: %v", errUnmarshal)
 			}
 			if sdkCfg.Client.Codex != cfg.Client.Codex {
@@ -54,11 +52,11 @@ func TestClientCodexOptimizeMultiAgentV2(t *testing.T) {
 		})
 	}
 	for _, raw := range []string{
-		"client: {codex: {optimize-multi-agent-v2: invalid}}",
-		"client: {codex: {optimize-multi-agent-v2: 1}}",
-		"client: false",
-		"client: {codex: false}",
-		"client: {codex: {optimize-multi-agent-v2: true, optimize-multi-agent-v2: false}}",
+		"client.codex.optimize-multi-agent-v2 = \"invalid\"\n",
+		"client.codex.optimize-multi-agent-v2 = 1\n",
+		"client = false\n",
+		"client.codex = false\n",
+		"client.codex.optimize-multi-agent-v2 = true\nclient.codex.optimize-multi-agent-v2 = false\n",
 	} {
 		if errValidate := ValidateV8Config([]byte(raw)); errValidate == nil {
 			t.Fatalf("accepted invalid config %q", raw)
@@ -72,19 +70,26 @@ func TestClientCodexOptimizeMultiAgentV2Migration(t *testing.T) {
 		raw  string
 		want bool
 	}{
-		{"flat", "codex: {optimize-multi-agent-v2: true}\n", true},
-		{"providers", "providers: {codex: {optimize-multi-agent-v2: true}}\n", true},
-		{"oauth", "oauth: {providers: {codex: {optimize-multi-agent-v2: true}}}\n", true},
-		{"old false", "providers: {codex: {optimize-multi-agent-v2: false}}\n", false},
-		{"client false wins", "client: {codex: {optimize-multi-agent-v2: false}}\nproviders: {codex: {optimize-multi-agent-v2: true}}\noauth: {providers: {codex: {optimize-multi-agent-v2: true}}}\ncodex: {optimize-multi-agent-v2: true}\n", false},
-		{"client true wins", "client: {codex: {optimize-multi-agent-v2: true}}\noauth: {providers: {codex: {optimize-multi-agent-v2: false}}}\n", true},
+		{"flat", "codex.optimize-multi-agent-v2 = true\n", true},
+		{"providers", "providers.codex.optimize-multi-agent-v2 = true\n", true},
+		{"oauth", "oauth.providers.codex.optimize-multi-agent-v2 = true\n", true},
+		{"old false", "providers.codex.optimize-multi-agent-v2 = false\n", false},
+		{"client false wins", "client.codex.optimize-multi-agent-v2 = false\nproviders.codex.optimize-multi-agent-v2 = true\noauth.providers.codex.optimize-multi-agent-v2 = true\ncodex.optimize-multi-agent-v2 = true\n", false},
+		{"client true wins", "client.codex.optimize-multi-agent-v2 = true\noauth.providers.codex.optimize-multi-agent-v2 = false\n", true},
 		{"client null wins", "client: {codex: {optimize-multi-agent-v2: null}}\nproviders: {codex: {optimize-multi-agent-v2: true}}\n", false},
-		{"oauth wins old conflicts", "oauth: {providers: {codex: {optimize-multi-agent-v2: false}}}\nproviders: {codex: {optimize-multi-agent-v2: true}}\ncodex: {optimize-multi-agent-v2: true}\n", false},
-		{"providers wins flat", "providers: {codex: {optimize-multi-agent-v2: false}}\ncodex: {optimize-multi-agent-v2: true}\n", false},
+		{"oauth wins old conflicts", "oauth.providers.codex.optimize-multi-agent-v2 = false\nproviders.codex.optimize-multi-agent-v2 = true\ncodex.optimize-multi-agent-v2 = true\n", false},
+		{"providers wins flat", "providers.codex.optimize-multi-agent-v2 = false\ncodex.optimize-multi-agent-v2 = true\n", false},
 		{"aliases", "client: &client {codex: {optimize-multi-agent-v2: false}}\nproviders: {<<: *client}\n", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			raw := []byte(tc.raw)
+			if tc.name == "aliases" || tc.name == "client null wins" {
+				var err error
+				raw, err = YAMLToTOML(raw)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
 			cfg, errParse := ParseConfigBytes(raw)
 			if errParse != nil {
 				t.Fatalf("parse: %v", errParse)
@@ -101,16 +106,11 @@ func TestClientCodexOptimizeMultiAgentV2Migration(t *testing.T) {
 			if errClean != nil {
 				t.Fatalf("clean conflicts: %v", errClean)
 			}
-			var original, normalized yaml.Node
-			if errOriginal := yaml.Unmarshal(raw, &original); errOriginal != nil {
-				t.Fatalf("decode original layout: %v", errOriginal)
-			}
-			if errCleaned := yaml.Unmarshal(cleaned, &normalized); errCleaned != nil {
-				t.Fatalf("decode cleaned layout: %v", errCleaned)
-			}
-			if yamlPath(original.Content[0], "client.codex.optimize-multi-agent-v2") != nil {
+			original := testV8Document(t, raw)
+			normalized := testV8Document(t, cleaned)
+			if testV8Path(original, "client.codex.optimize-multi-agent-v2") != nil {
 				for _, path := range v8ClientPaths {
-					if yamlPath(normalized.Content[0], path.old) != nil {
+					if testV8Path(normalized, path.old) != nil {
 						t.Fatalf("conflicting historical path was retained: %s", path.old)
 					}
 				}
@@ -123,12 +123,12 @@ func TestClientCodexOptimizeMultiAgentV2Migration(t *testing.T) {
 			if api.Client != cfg.Client || !api.Codex.ResponseSteering || !cfg.Codex.ResponseSteering || api.WebsocketAuth || !cfg.WebsocketAuth {
 				t.Fatal("API-key scope changed client configuration or shared state")
 			}
-			snapshot, errMarshal := yaml.Marshal(cfg)
+			snapshot, errMarshal := MarshalTOML(cfg)
 			if errMarshal != nil {
 				t.Fatalf("snapshot: %v", errMarshal)
 			}
 			var restored Config
-			if errUnmarshal := yaml.Unmarshal(snapshot, &restored); errUnmarshal != nil {
+			if errUnmarshal := decodeNativeValue(reflect.ValueOf(&restored).Elem(), testV8Document(t, snapshot), "", false); errUnmarshal != nil {
 				t.Fatalf("restore snapshot: %v", errUnmarshal)
 			}
 			if restored.ForAPIKey().Client.Codex.OptimizeMultiAgentV2 != tc.want {
@@ -141,7 +141,7 @@ func TestClientCodexOptimizeMultiAgentV2Migration(t *testing.T) {
 			if errValidate := ValidateV8Config(migrated); errValidate != nil {
 				t.Fatalf("validate migrated config: %v; data=%s", errValidate, migrated)
 			}
-			if errUnmarshal := yaml.Unmarshal(migrated, &restored); errUnmarshal != nil {
+			if errUnmarshal := decodeNativeValue(reflect.ValueOf(&restored).Elem(), testV8Document(t, migrated), "", false); errUnmarshal != nil {
 				t.Fatalf("decode migrated config: %v", errUnmarshal)
 			}
 			if restored.Client.Codex.OptimizeMultiAgentV2 != tc.want {
@@ -154,12 +154,11 @@ func TestClientCodexOptimizeMultiAgentV2Migration(t *testing.T) {
 		})
 	}
 	for _, path := range v8ClientPaths {
-		var root yaml.Node
-		root.Kind, root.Tag = yaml.MappingNode, "!!map"
-		setYAMLPath(&root, path.old, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "true"})
-		data, errMarshal := yaml.Marshal(&root)
+		root := map[string]any{}
+		setMapPath(root, path.old, true)
+		data, errMarshal := RenderConfigDocument(root)
 		if errMarshal != nil {
-			t.Fatalf("encode old path: %v", errMarshal)
+			t.Fatal(errMarshal)
 		}
 		if errValidate := ValidateV8Config(data); errValidate == nil {
 			t.Fatalf("v8 write accepted historical path %s", path.old)
@@ -174,18 +173,15 @@ func TestClientCodexOptimizeMultiAgentV2Migration(t *testing.T) {
 func TestClientCodexOptimizeMultiAgentV2Save(t *testing.T) {
 	for _, old := range v8ClientPaths {
 		t.Run(old.old, func(t *testing.T) {
-			var root yaml.Node
-			root.Kind, root.Tag = yaml.MappingNode, "!!map"
-			setYAMLPath(&root, old.old, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "true", LineComment: "keep optimize comment"})
-			parts := strings.Split(old.old, ".")
-			parent := yamlPath(&root, strings.Join(parts[:len(parts)-1], "."))
-			parent.Content[findMapKeyIndex(parent, parts[len(parts)-1])].HeadComment = "keep optimize heading"
-			setYAMLPath(&root, "client.codex.enable-apply-patch", &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "true"})
-			raw, errMarshal := yaml.Marshal(&root)
+			root := map[string]any{}
+			setMapPath(root, old.old, true)
+			setMapPath(root, "client.codex.enable-apply-patch", true)
+			raw, errMarshal := RenderConfigDocument(root)
 			if errMarshal != nil {
-				t.Fatalf("marshal: %v", errMarshal)
+				t.Fatal(errMarshal)
 			}
-			path := filepath.Join(t.TempDir(), "config.yaml")
+			raw = append([]byte("# keep optimize heading\n# keep optimize comment\n"), raw...)
+			path := filepath.Join(t.TempDir(), "config.toml")
 			if errWrite := os.WriteFile(path, raw, 0600); errWrite != nil {
 				t.Fatalf("write: %v", errWrite)
 			}

@@ -36,13 +36,13 @@ func TestModelsMultiAgentClientConfigAndReload(t *testing.T) {
 				raw  string
 				want bool
 			}{
-				{"omitted", "{}", false},
-				{"enabled", "client: {codex: {optimize-multi-agent-v2: true}}", true},
-				{"disabled", "client: {codex: {optimize-multi-agent-v2: false}}", false},
-				{"legacy enabled", "providers: {codex: {optimize-multi-agent-v2: true}}", true},
-				{"new false wins", "client: {codex: {optimize-multi-agent-v2: false}}\noauth: {providers: {codex: {optimize-multi-agent-v2: true}}}", false},
-				{"oauth alias enabled", "oauth: {providers: {codex: {optimize-multi-agent-v2: true}}}", true},
-				{"removed", "{}", false},
+				{"omitted", "[client]\n", false},
+				{"enabled", "[client.codex]\noptimize-multi-agent-v2 = true\n", true},
+				{"disabled", "[client.codex]\noptimize-multi-agent-v2 = false\n", false},
+				{"legacy enabled", "[providers.codex]\noptimize-multi-agent-v2 = true\n", true},
+				{"new false wins", "[client.codex]\noptimize-multi-agent-v2 = false\n[oauth.providers.codex]\noptimize-multi-agent-v2 = true\n", false},
+				{"oauth alias enabled", "[oauth.providers.codex]\noptimize-multi-agent-v2 = true\n", true},
+				{"removed", "[client]\n", false},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
 					parsed, errParse := config.ParseConfigBytes([]byte(tc.raw))

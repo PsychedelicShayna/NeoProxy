@@ -61,7 +61,7 @@ func TestListPluginStoreSkipsUninstalledReleases(t *testing.T) {
 		cfg: &config.Config{Plugins: config.PluginsConfig{
 			Dir: t.TempDir(),
 			// Configuration alone does not mean the plugin is installed.
-			Configs: map[string]config.PluginInstanceConfig{"plugin-0": pluginConfigFromYAML(t, "enabled: true\n")},
+			Configs: map[string]config.PluginInstanceConfig{"plugin-0": pluginConfigFromTOML(t, "enabled = true\n")},
 		}},
 		pluginStoreHTTPClient: httpClient,
 	}

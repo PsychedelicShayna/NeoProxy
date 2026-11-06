@@ -156,7 +156,7 @@ func main() {
 	flag.StringVar(&discoverServiceType, "discover-service-type", "", "DNS-SD service type for LAN discovery (default _ai-gateway._tcp)")
 	flag.Func("discover-include", "Comma-separated interface names to scan during LAN discovery", appendCSV(&discoverInclude))
 	flag.Func("discover-exclude", "Comma-separated interface names to skip during LAN discovery", appendCSV(&discoverExclude))
-	flag.StringVar(&configPath, "config", DefaultConfigPath, "Config file path, TOML (.toml) or YAML (.yaml); default config.toml, else config.yaml, in the working directory. Convert with: config convert --to toml")
+	flag.StringVar(&configPath, "config", DefaultConfigPath, "Config file path; defaults to config.toml. Legacy .yaml/.yml paths import once to a sibling .toml without changing YAML")
 	flag.StringVar(&vertexImport, "vertex-import", "", "Import Vertex service account key JSON file")
 	flag.StringVar(&vertexImportPrefix, "vertex-import-prefix", "", "Prefix for Vertex model namespacing (use with -vertex-import)")
 	flag.StringVar(&password, "password", "", "")
@@ -462,7 +462,7 @@ func main() {
 			log.Errorf("failed to initialize postgres token store: %v", err)
 			return
 		}
-		examplePath := filepath.Join(wd, "config.example.yaml")
+		examplePath := filepath.Join(wd, "config.example.toml")
 		ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 		if errBootstrap := pgStoreInst.Bootstrap(ctx, examplePath); errBootstrap != nil {
 			cancel()
@@ -526,7 +526,7 @@ func main() {
 			log.Errorf("failed to initialize object token store: %v", err)
 			return
 		}
-		examplePath := filepath.Join(wd, "config.example.yaml")
+		examplePath := filepath.Join(wd, "config.example.toml")
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		if errBootstrap := objectStoreInst.Bootstrap(ctx, examplePath); errBootstrap != nil {
 			cancel()
@@ -561,15 +561,15 @@ func main() {
 		}
 		configFilePath = gitStoreInst.ConfigPath()
 		if configFilePath == "" {
-			configFilePath = filepath.Join(gitStoreRoot, "config", "config.yaml")
+			configFilePath = filepath.Join(gitStoreRoot, "config", "config.toml")
 		}
 		if _, statErr := os.Stat(configFilePath); errors.Is(statErr, fs.ErrNotExist) {
-			examplePath := filepath.Join(wd, "config.example.yaml")
+			examplePath := filepath.Join(wd, "config.example.toml")
 			if _, errExample := os.Stat(examplePath); errExample != nil {
 				log.Errorf("failed to find template config file: %v", errExample)
 				return
 			}
-			if errCopy := misc.CopyConfigTemplate(examplePath, configFilePath); errCopy != nil {
+			if errCopy := config.CopyConfigTemplate(examplePath, configFilePath); errCopy != nil {
 				log.Errorf("failed to bootstrap git-backed config: %v", errCopy)
 				return
 			}
@@ -602,6 +602,13 @@ func main() {
 	if err != nil {
 		log.Errorf("failed to load config: %v", err)
 		return
+	}
+	if !configLoadedFromHome {
+		configFilePath, err = config.ResolveConfigPath(configFilePath)
+		if err != nil {
+			log.Errorf("failed to resolve config path: %v", err)
+			return
+		}
 	}
 	if cfg == nil {
 		cfg = &config.Config{}
@@ -895,13 +902,20 @@ func defaultPluginBootstrapConfigPath(defaultPath string) string {
 	}
 	wd, errGetwd := os.Getwd()
 	if errGetwd != nil {
-		return "config.yaml"
+		return "config.toml"
 	}
 	return config.DefaultConfigFile(wd)
 }
 
 func loadPluginBootstrapConfig(path string) *config.Config {
-	raw, errReadFile := os.ReadFile(path)
+	resolved, errResolve := config.ResolveConfigPath(path)
+	if errResolve != nil {
+		log.Warnf("failed to resolve plugin bootstrap config: %v", errResolve)
+		cfg := &config.Config{}
+		cfg.NormalizePluginsConfig()
+		return cfg
+	}
+	raw, errReadFile := os.ReadFile(resolved)
 	if errReadFile != nil {
 		if !errors.Is(errReadFile, os.ErrNotExist) {
 			log.Warnf("failed to read plugin bootstrap config: %v", errReadFile)
@@ -915,14 +929,7 @@ func loadPluginBootstrapConfig(path string) *config.Config {
 		cfg.NormalizePluginsConfig()
 		return cfg
 	}
-	data, errConvert := config.ConfigToYAML(raw, config.DetectConfigFormat(path, raw))
-	if errConvert != nil {
-		log.Warnf("failed to parse plugin bootstrap config: %v", errConvert)
-		cfg := &config.Config{}
-		cfg.NormalizePluginsConfig()
-		return cfg
-	}
-	cfg, errParseConfig := config.ParseConfigBytes(data)
+	cfg, errParseConfig := config.DecodeConfig(raw, config.ConfigFormatTOML)
 	if errParseConfig != nil {
 		log.Warnf("failed to parse plugin bootstrap config: %v", errParseConfig)
 		cfg = &config.Config{}

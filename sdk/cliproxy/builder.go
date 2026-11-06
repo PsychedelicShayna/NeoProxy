@@ -203,6 +203,10 @@ func (b *Builder) Build() (*Service, error) {
 	if b.configPath == "" {
 		return nil, fmt.Errorf("cliproxy: configuration path is required")
 	}
+	configPath, errResolve := config.ResolveConfigPath(b.configPath)
+	if errResolve != nil {
+		return nil, fmt.Errorf("cliproxy: resolve configuration path: %w", errResolve)
+	}
 	if errValidate := b.cfg.ValidateCredentialWeights(); errValidate != nil {
 		return nil, fmt.Errorf("cliproxy: validate credential weights: %w", errValidate)
 	}
@@ -278,7 +282,7 @@ func (b *Builder) Build() (*Service, error) {
 
 	service := &Service{
 		cfg:                 b.cfg.CloneForRuntime(),
-		configPath:          b.configPath,
+		configPath:          configPath,
 		tokenProvider:       tokenProvider,
 		apiKeyProvider:      apiKeyProvider,
 		watcherFactory:      watcherFactory,

@@ -5,70 +5,15 @@ import (
 )
 
 func TestParseConfigRequestScopedErrors(t *testing.T) {
-	const yamlConfig = `
-gemini-api-key:
-  - api-key: gemini-key-1
-    request-scoped-errors:
-      - status: 400
-        match:
-          - "maximum_context_length"
-          - "context_length_exceeded"
-        match-regexr:
-          - "maximum_context_length$"
-          - "^context_length_exceeded"
-        action: stop
-
-interactions-api-key:
-  - api-key: interactions-key-1
-    request-scoped-errors:
-      - status: 400
-        match:
-          - "invalid_argument"
-        action: continue
-
-codex-api-key:
-  - api-key: codex-key-1
-    base-url: https://api.openai.com/v1
-    request-scoped-errors:
-      - status: 400
-        match:
-          - "context_window_exceeded"
-        action: stop-and-cooldown
-
-xai-api-key:
-  - api-key: xai-key-1
-    base-url: https://api.x.ai/v1
-    request-scoped-errors:
-      - status: 500
-        match:
-          - "rate_limit_exceeded"
-        action: continue-and-cooldown
-
-claude-api-key:
-  - api-key: claude-key-1
-    request-scoped-errors:
-      - status: 400
-        match:
-          - "prompt is too long"
-        action: stop
-
-openai-compatibility:
-  - name: test-openai-compat
-    base-url: https://api.openai.compat/v1
-    api-key-entries:
-      - api-key: compat-key-1
-    request-scoped-errors:
-      - status: 400
-        match:
-          - maximum_context_length
-          - context_length_exceeded
-        match-regexr:
-          - "maximum_context_length$"
-          - "^context_length_exceeded"
-        action: stop
+	const tomlConfig = `"gemini-api-key" = [{"api-key" = "gemini-key-1", "request-scoped-errors" = [{"status" = 400, "match" = ["maximum_context_length", "context_length_exceeded"], "match-regexr" = ["maximum_context_length$", "^context_length_exceeded"], "action" = "stop"}]}]
+"interactions-api-key" = [{"api-key" = "interactions-key-1", "request-scoped-errors" = [{"status" = 400, "match" = ["invalid_argument"], "action" = "continue"}]}]
+"codex-api-key" = [{"api-key" = "codex-key-1", "base-url" = "https://api.openai.com/v1", "request-scoped-errors" = [{"status" = 400, "match" = ["context_window_exceeded"], "action" = "stop-and-cooldown"}]}]
+"xai-api-key" = [{"api-key" = "xai-key-1", "base-url" = "https://api.x.ai/v1", "request-scoped-errors" = [{"status" = 500, "match" = ["rate_limit_exceeded"], "action" = "continue-and-cooldown"}]}]
+"claude-api-key" = [{"api-key" = "claude-key-1", "request-scoped-errors" = [{"status" = 400, "match" = ["prompt is too long"], "action" = "stop"}]}]
+"openai-compatibility" = [{"name" = "test-openai-compat", "base-url" = "https://api.openai.compat/v1", "api-key-entries" = [{"api-key" = "compat-key-1"}], "request-scoped-errors" = [{"status" = 400, "match" = ["maximum_context_length", "context_length_exceeded"], "match-regexr" = ["maximum_context_length$", "^context_length_exceeded"], "action" = "stop"}]}]
 `
 
-	cfg, errParse := ParseConfigBytes([]byte(yamlConfig))
+	cfg, errParse := ParseConfigBytes([]byte(tomlConfig))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
 	}

@@ -556,7 +556,7 @@ func (s *Service) runHomeSubscriber(homeCtx context.Context, parentCtx context.C
 		}()
 
 		errRun := client.RunConfigSubscriberLifetime(lifetimeCtx, func(raw []byte) error {
-			parsed, errParse := config.ParseConfigBytes(raw)
+			parsed, errParse := config.DecodeConfig(raw, config.ConfigFormatTOML)
 			if errParse != nil {
 				log.Warnf("failed to parse home config payload: %v", errParse)
 				return errParse
@@ -682,7 +682,7 @@ func (s *Service) runHomeConfigWorkerWithSupervisor(lifetimeCtx, homeCtx context
 			if lifetimeCtx.Err() != nil {
 				return
 			}
-			parsed, errParse := config.ParseConfigBytes(raw)
+			parsed, errParse := config.DecodeConfig(raw, config.ConfigFormatTOML)
 			if errParse == nil {
 				work, errParse = s.stageHomeOverlayWithClient(lifetimeCtx, parsed, client)
 			}

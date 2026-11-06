@@ -207,7 +207,7 @@ jobs:
           Windows: extract the amd64.zip archive and run neoproxy.exe.
           macOS: choose the matching darwin architecture archive.
 
-          Every archive contains DOWNLOADS.md, config.example.yaml and BUILD.json.
+          Every archive contains DOWNLOADS.md, config.example.toml and BUILD.json.
           Complete setup/security instructions:
           https://github.com/${GH_REPO}/blob/${SOURCE_COMMIT}/docs/downloads.md
 

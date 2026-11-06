@@ -147,21 +147,26 @@ plugins
 
 动态插件默认关闭。
 
-```yaml
-plugins:
-  enabled: true
-  dir: "plugins"
-  configs:
-    simple-go:
-      enabled: true
-      priority: 1
-      config1: true
-      config2: "string"
-      config3: 3
-      mode: "safe"
+```toml
+
+[plugins]
+enabled = true
+dir = "plugins"
+
+[plugins.configs]
+
+[plugins.configs.simple-go]
+enabled = true
+priority = 1
+config1 = true
+config2 = "string"
+config3 = 3
+mode = "safe"
 ```
 
-`plugins.configs.<pluginID>` 会作为标准化 YAML 字节放进 JSON 请求，传给 `plugin.register` 或 `plugin.reconfigure`。
+`plugins.configs.<pluginID>` 会作为标准化 TOML 字节放进 JSON 请求的 `config_toml` 字段（JSON 中以 base64 编码），传给 `plugin.register` 或 `plugin.reconfigure`。插件应按 TOML 解码；插件自定义字段及嵌套表会与宿主补充的 `enabled` 和 `priority` 默认值一起保留。
+
+插件配置保存在主 TOML 配置文件中。选择旧 YAML 配置时，宿主会一次性导入到同目录的同名 `.toml` 文件，以原文件权限原子写入，并发出迁移警告。已有的同名 TOML 文件优先；原 YAML 文件保持不变，之后的 API 操作和文件监听使用解析后的 TOML 路径。
 
 ## 宿主 HTTP 桥接
 

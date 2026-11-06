@@ -5,31 +5,32 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestV8OAuthScopeSurvivesSnapshotsAndSaves(t *testing.T) {
-	raw := []byte(`codex: {stream-bootstrap-buffering: true}
-oauth:
-  providers:
-    codex: {disable-codex-cloaking: true, model-level-cooling: true}
-    aistudio: {ws-auth: true}
-    claude:
-      disable-claude-cloak-mode: true
-      header-defaults: {user-agent: oauth-agent}
-    xai: {inject-x-search: true}
-api-keys:
-  codex:
-    - name: api
-      base-url: https://example.invalid
-      keys: [{api-key: test-key, disable-codex-cloaking: true}]
+	raw := []byte(`[codex]
+stream-bootstrap-buffering = true
+[oauth.providers.codex]
+disable-codex-cloaking = true
+model-level-cooling = true
+[oauth.providers.aistudio]
+ws-auth = true
+[oauth.providers.claude]
+disable-claude-cloak-mode = true
+[oauth.providers.claude.header-defaults]
+user-agent = "oauth-agent"
+[oauth.providers.xai]
+inject-x-search = true
+[[api-keys.codex]]
+name = "api"
+base-url = "https://example.invalid"
+keys = [{api-key = "test-key", disable-codex-cloaking = true}]
 `)
 	cfg, err := ParseConfigBytes(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	snapshot, err := yaml.Marshal(cfg)
+	snapshot, err := EncodeConfig(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +55,7 @@ api-keys:
 			}
 		})
 	}
-	path := filepath.Join(t.TempDir(), "config.yaml")
+	path := filepath.Join(t.TempDir(), "config.toml")
 	if err = os.WriteFile(path, raw, 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +73,7 @@ api-keys:
 }
 
 func TestV8ScopeKeepsLegacyGlobals(t *testing.T) {
-	cfg, err := ParseConfigBytes([]byte("codex: {disable-codex-cloaking: true}\ndisable-claude-cloak-mode: true\n"))
+	cfg, err := ParseConfigBytes([]byte("disable-claude-cloak-mode = true\n[codex]\ndisable-codex-cloaking = true\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,8 +89,8 @@ func TestV8MigrationUpdatesScopeAfterSaving(t *testing.T) {
 			name = "v8"
 		}
 		t.Run(name, func(t *testing.T) {
-			raw := []byte("codex: {disable-codex-cloaking: true, response-steering: true}\nxai: {inject-x-search: true}\n")
-			path := filepath.Join(t.TempDir(), "config.yaml")
+			raw := []byte("[codex]\ndisable-codex-cloaking = true\nresponse-steering = true\n[xai]\ninject-x-search = true\n")
+			path := filepath.Join(t.TempDir(), "config.toml")
 			if err := os.WriteFile(path, raw, 0600); err != nil {
 				t.Fatal(err)
 			}

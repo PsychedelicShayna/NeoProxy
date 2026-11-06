@@ -47,8 +47,8 @@ func newKeyEngine(t *testing.T) *keyEngine {
 	if k.pool, err = neopool.New(identity.DB(), k.manager); err != nil {
 		t.Fatal(err)
 	}
-	k.cfgPath = filepath.Join(t.TempDir(), "config.yaml")
-	if err = os.WriteFile(k.cfgPath, []byte("port: 8317\nauth-dir: auths\n"), 0600); err != nil {
+	k.cfgPath = filepath.Join(t.TempDir(), "config.toml")
+	if err = os.WriteFile(k.cfgPath, []byte("port = 8317\nauth-dir = 'auths'\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	k.engine = management.NewHandler(&config.Config{}, k.cfgPath, k.manager)
@@ -162,7 +162,7 @@ func TestOneGitLabTokenServesBothGitLabProviders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(data), "gitlab-duo-agent-api-key:\n    -") || !strings.Contains(string(data), token) {
+	if strings.Contains(string(data), "[[api-keys.gitlab-duo-agent]]") || !strings.Contains(string(data), token) {
 		t.Fatalf("config after removing the agent's key:\n%s", data)
 	}
 }

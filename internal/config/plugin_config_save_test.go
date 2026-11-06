@@ -3,476 +3,186 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
-func parseTestPluginConfig(t *testing.T, yamlText string) PluginInstanceConfig {
+func parseTestPluginConfig(t *testing.T, text string) PluginInstanceConfig {
 	t.Helper()
-	var item PluginInstanceConfig
-	if errUnmarshal := yaml.Unmarshal([]byte(yamlText), &item); errUnmarshal != nil {
-		t.Fatalf("yaml.Unmarshal() error = %v", errUnmarshal)
+	raw, errParse := ParseConfigDocument([]byte(text))
+	if errParse != nil {
+		t.Fatal(errParse)
+	}
+	item, errConvert := PluginInstanceConfigFromMap(raw)
+	if errConvert != nil {
+		t.Fatal(errConvert)
 	}
 	return item
 }
 
-func TestSaveConfigPreserveComments_PluginConfigPreservesZeroValuesAndBooleans(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `plugins:
-  enabled: true
-  configs:
-    sample:
-      name: initial
-`
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
-		t.Fatalf("os.WriteFile() error = %v", errWrite)
+func saveTestPluginConfig(t *testing.T, initial string, cfg *Config) (string, map[string]any) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if errWrite := os.WriteFile(path, []byte(initial), 0o600); errWrite != nil {
+		t.Fatal(errWrite)
 	}
-
-	enabledFalse := false
-	cfg := &Config{
-		Plugins: PluginsConfig{
-			Enabled: true,
-			Dir:     "plugins",
-			Configs: map[string]PluginInstanceConfig{
-				"sample": parseTestPluginConfig(t, `name: updated
-enabled: false
-timeout: 0
-empty_str: ""
-empty_list: []
-`),
-			},
-		},
+	if errSave := SaveConfigPreserveComments(path, cfg); errSave != nil {
+		t.Fatal(errSave)
 	}
-	cfg.Plugins.Configs["sample"] = PluginInstanceConfig{
-		Enabled: &enabledFalse,
-		Raw:     cfg.Plugins.Configs["sample"].Raw,
-	}
-
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() error = %v", errSave)
-	}
-
-	savedBytes, errRead := os.ReadFile(configPath)
+	data, errRead := os.ReadFile(path)
 	if errRead != nil {
-		t.Fatalf("os.ReadFile() error = %v", errRead)
+		t.Fatal(errRead)
 	}
-	savedText := string(savedBytes)
+	root, errParse := ParseConfigDocument(data)
+	if errParse != nil {
+		t.Fatal(errParse)
+	}
+	return string(data), root
+}
 
-	// In the reported bug, newly added false booleans, zeros, empty strings and empty lists
-	// are silently dropped by mergeMappingPreserve/isKnownDefaultValue.
-	for _, expected := range []string{
-		"enabled: false",
-		"timeout: 0",
-		"empty_list: []",
-		"empty_str: \"\"",
-	} {
-		if !strings.Contains(savedText, expected) {
-			t.Errorf("saved config missing %q; got:\n%s", expected, savedText)
-		}
+func assertTestPluginValues(t *testing.T, root map[string]any, name string, want map[string]any) {
+	t.Helper()
+	value, present := mapPath(root, "plugins.configs."+name)
+	if !present || !reflect.DeepEqual(value, want) {
+		t.Fatalf("saved plugin %s = %#v, want %#v", name, value, want)
 	}
+}
 
-	var loaded struct {
-		Plugins struct {
-			Configs map[string]map[string]any `yaml:"configs"`
-		} `yaml:"plugins"`
-	}
-	if errUnmarshal := yaml.Unmarshal(savedBytes, &loaded); errUnmarshal != nil {
-		t.Fatalf("yaml.Unmarshal(savedBytes) error = %v", errUnmarshal)
-	}
-	sampleConfig := loaded.Plugins.Configs["sample"]
-	if sampleConfig["enabled"] != false {
-		t.Errorf("loaded enabled = %#v, want false", sampleConfig["enabled"])
-	}
-	if sampleConfig["timeout"] != 0 {
-		t.Errorf("loaded timeout = %#v, want 0", sampleConfig["timeout"])
-	}
-	if sampleConfig["empty_str"] != "" {
-		t.Errorf("loaded empty_str = %#v, want empty string", sampleConfig["empty_str"])
-	}
+func TestSaveConfigPreserveComments_PluginConfigPreservesZeroValuesAndBooleans(t *testing.T) {
+	cfg := &Config{Plugins: PluginsConfig{Enabled: true, Dir: "plugins", Configs: map[string]PluginInstanceConfig{
+		"sample": parseTestPluginConfig(t, `name = "updated"
+enabled = false
+timeout = 0
+empty_str = ""
+empty_list = []
+`),
+	}}}
+	_, root := saveTestPluginConfig(t, "[plugins]\nenabled = true\n[plugins.configs.sample]\nname = 'initial'\n", cfg)
+	assertTestPluginValues(t, root, "sample", map[string]any{"name": "updated", "enabled": false, "timeout": int64(0), "empty_str": "", "empty_list": []any{}})
 }
 
 func TestSaveConfigPreserveComments_PluginConfigDeletesRemovedKeys(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `plugins:
-  enabled: true
-  configs:
-    sample:
-      name: initial
-      stale_key: should_be_removed
-      nested:
-        old_child: remove_me
-`
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
-		t.Fatalf("os.WriteFile() error = %v", errWrite)
-	}
-
-	cfg := &Config{
-		Plugins: PluginsConfig{
-			Enabled: true,
-			Dir:     "plugins",
-			Configs: map[string]PluginInstanceConfig{
-				"sample": parseTestPluginConfig(t, `name: updated
-nested:
-  new_child: keep_me
-`),
-			},
-		},
-	}
-
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() error = %v", errSave)
-	}
-
-	savedBytes, errRead := os.ReadFile(configPath)
-	if errRead != nil {
-		t.Fatalf("os.ReadFile() error = %v", errRead)
-	}
-	savedText := string(savedBytes)
-
-	// In the reported bug, mergeMappingPreserve does not delete stale keys in mappings.
-	if strings.Contains(savedText, "stale_key") {
-		t.Errorf("saved config unexpectedly contains stale_key; got:\n%s", savedText)
-	}
-	if strings.Contains(savedText, "old_child") {
-		t.Errorf("saved config unexpectedly contains old_child; got:\n%s", savedText)
-	}
-	if !strings.Contains(savedText, "new_child: keep_me") {
-		t.Errorf("saved config missing new_child: keep_me; got:\n%s", savedText)
-	}
+	cfg := &Config{Plugins: PluginsConfig{Enabled: true, Dir: "plugins", Configs: map[string]PluginInstanceConfig{
+		"sample": parseTestPluginConfig(t, "name = 'updated'\n[nested]\nnew_child = 'keep_me'\n"),
+	}}}
+	_, root := saveTestPluginConfig(t, `[plugins]
+enabled = true
+[plugins.configs.sample]
+name = "initial"
+stale_key = "should_be_removed"
+[plugins.configs.sample.nested]
+old_child = "remove_me"
+`, cfg)
+	assertTestPluginValues(t, root, "sample", map[string]any{"name": "updated", "nested": map[string]any{"new_child": "keep_me"}})
 }
 
 func TestSaveConfigPreserveComments_PluginConfigPreservesSequenceReordering(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `plugins:
-  enabled: true
-  configs:
-    sample:
-      vision_models:
-        - name: model-a
-          detail: detail-a
-          old_prop: stale-a
-        - name: model-b
-          detail: detail-b
-          old_prop: stale-b
-`
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
-		t.Fatalf("os.WriteFile() error = %v", errWrite)
-	}
-
-	// Reorder sequence: model-b first, then model-a, with detail modified.
-	cfg := &Config{
-		Plugins: PluginsConfig{
-			Enabled: true,
-			Dir:     "plugins",
-			Configs: map[string]PluginInstanceConfig{
-				"sample": parseTestPluginConfig(t, `vision_models:
-  - name: model-b
-    detail: new-detail-b
-    extra_b: only-in-b
-  - name: model-a
-    detail: new-detail-a
+	cfg := &Config{Plugins: PluginsConfig{Enabled: true, Dir: "plugins", Configs: map[string]PluginInstanceConfig{
+		"sample": parseTestPluginConfig(t, `[[vision_models]]
+name = "model-b"
+detail = "new-detail-b"
+extra_b = "only-in-b"
+[[vision_models]]
+name = "model-a"
+detail = "new-detail-a"
 `),
-			},
-		},
-	}
-
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() error = %v", errSave)
-	}
-
-	savedBytes, errRead := os.ReadFile(configPath)
-	if errRead != nil {
-		t.Fatalf("os.ReadFile() error = %v", errRead)
-	}
-	savedText := string(savedBytes)
-
-	idxB := strings.Index(savedText, "name: model-b")
-	idxA := strings.Index(savedText, "name: model-a")
-	if idxB == -1 || idxA == -1 {
-		t.Fatalf("saved config missing model-a or model-b; got:\n%s", savedText)
-	}
-	if idxB > idxA {
-		t.Errorf("expected model-b to precede model-a in reordered sequence; got:\n%s", savedText)
-	}
-	if !strings.Contains(savedText, "new-detail-b") || !strings.Contains(savedText, "new-detail-a") {
-		t.Errorf("saved config missing updated details; got:\n%s", savedText)
-	}
-	if !strings.Contains(savedText, "extra_b: only-in-b") {
-		t.Errorf("saved config missing extra_b; got:\n%s", savedText)
-	}
-	if strings.Contains(savedText, "old_prop") || strings.Contains(savedText, "stale-") {
-		t.Errorf("saved config unexpectedly contains stale properties from old sequence items; got:\n%s", savedText)
-	}
-
-	var loaded struct {
-		Plugins struct {
-			Configs map[string]struct {
-				VisionModels []struct {
-					Name   string `yaml:"name"`
-					Detail string `yaml:"detail"`
-					ExtraB string `yaml:"extra_b"`
-				} `yaml:"vision_models"`
-			} `yaml:"configs"`
-		} `yaml:"plugins"`
-	}
-	if errUnmarshal := yaml.Unmarshal(savedBytes, &loaded); errUnmarshal != nil {
-		t.Fatalf("yaml.Unmarshal(savedBytes) error = %v", errUnmarshal)
-	}
-	models := loaded.Plugins.Configs["sample"].VisionModels
-	if len(models) != 2 {
-		t.Fatalf("len(models) = %d, want 2", len(models))
-	}
-	if models[0].Name != "model-b" || models[0].Detail != "new-detail-b" || models[0].ExtraB != "only-in-b" {
-		t.Errorf("models[0] = %+v, want model-b with new-detail-b and only-in-b", models[0])
-	}
-	if models[1].Name != "model-a" || models[1].Detail != "new-detail-a" || models[1].ExtraB != "" {
-		t.Errorf("models[1] = %+v, want model-a with new-detail-a and empty ExtraB", models[1])
-	}
+	}}}
+	_, root := saveTestPluginConfig(t, `[plugins]
+enabled = true
+[[plugins.configs.sample.vision_models]]
+name = "model-a"
+detail = "detail-a"
+old_prop = "stale-a"
+[[plugins.configs.sample.vision_models]]
+name = "model-b"
+detail = "detail-b"
+old_prop = "stale-b"
+`, cfg)
+	assertTestPluginValues(t, root, "sample", map[string]any{"vision_models": []any{
+		map[string]any{"name": "model-b", "detail": "new-detail-b", "extra_b": "only-in-b"},
+		map[string]any{"name": "model-a", "detail": "new-detail-a"},
+	}})
 }
 
 func TestSaveConfigPreserveComments_PluginConfigCreatesNewSubtree(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `port: 8080
-debug: false
-`
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
-		t.Fatalf("os.WriteFile() error = %v", errWrite)
-	}
-
-	enabledFalse := false
-	cfg := &Config{
-		Port:  8080,
-		Debug: false,
-		Plugins: PluginsConfig{
-			Enabled: true,
-			Dir:     "plugins",
-			Configs: map[string]PluginInstanceConfig{
-				"new-plugin": parseTestPluginConfig(t, `enabled: false
-mode: minimal
-count: 0
-`),
-			},
-		},
-	}
-	cfg.Plugins.Configs["new-plugin"] = PluginInstanceConfig{
-		Enabled: &enabledFalse,
-		Raw:     cfg.Plugins.Configs["new-plugin"].Raw,
-	}
-
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() error = %v", errSave)
-	}
-
-	savedBytes, errRead := os.ReadFile(configPath)
-	if errRead != nil {
-		t.Fatalf("os.ReadFile() error = %v", errRead)
-	}
-	savedText := string(savedBytes)
-
-	for _, expected := range []string{
-		"new-plugin:",
-		"enabled: false",
-		"mode: minimal",
-		"count: 0",
-	} {
-		if !strings.Contains(savedText, expected) {
-			t.Errorf("saved config missing %q; got:\n%s", expected, savedText)
-		}
-	}
+	cfg := &Config{Port: 8080, Plugins: PluginsConfig{Enabled: true, Dir: "plugins", Configs: map[string]PluginInstanceConfig{
+		"new-plugin": parseTestPluginConfig(t, "enabled = false\nmode = 'minimal'\ncount = 0\n"),
+	}}}
+	_, root := saveTestPluginConfig(t, "port = 8080\ndebug = false\n", cfg)
+	assertTestPluginValues(t, root, "new-plugin", map[string]any{"enabled": false, "mode": "minimal", "count": int64(0)})
 }
 
 func TestSaveConfigPreserveComments_PluginConfigCreatesNewSubtreeWithOnlyZeroValues(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `port: 8080
-`
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
-		t.Fatalf("os.WriteFile() error = %v", errWrite)
-	}
-
-	enabledFalse := false
-	cfg := &Config{
-		Port: 8080,
-		Plugins: PluginsConfig{
-			Enabled: false,
-			Dir:     "plugins",
-			Configs: map[string]PluginInstanceConfig{
-				"zero-plugin": parseTestPluginConfig(t, `enabled: false
-timeout: 0
-empty_str: ""
-empty_list: []
-`),
-			},
-		},
-	}
-	cfg.Plugins.Configs["zero-plugin"] = PluginInstanceConfig{
-		Enabled: &enabledFalse,
-		Raw:     cfg.Plugins.Configs["zero-plugin"].Raw,
-	}
-
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() error = %v", errSave)
-	}
-
-	savedBytes, errRead := os.ReadFile(configPath)
-	if errRead != nil {
-		t.Fatalf("os.ReadFile() error = %v", errRead)
-	}
-	savedText := string(savedBytes)
-
-	for _, expected := range []string{
-		"plugins:",
-		"configs:",
-		"zero-plugin:",
-		"enabled: false",
-		"timeout: 0",
-		"empty_list: []",
-	} {
-		if !strings.Contains(savedText, expected) {
-			t.Errorf("saved config missing %q; got:\n%s", expected, savedText)
-		}
-	}
+	cfg := &Config{Port: 8080, Plugins: PluginsConfig{Dir: "plugins", Configs: map[string]PluginInstanceConfig{
+		"zero-plugin": parseTestPluginConfig(t, "enabled = false\ntimeout = 0\nempty_str = ''\nempty_list = []\n"),
+	}}}
+	_, root := saveTestPluginConfig(t, "port = 8080\n", cfg)
+	assertTestPluginValues(t, root, "zero-plugin", map[string]any{"enabled": false, "timeout": int64(0), "empty_str": "", "empty_list": []any{}})
 }
 
 func TestSaveConfigPreserveComments_PluginConfigDeletesPluginAndClearsConfigs(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `plugins:
-  enabled: true
-  configs:
-    plugin-a:
-      name: a
-    plugin-b:
-      name: b
-`
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
-		t.Fatalf("os.WriteFile() error = %v", errWrite)
+	path := filepath.Join(t.TempDir(), "config.toml")
+	initial := "[plugins]\nenabled = true\n[plugins.configs.plugin-a]\nname = 'a'\n[plugins.configs.plugin-b]\nname = 'b'\n"
+	if errWrite := os.WriteFile(path, []byte(initial), 0o600); errWrite != nil {
+		t.Fatal(errWrite)
 	}
-
-	// Step 1: remove plugin-a, keep plugin-b
-	cfg := &Config{
-		Plugins: PluginsConfig{
-			Enabled: true,
-			Dir:     "plugins",
-			Configs: map[string]PluginInstanceConfig{
-				"plugin-b": parseTestPluginConfig(t, "name: b-updated\n"),
-			},
-		},
-	}
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() step 1 error = %v", errSave)
-	}
-
-	savedBytes, errRead := os.ReadFile(configPath)
-	if errRead != nil {
-		t.Fatalf("os.ReadFile() step 1 error = %v", errRead)
-	}
-	savedText := string(savedBytes)
-	if strings.Contains(savedText, "plugin-a") {
-		t.Errorf("saved config step 1 still contains plugin-a; got:\n%s", savedText)
-	}
-	if !strings.Contains(savedText, "plugin-b:") || !strings.Contains(savedText, "b-updated") {
-		t.Errorf("saved config step 1 missing plugin-b; got:\n%s", savedText)
-	}
-
-	// Step 2: clear all configs
-	cfg.Plugins.Configs = map[string]PluginInstanceConfig{}
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() step 2 error = %v", errSave)
-	}
-
-	savedBytes, errRead = os.ReadFile(configPath)
-	if errRead != nil {
-		t.Fatalf("os.ReadFile() step 2 error = %v", errRead)
-	}
-	savedText = string(savedBytes)
-	if strings.Contains(savedText, "plugin-b") {
-		t.Errorf("saved config step 2 still contains plugin-b; got:\n%s", savedText)
-	}
-	if strings.Contains(savedText, "configs:") {
-		t.Errorf("saved config step 2 still contains configs section; got:\n%s", savedText)
+	cfg := &Config{Plugins: PluginsConfig{Enabled: true, Dir: "plugins", Configs: map[string]PluginInstanceConfig{
+		"plugin-b": parseTestPluginConfig(t, "name = 'b-updated'\n"),
+	}}}
+	for step := 1; step <= 2; step++ {
+		if step == 2 {
+			cfg.Plugins.Configs = map[string]PluginInstanceConfig{}
+		}
+		if errSave := SaveConfigPreserveComments(path, cfg); errSave != nil {
+			t.Fatalf("step %d: %v", step, errSave)
+		}
+		data, errRead := os.ReadFile(path)
+		if errRead != nil {
+			t.Fatal(errRead)
+		}
+		root, errParse := ParseConfigDocument(data)
+		if errParse != nil {
+			t.Fatal(errParse)
+		}
+		if step == 1 {
+			if _, present := mapPath(root, "plugins.configs.plugin-a"); present {
+				t.Fatal("removed plugin-a survived")
+			}
+			assertTestPluginValues(t, root, "plugin-b", map[string]any{"name": "b-updated"})
+		} else if _, present := mapPath(root, "plugins.configs"); present {
+			t.Fatalf("cleared configs survived: %s", data)
+		}
 	}
 }
 
 func TestSaveConfigPreserveComments_PluginConfigPreservesCommentsOutsidePlugins(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `# Server listening port
-port: 8080
+	cfg := &Config{Port: 8080, Plugins: PluginsConfig{Enabled: true, Dir: "plugins", Configs: map[string]PluginInstanceConfig{
+		"sample": parseTestPluginConfig(t, "name = 'updated'\nenabled = false\n"),
+	}}}
+	text, root := saveTestPluginConfig(t, `# Server listening port
+port = 8080
 # Plugins configuration section
-plugins:
-  enabled: true
-  configs:
-    sample:
-      name: old
-`
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
-		t.Fatalf("os.WriteFile() error = %v", errWrite)
+[plugins]
+enabled = true
+[plugins.configs.sample]
+name = "old"
+`, cfg)
+	for _, comment := range []string{"# Server listening port", "# Plugins configuration section"} {
+		if !strings.Contains(text, comment) {
+			t.Errorf("saved config lost comment %q: %s", comment, text)
+		}
 	}
-
-	cfg := &Config{
-		Port: 8080,
-		Plugins: PluginsConfig{
-			Enabled: true,
-			Dir:     "plugins",
-			Configs: map[string]PluginInstanceConfig{
-				"sample": parseTestPluginConfig(t, "name: updated\nenabled: false\n"),
-			},
-		},
-	}
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() error = %v", errSave)
-	}
-
-	savedBytes, errRead := os.ReadFile(configPath)
-	if errRead != nil {
-		t.Fatalf("os.ReadFile() error = %v", errRead)
-	}
-	savedText := string(savedBytes)
-
-	if !strings.Contains(savedText, "# Server listening port") {
-		t.Errorf("saved config missing port comment; got:\n%s", savedText)
-	}
-	if !strings.Contains(savedText, "# Plugins configuration section") {
-		t.Errorf("saved config missing plugins comment; got:\n%s", savedText)
-	}
-	if !strings.Contains(savedText, "name: updated") || !strings.Contains(savedText, "enabled: false") {
-		t.Errorf("saved config missing updated plugin config; got:\n%s", savedText)
-	}
+	assertTestPluginValues(t, root, "sample", map[string]any{"name": "updated", "enabled": false})
 }
 
 func TestSaveConfigPreserveComments_PluginConfigAddsConfigsWhenPluginsExistsWithoutConfigs(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "config.yaml")
-	initialYAML := `plugins:
-  enabled: true
-  dir: custom-dir
-`
-	if errWrite := os.WriteFile(configPath, []byte(initialYAML), 0o600); errWrite != nil {
-		t.Fatalf("os.WriteFile() error = %v", errWrite)
+	cfg := &Config{Plugins: PluginsConfig{Enabled: true, Dir: "custom-dir", Configs: map[string]PluginInstanceConfig{
+		"new-item": parseTestPluginConfig(t, "enabled = false\n"),
+	}}}
+	_, root := saveTestPluginConfig(t, "[plugins]\nenabled = true\ndir = 'custom-dir'\n", cfg)
+	if dir, _ := mapPath(root, "plugins.dir"); dir != "custom-dir" {
+		t.Fatalf("saved plugins.dir = %#v, want custom-dir", dir)
 	}
-
-	cfg := &Config{
-		Plugins: PluginsConfig{
-			Enabled: true,
-			Dir:     "custom-dir",
-			Configs: map[string]PluginInstanceConfig{
-				"new-item": parseTestPluginConfig(t, "enabled: false\n"),
-			},
-		},
-	}
-	if errSave := SaveConfigPreserveComments(configPath, cfg); errSave != nil {
-		t.Fatalf("SaveConfigPreserveComments() error = %v", errSave)
-	}
-
-	savedBytes, errRead := os.ReadFile(configPath)
-	if errRead != nil {
-		t.Fatalf("os.ReadFile() error = %v", errRead)
-	}
-	savedText := string(savedBytes)
-
-	if !strings.Contains(savedText, "dir: custom-dir") {
-		t.Errorf("saved config missing dir: custom-dir; got:\n%s", savedText)
-	}
-	if !strings.Contains(savedText, "new-item:") || !strings.Contains(savedText, "enabled: false") {
-		t.Errorf("saved config missing new-item with enabled: false; got:\n%s", savedText)
-	}
+	assertTestPluginValues(t, root, "new-item", map[string]any{"enabled": false})
 }

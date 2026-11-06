@@ -21,7 +21,6 @@ import (
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginhost"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/cliproxy/executionregistry"
 	sdkpluginstore "github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginstore"
-	"gopkg.in/yaml.v3"
 )
 
 func TestSyncHomePluginsSkipsUnchangedSignature(t *testing.T) {
@@ -165,20 +164,8 @@ func TestApplyHomeOverlayReturnsRuntimePluginSyncFailureWithoutApplyingConfig(t 
 	remote.Plugins.Configs = map[string]config.PluginInstanceConfig{
 		"broken": {
 			Enabled: &enabled,
-			Raw: yaml.Node{
-				Kind: yaml.MappingNode,
-				Tag:  "!!map",
-				Content: []*yaml.Node{
-					{Kind: yaml.ScalarNode, Tag: "!!str", Value: "store"},
-					{
-						Kind: yaml.MappingNode,
-						Tag:  "!!map",
-						Content: []*yaml.Node{
-							{Kind: yaml.ScalarNode, Tag: "!!str", Value: "id"},
-							{Kind: yaml.ScalarNode, Tag: "!!str", Value: "broken"},
-						},
-					},
-				},
+			Raw: map[string]any{
+				"store": map[string]any{"id": "broken"},
 			},
 		},
 	}
@@ -809,9 +796,9 @@ func TestHomeConfigWorkerPreemptsFailingConfigWithNewerPayload_Issue6225(t *test
 
 	queue := newHomeConfigWorkQueue()
 	// Enqueue an invalid payload that fails config parsing and triggers the retry loop
-	queue.enqueue([]byte("invalid: yaml: ["))
+	queue.enqueue([]byte("invalid = ["))
 	// Enqueue a valid recovered config payload that should preempt the failing one during retry
-	queue.enqueue([]byte("plugins:\n  enabled: true\nrouting:\n  strategy: recovered\n"))
+	queue.enqueue([]byte("[plugins]\nenabled = true\n[routing]\nstrategy = \"recovered\"\n"))
 
 	ready := make(chan struct{})
 	close(ready)

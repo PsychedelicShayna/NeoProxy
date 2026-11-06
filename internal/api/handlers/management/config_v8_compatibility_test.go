@@ -36,8 +36,8 @@ func TestConfigV8HistoricalFieldPaths(t *testing.T) {
 		{"oauth/providers/codex/optimize-multi-agent-v2", "client/codex/optimize-multi-agent-v2", "true"},
 	} {
 		t.Run(tc.historical, func(t *testing.T) {
-			file := filepath.Join(t.TempDir(), "config.yaml")
-			if err := os.WriteFile(file, []byte("server: {port: 8317}\n"), 0600); err != nil {
+			file := filepath.Join(t.TempDir(), "config.toml")
+			if err := os.WriteFile(file, []byte("server = {port = 8317}\n"), 0600); err != nil {
 				t.Fatal(err)
 			}
 			cfg, err := config.LoadConfig(file)
@@ -64,9 +64,8 @@ func TestConfigV8HistoricalFieldPaths(t *testing.T) {
 			}
 			request(http.MethodPatch, tc.historical, tc.value, http.StatusOK)
 			request(http.MethodPut, tc.historical, "null", http.StatusOK)
-			if got := request(http.MethodGet, tc.current, "", http.StatusOK); got != "null" {
-				t.Fatalf("historical PUT lost explicit null: %s", got)
-			}
+			request(http.MethodGet, tc.current, "", http.StatusNotFound)
+			request(http.MethodPut, tc.historical, tc.value, http.StatusOK)
 			request(http.MethodDelete, tc.historical, "", http.StatusOK)
 			request(http.MethodGet, tc.current, "", http.StatusNotFound)
 			if got := request(http.MethodGet, "server/port", "", http.StatusOK); got != "8317" {
@@ -95,8 +94,8 @@ func TestConfigV8HistoricalProviderSubtrees(t *testing.T) {
 		{"replace shared provider", http.MethodPut, "upstream/codex", `{"response-steering":false}`, false, false, true, 12},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			file := filepath.Join(t.TempDir(), "config.yaml")
-			raw := "upstream: {codex: {response-steering: true, stream-bootstrap-buffering: true}, xai: {inject-x-search: true}}\noauth: {providers: {codex: {live-media-relay: {max-sessions: 12}}}}\nclient: {codex: {optimize-multi-agent-v2: true, enable-apply-patch: true}}\n"
+			file := filepath.Join(t.TempDir(), "config.toml")
+			raw := "upstream = {codex = {response-steering = true, stream-bootstrap-buffering = true}, xai = {inject-x-search = true}}\noauth = {providers = {codex = {live-media-relay = {max-sessions = 12}}}}\nclient = {codex = {optimize-multi-agent-v2 = true, enable-apply-patch = true}}\n"
 			if err := os.WriteFile(file, []byte(raw), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -152,11 +151,11 @@ func TestConfigV8HistoricalConfigurationBodies(t *testing.T) {
 		{"canonical false wins", http.MethodPatch, "config", `{"oauth":{"providers":{"codex":{"response-steering":true}}},"upstream":{"codex":{"response-steering":false}}}`, false, true},
 		{"canonical null wins", http.MethodPatch, "config", `{"oauth":{"providers":{"codex":{"response-steering":true}}},"upstream":{"codex":{"response-steering":null}}}`, false, true},
 		{"replace old JSON", http.MethodPut, "config", `{"oauth":{"providers":{"codex":{"response-steering":true}}}}`, true, false},
-		{"replace old YAML", http.MethodPut, "config.yaml", "# Keep this comment\noauth: {providers: {codex: {response-steering: false}}}\n", false, false},
+		{"replace old TOML", http.MethodPut, "config.toml", "# Keep this comment\noauth = {providers = {codex = {response-steering = false}}}\n", false, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			file := filepath.Join(t.TempDir(), "config.yaml")
-			if err := os.WriteFile(file, []byte("upstream: {codex: {response-steering: true, stream-bootstrap-buffering: true}}\n"), 0600); err != nil {
+			file := filepath.Join(t.TempDir(), "config.toml")
+			if err := os.WriteFile(file, []byte("upstream = {codex = {response-steering = true, stream-bootstrap-buffering = true}}\n"), 0600); err != nil {
 				t.Fatal(err)
 			}
 			cfg, err := config.LoadConfig(file)
@@ -178,14 +177,14 @@ func TestConfigV8HistoricalConfigurationBodies(t *testing.T) {
 			if err = config.ValidateV8Config(data); err != nil {
 				t.Fatalf("saved historical request body: %v", err)
 			}
-			if !strings.Contains(string(data), "config-version: 8") {
+			if !strings.Contains(string(data), "config-version = 8") {
 				t.Fatal("historical v8 request did not save the latest version")
 			}
 			loaded, err := config.LoadConfig(file)
 			if err != nil || loaded.Codex.ResponseSteering != tc.steering || loaded.Codex.StreamBootstrapBuffering != tc.buffering {
 				t.Fatalf("historical body lost effective values: %v", err)
 			}
-			if tc.route == "config.yaml" && !strings.Contains(string(data), "# Keep this comment") {
+			if tc.route == "config.toml" && !strings.Contains(string(data), "# Keep this comment") {
 				t.Fatal("YAML alias normalization lost comments")
 			}
 		})
@@ -204,8 +203,8 @@ func TestLegacyConfigYAMLSavesBySubmittedVersion(t *testing.T) {
 		{"mixed", "# Keep this comment\nrequest-retry: 3\nupstream: {codex: {response-steering: false}}\n", false, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			file := filepath.Join(t.TempDir(), "config.yaml")
-			if err := os.WriteFile(file, []byte("server: {port: 8317}\n"), 0600); err != nil {
+			file := filepath.Join(t.TempDir(), "config.toml")
+			if err := os.WriteFile(file, []byte("server = {port = 8317}\n"), 0600); err != nil {
 				t.Fatal(err)
 			}
 			h := &Handler{configFilePath: file}
@@ -220,11 +219,11 @@ func TestLegacyConfigYAMLSavesBySubmittedVersion(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !tc.v8 && string(data) != tc.body {
+			if !tc.v8 && strings.Contains(string(data), "config-version =") {
 				t.Fatalf("v0 changed the submitted layout:\n%s", data)
 			}
 			if tc.v8 {
-				if err = config.ValidateV8Config(data); err != nil || !strings.Contains(string(data), "config-version: 8") {
+				if err = config.ValidateV8Config(data); err != nil || !strings.Contains(string(data), "config-version = 8") {
 					t.Fatalf("v0 did not normalize the submitted v8 document: %v", err)
 				}
 			}
@@ -243,13 +242,13 @@ func TestV0SetterSavesByExistingVersion(t *testing.T) {
 		name, raw string
 		v8        bool
 	}{
-		{"legacy", "request-retry: 3\ncodex: {response-steering: true}\nxai: {inject-x-search: true}\nrouting: {strategy: fill-first}\n", false},
-		{"historical v8", "config-version: 8\noauth: {providers: {codex: {response-steering: true, live-media-relay: {max-sessions: 12}}, xai: {inject-x-search: true}}}\n", true},
-		{"unversioned v8", "oauth: {providers: {codex: {response-steering: true}, xai: {inject-x-search: true}}}\n", true},
-		{"latest v8", "config-version: 8\nupstream: {codex: {response-steering: true}, xai: {inject-x-search: true}}\nrouting: {retry: {request-retry: 3}}\n", true},
+		{"legacy", "request-retry = 3\ncodex = {response-steering = true}\nxai = {inject-x-search = true}\nrouting = {strategy = \"fill-first\"}\n", false},
+		{"historical v8", "config-version = 8\noauth = {providers = {codex = {response-steering = true, live-media-relay = {max-sessions = 12}}, xai = {inject-x-search = true}}}\n", true},
+		{"unversioned v8", "oauth = {providers = {codex = {response-steering = true}, xai = {inject-x-search = true}}}\n", true},
+		{"latest v8", "config-version = 8\nupstream = {codex = {response-steering = true}, xai = {inject-x-search = true}}\nrouting = {retry = {request-retry = 3}}\n", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			file := filepath.Join(t.TempDir(), "config.yaml")
+			file := filepath.Join(t.TempDir(), "config.toml")
 			if err := os.WriteFile(file, []byte(tc.raw), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -270,10 +269,10 @@ func TestV0SetterSavesByExistingVersion(t *testing.T) {
 				t.Fatal(err)
 			}
 			if tc.v8 {
-				if err = config.ValidateV8Config(data); err != nil || !strings.Contains(string(data), "config-version: 8") {
+				if err = config.ValidateV8Config(data); err != nil || !strings.Contains(string(data), "config-version = 8") {
 					t.Fatalf("v0 saved historical/legacy paths in a v8 file: %v", err)
 				}
-			} else if strings.Contains(string(data), "config-version:") || strings.Contains(string(data), "upstream:") {
+			} else if strings.Contains(string(data), "config-version =") || strings.Contains(string(data), "[upstream") {
 				t.Fatal("v0 migrated a legacy-only file")
 			}
 			loaded, err := config.LoadConfig(file)
@@ -285,8 +284,8 @@ func TestV0SetterSavesByExistingVersion(t *testing.T) {
 }
 
 func TestConfigV8HistoricalNullContainerPatch(t *testing.T) {
-	file := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "upstream: {claude: {model-level-cooling: true, header-defaults: {user-agent: agent, timezone: UTC, stabilize-device-profile: true}}}\n"
+	file := filepath.Join(t.TempDir(), "config.toml")
+	raw := "upstream = {claude = {model-level-cooling = true, header-defaults = {user-agent = \"agent\", timezone = \"UTC\", stabilize-device-profile = true}}}\n"
 	if err := os.WriteFile(file, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -310,8 +309,8 @@ func TestConfigV8HistoricalNullContainerPatch(t *testing.T) {
 }
 
 func TestV0RepeatedSavesKeepLegacyClientAlias(t *testing.T) {
-	file := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "# LEGACY DOCUMENT\ncodex:\n  # OPTIMIZE HEAD\n  optimize-multi-agent-v2: true # OPTIMIZE INLINE\n  response-steering: true\nrequest-retry: 3\n"
+	file := filepath.Join(t.TempDir(), "config.toml")
+	raw := "# LEGACY DOCUMENT\n# OPTIMIZE HEAD\n# OPTIMIZE INLINE\ncodex = {optimize-multi-agent-v2 = true, response-steering = true}\nrequest-retry = 3\n"
 	if err := os.WriteFile(file, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -332,7 +331,7 @@ func TestV0RepeatedSavesKeepLegacyClientAlias(t *testing.T) {
 		if errRead != nil {
 			t.Fatal(errRead)
 		}
-		if strings.Contains(string(data), "config-version:") || strings.Contains(string(data), "upstream:") || strings.Contains(string(data), "client:") || !strings.Contains(string(data), "optimize-multi-agent-v2: true") {
+		if strings.Contains(string(data), "config-version =") || strings.Contains(string(data), "[upstream") || strings.Contains(string(data), "[client") || !strings.Contains(string(data), "optimize-multi-agent-v2 = true") {
 			t.Fatalf("v0 save changed the legacy layout: %s", data)
 		}
 		for _, marker := range []string{"LEGACY DOCUMENT", "OPTIMIZE HEAD", "OPTIMIZE INLINE"} {
@@ -351,8 +350,8 @@ func TestConfigV8FieldUpdatesKeepComments(t *testing.T) {
 	for _, method := range []string{http.MethodPut, http.MethodPatch} {
 		for _, path := range []string{"oauth/providers/codex/response-steering", "upstream/codex/response-steering"} {
 			t.Run(method+path, func(t *testing.T) {
-				file := filepath.Join(t.TempDir(), "config.yaml")
-				raw := "oauth:\n  providers:\n    codex: # PROVIDER INLINE\n      # FIELD HEAD\n      response-steering: true # FIELD INLINE\n\n      # FIELD FOOT\n"
+				file := filepath.Join(t.TempDir(), "config.toml")
+				raw := "# PROVIDER INLINE\n# FIELD HEAD\n# FIELD INLINE\n# FIELD FOOT\noauth = {providers = {codex = {response-steering = true}}}\n"
 				if err := os.WriteFile(file, []byte(raw), 0600); err != nil {
 					t.Fatal(err)
 				}

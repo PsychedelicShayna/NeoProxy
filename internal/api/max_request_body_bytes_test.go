@@ -51,7 +51,7 @@ func (p *bodyReadingAccessProvider) Authenticate(_ context.Context, r *http.Requ
 	return nil, sdkaccess.NewNotHandledError()
 }
 
-func parseTestServerConfigYAML(t *testing.T, raw string) *proxyconfig.Config {
+func parseTestServerConfigTOML(t *testing.T, raw string) *proxyconfig.Config {
 	t.Helper()
 	cfg, errParse := proxyconfig.ParseConfigBytes([]byte(raw))
 	if errParse != nil {
@@ -61,37 +61,35 @@ func parseTestServerConfigYAML(t *testing.T, raw string) *proxyconfig.Config {
 }
 
 func TestMaxRequestBodyBytesConfigV8Validation(t *testing.T) {
-	raw := "config-version: 8\nserver:\n  max-request-body-bytes: 64\n"
+	raw := "config-version = 8\n[server]\nmax-request-body-bytes = 64\n"
 	if errValidate := proxyconfig.ValidateV8Config([]byte(raw)); errValidate != nil {
 		t.Fatalf("ValidateV8Config() error = %v, want nil", errValidate)
 	}
 
-	cfg := parseTestServerConfigYAML(t, raw)
+	cfg := parseTestServerConfigTOML(t, raw)
 	if cfg.MaxRequestBodyBytes != 64 {
 		t.Fatalf("cfg.MaxRequestBodyBytes = %d, want 64", cfg.MaxRequestBodyBytes)
 	}
 
-	legacyCfg := parseTestServerConfigYAML(t, "max-request-body-bytes: 128\n")
+	legacyCfg := parseTestServerConfigTOML(t, "max-request-body-bytes = 128\n")
 	if legacyCfg.MaxRequestBodyBytes != 128 {
 		t.Fatalf("legacyCfg.MaxRequestBodyBytes = %d, want 128", legacyCfg.MaxRequestBodyBytes)
 	}
 
-	precedenceCfg := parseTestServerConfigYAML(t, "max-request-body-bytes: 128\nserver:\n  max-request-body-bytes: 0\n")
+	precedenceCfg := parseTestServerConfigTOML(t, "max-request-body-bytes = 128\n[server]\nmax-request-body-bytes = 0\n")
 	if precedenceCfg.MaxRequestBodyBytes != 0 {
 		t.Fatalf("precedenceCfg.MaxRequestBodyBytes = %d, want 0", precedenceCfg.MaxRequestBodyBytes)
 	}
 }
 
 func TestServerMaxRequestBodyBytesRejectsContentLengthAndChunkedBodies(t *testing.T) {
-	cfg := parseTestServerConfigYAML(t, `config-version: 8
-server:
-  max-request-body-bytes: 64
-access:
-  api-keys:
-    - test-key
-observability:
-  logs:
-    request-log: true
+	cfg := parseTestServerConfigTOML(t, `config-version = 8
+[server]
+max-request-body-bytes = 64
+[access]
+api-keys = ["test-key"]
+[observability.logs]
+request-log = true
 `)
 	server := newTestServerWithConfig(t, cfg)
 
@@ -137,12 +135,11 @@ observability:
 		"/v1beta/interactions",
 	} {
 		t.Run("authenticated chunked body exceeding limit returns 413 on "+endpoint, func(t *testing.T) {
-			cfgNoLog := parseTestServerConfigYAML(t, `config-version: 8
-server:
-  max-request-body-bytes: 64
-access:
-  api-keys:
-    - test-key
+			cfgNoLog := parseTestServerConfigTOML(t, `config-version = 8
+[server]
+max-request-body-bytes = 64
+[access]
+api-keys = ["test-key"]
 `)
 			srv := newTestServerWithConfig(t, cfgNoLog)
 			payload := `{"model":"gpt-5","messages":[{"role":"user","content":"` + strings.Repeat("x", 128) + `"}]}`
@@ -161,12 +158,11 @@ access:
 	}
 
 	t.Run("zstd decompressed body exceeding limit returns 413", func(t *testing.T) {
-		cfgZstd := parseTestServerConfigYAML(t, `config-version: 8
-server:
-  max-request-body-bytes: 128
-access:
-  api-keys:
-    - test-key
+		cfgZstd := parseTestServerConfigTOML(t, `config-version = 8
+[server]
+max-request-body-bytes = 128
+[access]
+api-keys = ["test-key"]
 `)
 		srv := newTestServerWithConfig(t, cfgZstd)
 
@@ -200,12 +196,11 @@ access:
 	})
 
 	t.Run("unauthenticated chunked body with plugin auth fallback is bounded and returns 413", func(t *testing.T) {
-		cfgPluginAuth := parseTestServerConfigYAML(t, `config-version: 8
-server:
-  max-request-body-bytes: 64
-access:
-  api-keys:
-    - test-key
+		cfgPluginAuth := parseTestServerConfigTOML(t, `config-version = 8
+[server]
+max-request-body-bytes = 64
+[access]
+api-keys = ["test-key"]
 `)
 		srv := newTestServerWithConfig(t, cfgPluginAuth)
 		fallbackProvider := &bodyReadingAccessProvider{}
@@ -233,10 +228,9 @@ access:
 	})
 
 	t.Run("default off and hot reload update limit", func(t *testing.T) {
-		cfgDefault := parseTestServerConfigYAML(t, `config-version: 8
-access:
-  api-keys:
-    - test-key
+		cfgDefault := parseTestServerConfigTOML(t, `config-version = 8
+[access]
+api-keys = ["test-key"]
 `)
 		srv := newTestServerWithConfig(t, cfgDefault)
 
@@ -250,12 +244,11 @@ access:
 			t.Fatalf("default-off status = %d body = %s, want 400 model_not_found", rr.Code, rr.Body.String())
 		}
 
-		cfgReloaded := parseTestServerConfigYAML(t, `config-version: 8
-server:
-  max-request-body-bytes: 32
-access:
-  api-keys:
-    - test-key
+		cfgReloaded := parseTestServerConfigTOML(t, `config-version = 8
+[server]
+max-request-body-bytes = 32
+[access]
+api-keys = ["test-key"]
 `)
 		srv.UpdateClients(cfgReloaded)
 
@@ -271,7 +264,7 @@ access:
 
 	t.Run("exact boundary body is accepted", func(t *testing.T) {
 		exactPayload := `{"model":"gpt-5","input":"ok"}`
-		cfgExact := parseTestServerConfigYAML(t, "config-version: 8\nserver:\n  max-request-body-bytes: 30\naccess:\n  api-keys:\n    - test-key\n")
+		cfgExact := parseTestServerConfigTOML(t, "config-version = 8\n[server]\nmax-request-body-bytes = 30\n[access]\napi-keys = [\"test-key\"]\n")
 		srvExact := newTestServerWithConfig(t, cfgExact)
 		if len(exactPayload) != 30 {
 			t.Fatalf("len(exactPayload) = %d, want 30", len(exactPayload))
@@ -287,7 +280,7 @@ access:
 	})
 
 	t.Run("negative limit disables request body cap", func(t *testing.T) {
-		cfgNegative := parseTestServerConfigYAML(t, "config-version: 8\nserver:\n  max-request-body-bytes: -1\naccess:\n  api-keys:\n    - test-key\n")
+		cfgNegative := parseTestServerConfigTOML(t, "config-version = 8\n[server]\nmax-request-body-bytes = -1\n[access]\napi-keys = [\"test-key\"]\n")
 		srvNegative := newTestServerWithConfig(t, cfgNegative)
 		payload := `{"model":"gpt-5","input":"` + strings.Repeat("a", 256) + `"}`
 		reqNeg := httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(payload))
@@ -301,7 +294,7 @@ access:
 	})
 
 	t.Run("multipart chunked body exceeding limit returns 413", func(t *testing.T) {
-		cfgMultipart := parseTestServerConfigYAML(t, "config-version: 8\nserver:\n  max-request-body-bytes: 30\naccess:\n  api-keys:\n    - test-key\n")
+		cfgMultipart := parseTestServerConfigTOML(t, "config-version = 8\n[server]\nmax-request-body-bytes = 30\n[access]\napi-keys = [\"test-key\"]\n")
 		srvMultipart := newTestServerWithConfig(t, cfgMultipart)
 		var multipartBuf bytes.Buffer
 		mw := multipart.NewWriter(&multipartBuf)
@@ -326,7 +319,7 @@ access:
 	})
 
 	t.Run("zstd decompressed body exceeding limit with request-log enabled returns 413", func(t *testing.T) {
-		cfgZstdWithLog := parseTestServerConfigYAML(t, "config-version: 8\nserver:\n  max-request-body-bytes: 128\naccess:\n  api-keys:\n    - test-key\nobservability:\n  logs:\n    request-log: true\n")
+		cfgZstdWithLog := parseTestServerConfigTOML(t, "config-version = 8\n[server]\nmax-request-body-bytes = 128\n[access]\napi-keys = [\"test-key\"]\n[observability.logs]\nrequest-log = true\n")
 		srvZstdLog := newTestServerWithConfig(t, cfgZstdWithLog)
 		uncompressed := []byte(`{"model":"gpt-5","input":"` + strings.Repeat("z", 512) + `"}`)
 		var compressed bytes.Buffer
@@ -353,7 +346,7 @@ access:
 
 	t.Run("MaxInt64 limit does not overflow zstd LimitReader", func(t *testing.T) {
 		exactPayload := `{"model":"gpt-5","input":"ok"}`
-		cfgMaxInt64 := parseTestServerConfigYAML(t, "config-version: 8\naccess:\n  api-keys:\n    - test-key\nobservability:\n  logs:\n    request-log: true\n")
+		cfgMaxInt64 := parseTestServerConfigTOML(t, "config-version = 8\n[access]\napi-keys = [\"test-key\"]\n[observability.logs]\nrequest-log = true\n")
 		cfgMaxInt64.MaxRequestBodyBytes = math.MaxInt64
 		srvMaxInt64 := newTestServerWithConfig(t, cfgMaxInt64)
 		var smallZstd bytes.Buffer
@@ -379,8 +372,8 @@ access:
 	})
 
 	t.Run("v8 management chunked body exceeding limit returns 413", func(t *testing.T) {
-		rawCfg := "config-version: 8\nserver:\n  max-request-body-bytes: 32\nmanagement:\n  allow-remote: true\n  secret-key: mgmt-secret\n"
-		cfgMgmt := parseTestServerConfigYAML(t, rawCfg)
+		rawCfg := "config-version = 8\n[server]\nmax-request-body-bytes = 32\n[management]\nallow-remote = true\nsecret-key = \"mgmt-secret\"\n"
+		cfgMgmt := parseTestServerConfigTOML(t, rawCfg)
 		srvMgmt := newTestServerWithConfig(t, cfgMgmt)
 		if errWrite := os.WriteFile(srvMgmt.configFilePath, []byte(rawCfg), 0o600); errWrite != nil {
 			t.Fatalf("WriteFile(configFilePath) error = %v", errWrite)

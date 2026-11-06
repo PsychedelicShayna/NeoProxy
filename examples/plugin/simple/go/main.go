@@ -61,7 +61,7 @@ type envelopeError struct {
 }
 
 type lifecycleRequest struct {
-	ConfigYAML []byte `json:"config_yaml"`
+	ConfigTOML []byte `json:"config_toml"`
 }
 
 type registration struct {

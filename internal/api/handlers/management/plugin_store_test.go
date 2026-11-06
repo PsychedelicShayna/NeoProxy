@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/pluginstore"
 )
@@ -32,7 +33,7 @@ func TestListPluginStoreMergesInstalledStatus(t *testing.T) {
 				Enabled: true,
 				Dir:     pluginsDir,
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample-provider": pluginConfigFromYAML(t, "enabled: true\nmode: fast\n"),
+					"sample-provider": pluginConfigFromTOML(t, "enabled = true\nmode = \"fast\"\n"),
 				},
 			},
 		},
@@ -182,7 +183,7 @@ func TestListPluginStoreUsesConfiguredStoreVersionWhenFilesCoexist(t *testing.T)
 				Enabled: true,
 				Dir:     pluginsDir,
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample-provider": pluginConfigFromYAML(t, "enabled: true\nstore:\n  version: 0.1.0\n  release-tag: v0.1.0\n"),
+					"sample-provider": pluginConfigFromTOML(t, "enabled = true\n[store]\nversion = \"0.1.0\"\nrelease-tag = \"v0.1.0\"\n"),
 				},
 			},
 		},
@@ -776,14 +777,14 @@ func TestInstallPluginFromStoreWritesFileAndEnablesConfig(t *testing.T) {
 	t.Chdir(workspace)
 
 	cfg, errParse := config.ParseConfigBytes([]byte(`
-plugins:
-  enabled: false
-  dir: "~/.cli-proxy-api/plugins"
+[plugins]
+enabled = false
+dir = "~/.cli-proxy-api/plugins"
 `))
 	if errParse != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", errParse)
 	}
-	cfg.Plugins.Configs["sample-provider"] = pluginConfigFromYAML(t, "enabled: false\nmode: fast\n")
+	cfg.Plugins.Configs["sample-provider"] = pluginConfigFromTOML(t, "enabled = false\nmode = \"fast\"\n")
 	pluginsDir := filepath.Join(homeDir, ".cli-proxy-api", "plugins")
 	archiveData := makeManagementPluginStoreZip(t, "sample-provider"+managementPluginExtension(runtime.GOOS), "library-data")
 	archiveName := "sample-provider_0.1.0_" + runtime.GOOS + "_" + runtime.GOARCH + ".zip"
@@ -858,14 +859,14 @@ plugins:
 		t.Fatal("snapshot global plugins.enabled changed to true")
 	}
 	raw := marshalPluginRaw(t, item)
-	if !strings.Contains(raw, "mode: fast") {
+	if !strings.Contains(raw, "mode = 'fast'") {
 		t.Fatalf("plugin raw config lost custom field:\n%s", raw)
 	}
 	manifest := pluginStoreManifestFromConfig(t, item)
 	if manifest.InstallType() != pluginstore.InstallTypeGitHubRelease || manifest.ReleaseTag != "v0.1.0" || manifest.Version != "0.1.0" {
 		t.Fatalf("store manifest = %#v, want github-release v0.1.0", manifest)
 	}
-	if raw := marshalPluginRaw(t, snapshotItem); !strings.Contains(raw, "mode: fast") {
+	if raw := marshalPluginRaw(t, snapshotItem); !strings.Contains(raw, "mode = 'fast'") {
 		t.Fatalf("snapshot plugin raw config lost custom field:\n%s", raw)
 	}
 }
@@ -927,7 +928,7 @@ func TestInstallPluginFromStoreInstallsDirectArtifact(t *testing.T) {
 	if manifest.SourceURL != "https://registry.example/registry.json" || len(manifest.Install.Artifacts) == 0 {
 		t.Fatalf("store manifest source/artifacts = %q/%d, want source URL with pinned artifacts", manifest.SourceURL, len(manifest.Install.Artifacts))
 	}
-	if raw := marshalPluginRaw(t, h.cfg.Plugins.Configs["sample-provider"]); !strings.Contains(raw, "artifacts:") {
+	if raw := marshalPluginRaw(t, h.cfg.Plugins.Configs["sample-provider"]); !strings.Contains(raw, "[[store.install.artifacts]]") {
 		t.Fatalf("direct store manifest should persist pinned artifacts:\n%s", raw)
 	}
 }
@@ -1114,7 +1115,7 @@ func TestInstallPluginFromStoreOverwritesFilePreservesConfigAndReloads(t *testin
 				Enabled: true,
 				Dir:     pluginsDir,
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample-provider": pluginConfigFromYAML(t, "enabled: false\npriority: 5\nmode: fast\nextra: keep\n"),
+					"sample-provider": pluginConfigFromTOML(t, "enabled = false\npriority = 5\nmode = \"fast\"\nextra = \"keep\"\n"),
 				},
 			},
 		},
@@ -1172,10 +1173,10 @@ func TestInstallPluginFromStoreOverwritesFilePreservesConfigAndReloads(t *testin
 		t.Fatalf("snapshot plugin priority = %d, want 5", snapshotItem.Priority)
 	}
 	raw := marshalPluginRaw(t, item)
-	if !strings.Contains(raw, "mode: fast") || !strings.Contains(raw, "extra: keep") {
+	if !strings.Contains(raw, "mode = 'fast'") || !strings.Contains(raw, "extra = 'keep'") {
 		t.Fatalf("plugin raw config lost custom fields:\n%s", raw)
 	}
-	if raw := marshalPluginRaw(t, snapshotItem); !strings.Contains(raw, "mode: fast") || !strings.Contains(raw, "extra: keep") {
+	if raw := marshalPluginRaw(t, snapshotItem); !strings.Contains(raw, "mode = 'fast'") || !strings.Contains(raw, "extra = 'keep'") {
 		t.Fatalf("snapshot plugin raw config lost custom fields:\n%s", raw)
 	}
 }
@@ -1188,7 +1189,7 @@ func TestEnablePluginConfigLockedPreservesExistingFields(t *testing.T) {
 			Plugins: config.PluginsConfig{
 				Enabled: false,
 				Configs: map[string]config.PluginInstanceConfig{
-					"sample-provider": pluginConfigFromYAML(t, "enabled: false\npriority: 5\nmode: fast\n"),
+					"sample-provider": pluginConfigFromTOML(t, "enabled = false\npriority = 5\nmode = \"fast\"\n"),
 				},
 			},
 		},
@@ -1208,7 +1209,7 @@ func TestEnablePluginConfigLockedPreservesExistingFields(t *testing.T) {
 		t.Fatalf("plugin priority = %d, want 5", item.Priority)
 	}
 	raw := marshalPluginRaw(t, item)
-	if !strings.Contains(raw, "mode: fast") || !strings.Contains(raw, "store:") {
+	if !strings.Contains(raw, "mode = 'fast'") || !strings.Contains(raw, "[store]") {
 		t.Fatalf("plugin raw config lost custom field:\n%s", raw)
 	}
 }
@@ -1383,37 +1384,45 @@ func testStoreManifest() pluginstore.Manifest {
 
 func pluginConfigWithStoreSource(t *testing.T, sourceID string, sourceURL string) config.PluginInstanceConfig {
 	t.Helper()
-	sourceFields := ""
+	store := map[string]any{
+		"schema-version": 1,
+		"id":             "sample-provider",
+		"version":        "0.0.1",
+		"release-tag":    "v0.0.1",
+		"repository":     "https://github.com/author-name/cliproxy-sample-provider-plugin",
+		"install":        map[string]any{"type": "github-release"},
+	}
 	if sourceID != "" {
-		sourceFields += "  source-id: " + sourceID + "\n"
+		store["source-id"] = sourceID
 	}
 	if sourceURL != "" {
-		sourceFields += "  source-url: " + sourceURL + "\n"
+		store["source-url"] = sourceURL
 	}
-	return pluginConfigFromYAML(t, "enabled: true\nstore:\n  schema-version: 1\n  id: sample-provider\n  version: 0.0.1\n  release-tag: v0.0.1\n  repository: https://github.com/author-name/cliproxy-sample-provider-plugin\n"+sourceFields+"  install:\n    type: github-release\n")
+	item, errConfig := config.PluginInstanceConfigFromMap(map[string]any{"enabled": true, "store": store})
+	if errConfig != nil {
+		t.Fatalf("decode plugin config: %v", errConfig)
+	}
+	return item
 }
 
 func pluginStoreManifestFromConfig(t *testing.T, item config.PluginInstanceConfig) pluginstore.Manifest {
 	t.Helper()
-
-	node := pluginConfigNode(item)
-	for index := 0; index+1 < len(node.Content); index += 2 {
-		key := node.Content[index]
-		value := node.Content[index+1]
-		if key == nil || key.Value != "store" {
-			continue
-		}
-		var manifest pluginstore.Manifest
-		if errDecode := value.Decode(&manifest); errDecode != nil {
-			t.Fatalf("decode store manifest: %v", errDecode)
-		}
-		if errValidate := manifest.Validate(); errValidate != nil {
-			t.Fatalf("store manifest Validate() error = %v; manifest=%#v", errValidate, manifest)
-		}
-		return manifest
+	store := pluginStoreConfigNode(item)
+	if store == nil {
+		t.Fatalf("plugin config missing store manifest:\n%s", marshalPluginRaw(t, item))
 	}
-	t.Fatalf("plugin config missing store manifest:\n%s", marshalPluginRaw(t, item))
-	return pluginstore.Manifest{}
+	data, errMarshal := config.MarshalTOML(store)
+	if errMarshal != nil {
+		t.Fatalf("marshal store manifest: %v", errMarshal)
+	}
+	var manifest pluginstore.Manifest
+	if errDecode := toml.Unmarshal(data, &manifest); errDecode != nil {
+		t.Fatalf("decode store manifest: %v", errDecode)
+	}
+	if errValidate := manifest.Validate(); errValidate != nil {
+		t.Fatalf("store manifest Validate() error = %v; manifest=%#v", errValidate, manifest)
+	}
+	return manifest
 }
 
 func pluginStorePlatformsContain(platforms []pluginStorePlatform, goos string, goarch string) bool {

@@ -20,6 +20,8 @@ auths
 logs
 conv
 config.yaml
+config.yml
+config.toml
 
 # Development/editor
 bin

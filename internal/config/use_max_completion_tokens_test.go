@@ -3,25 +3,15 @@ package config
 import (
 	"encoding/json"
 	"testing"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestOpenAICompatibilityUseMaxCompletionTokensYAMLDecoding(t *testing.T) {
-	const yamlConfig = `
-openai-compatibility:
-  - name: test-provider
-    models:
-      - name: new-reasoning-model
-        alias: new-alias
-        use-max-completion-tokens: true
-      - name: legacy-model
-        alias: legacy-alias
+	const tomlConfig = `"openai-compatibility" = [{"name" = "test-provider", "models" = [{"name" = "new-reasoning-model", "alias" = "new-alias", "use-max-completion-tokens" = true}, {"name" = "legacy-model", "alias" = "legacy-alias"}]}]
 `
 
 	var cfg Config
-	if errDecode := yaml.Unmarshal([]byte(yamlConfig), &cfg); errDecode != nil {
-		t.Fatalf("yaml decode error: %v", errDecode)
+	if errDecode := decodeTOMLTestConfig([]byte(tomlConfig), &cfg); errDecode != nil {
+		t.Fatalf("TOML decode error: %v", errDecode)
 	}
 
 	if len(cfg.OpenAICompatibility) != 1 {

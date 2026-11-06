@@ -19,25 +19,25 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/pelletier/go-toml/v2"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/yaml.v3"
 )
 
 const seedTestPlaintextSecret = "seed-plaintext-secret"
 
 // seedTestConfigsKeepingPlaintext hold a plaintext secret that cannot be removed before
-// seeding: the file cannot be parsed, or a YAML anchor keeps the plaintext after the
-// referencing key is hashed or dropped as a conflicting legacy field.
+// seeding: the file cannot be parsed, or another field retains the plaintext after the
+// management key is hashed or dropped as a conflicting legacy field.
 var seedTestConfigsKeepingPlaintext = map[string]string{
-	"unparsable":      "remote-management:\n  secret-key: " + seedTestPlaintextSecret + "\nport: [8317\n",
-	"anchored secret": "defaults: &management\n  secret-key: " + seedTestPlaintextSecret + "\nmanagement: *management\n",
-	"anchored legacy secret beside v8 secret": "defaults: &legacy\n  secret-key: " + seedTestPlaintextSecret + "\nremote-management: *legacy\nmanagement:\n  secret-key: current-plaintext-secret\n",
+	"unparsable":        "[management]\nsecret-key = '" + seedTestPlaintextSecret + "'\nport = [8317\n",
+	"duplicated secret": "[defaults]\nsecret-key = '" + seedTestPlaintextSecret + "'\n[management]\nsecret-key = '" + seedTestPlaintextSecret + "'\n",
+	"duplicated legacy secret beside v8 secret": "[defaults]\nsecret-key = '" + seedTestPlaintextSecret + "'\n[remote-management]\nsecret-key = '" + seedTestPlaintextSecret + "'\n[management]\nsecret-key = 'current-plaintext-secret'\n",
 }
 
 var seedTestDriverID atomic.Uint64
 
 func seedTestPlaintextConfig(section string) string {
-	return "# operator note\nport: 8317\n" + section + ":\n  secret-key: " + seedTestPlaintextSecret + "\n"
+	return "# operator note\nport = 8317\n[" + section + "]\nsecret-key = '" + seedTestPlaintextSecret + "'\n"
 }
 
 // seedTestSettledConfigs hold no plaintext secret, so seeding must upload them unchanged.
@@ -48,8 +48,8 @@ func seedTestSettledConfigs(t *testing.T) map[string]string {
 		t.Fatalf("bcrypt.GenerateFromPassword() error = %v", errHash)
 	}
 	return map[string]string{
-		"hashed secret": "# operator note\nport: 8317\nremote-management:\n  secret-key: '" + string(hashed) + "'\n",
-		"null secret":   "# operator note\nport: 8317\nmanagement:\n  secret-key: null\n",
+		"hashed secret": "# operator note\nport = 8317\n[management]\nsecret-key = '" + string(hashed) + "'\n",
+		"empty secret":  "# operator note\nport = 8317\n[management]\nsecret-key = ''\n",
 	}
 }
 
@@ -81,7 +81,7 @@ func assertSeededWithHashedSecret(t *testing.T, seeded []byte, configPath, secti
 		t.Fatalf("remote store seeded with the plaintext management secret:\n%s", seeded)
 	}
 	var doc map[string]any
-	if errParse := yaml.Unmarshal(seeded, &doc); errParse != nil {
+	if errParse := toml.Unmarshal(seeded, &doc); errParse != nil {
 		t.Fatalf("parse seeded config: %v", errParse)
 	}
 	management, _ := doc[section].(map[string]any)
@@ -128,9 +128,9 @@ func newSeedTestObjectStore(t *testing.T, configPath string) (*ObjectTokenStore,
 
 func TestObjectTokenStoreSeedHashesPlaintextManagementSecret(t *testing.T) {
 	dir := t.TempDir()
-	examplePath := filepath.Join(dir, "config.example.yaml")
-	writeSeedTestFile(t, examplePath, seedTestPlaintextConfig("remote-management"))
-	configPath := filepath.Join(dir, "objectstore", "config", "config.yaml")
+	examplePath := filepath.Join(dir, "config.example.toml")
+	writeSeedTestFile(t, examplePath, seedTestPlaintextConfig("management"))
+	configPath := filepath.Join(dir, "objectstore", "config", "config.toml")
 	objectStore, uploads := newSeedTestObjectStore(t, configPath)
 
 	if errSync := objectStore.syncConfigFromBucket(context.Background(), examplePath); errSync != nil {
@@ -139,13 +139,13 @@ func TestObjectTokenStoreSeedHashesPlaintextManagementSecret(t *testing.T) {
 	if len(*uploads) != 1 {
 		t.Fatalf("config uploads = %d, want 1", len(*uploads))
 	}
-	assertSeededWithHashedSecret(t, (*uploads)[0], configPath, "remote-management")
+	assertSeededWithHashedSecret(t, (*uploads)[0], configPath, "management")
 }
 
 func TestObjectTokenStoreSeedUploadsSettledConfigUnchanged(t *testing.T) {
 	for name, original := range seedTestSettledConfigs(t) {
 		t.Run(name, func(t *testing.T) {
-			configPath := filepath.Join(t.TempDir(), "config.yaml")
+			configPath := filepath.Join(t.TempDir(), "config.toml")
 			writeSeedTestFile(t, configPath, original)
 			objectStore, uploads := newSeedTestObjectStore(t, configPath)
 
@@ -167,7 +167,7 @@ func TestObjectTokenStoreSeedUploadsSettledConfigUnchanged(t *testing.T) {
 func TestObjectTokenStoreSeedRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range seedTestConfigsKeepingPlaintext {
 		t.Run(name, func(t *testing.T) {
-			configPath := filepath.Join(t.TempDir(), "config.yaml")
+			configPath := filepath.Join(t.TempDir(), "config.toml")
 			writeSeedTestFile(t, configPath, content)
 			objectStore, uploads := newSeedTestObjectStore(t, configPath)
 
@@ -275,7 +275,7 @@ func newSeedTestPostgresStore(t *testing.T, configPath string) (*PostgresStore, 
 }
 
 func TestPostgresStoreSeedHashesPlaintextManagementSecret(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), "pgstore", "config", "config.yaml")
+	configPath := filepath.Join(t.TempDir(), "pgstore", "config", "config.toml")
 	writeSeedTestFile(t, configPath, seedTestPlaintextConfig("management"))
 	postgresStore, database := newSeedTestPostgresStore(t, configPath)
 
@@ -292,7 +292,7 @@ func TestPostgresStoreSeedHashesPlaintextManagementSecret(t *testing.T) {
 func TestPostgresStoreSeedUploadsSettledConfigUnchanged(t *testing.T) {
 	for name, original := range seedTestSettledConfigs(t) {
 		t.Run(name, func(t *testing.T) {
-			configPath := filepath.Join(t.TempDir(), "config.yaml")
+			configPath := filepath.Join(t.TempDir(), "config.toml")
 			writeSeedTestFile(t, configPath, original)
 			postgresStore, database := newSeedTestPostgresStore(t, configPath)
 
@@ -314,7 +314,7 @@ func TestPostgresStoreSeedUploadsSettledConfigUnchanged(t *testing.T) {
 func TestPostgresStoreSeedRefusesConfigThatKeepsPlaintextSecret(t *testing.T) {
 	for name, content := range seedTestConfigsKeepingPlaintext {
 		t.Run(name, func(t *testing.T) {
-			configPath := filepath.Join(t.TempDir(), "config.yaml")
+			configPath := filepath.Join(t.TempDir(), "config.toml")
 			writeSeedTestFile(t, configPath, content)
 			postgresStore, database := newSeedTestPostgresStore(t, configPath)
 

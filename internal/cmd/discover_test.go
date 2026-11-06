@@ -98,8 +98,8 @@ func TestResolveDiscoveryInterfaceFiltersPrefersCLI(t *testing.T) {
 
 func TestLoadDiscoveryScanFiltersIgnoresUnrelatedConfigWarnings(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	body := "redis-usage-queue-retention-seconds: 99999\ndiscovery:\n  interfaces:\n    include:\n      - docker0\n"
+	path := filepath.Join(dir, "config.toml")
+	body := "redis-usage-queue-retention-seconds = 99999\n[discovery.interfaces]\ninclude = ['docker0']\n"
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -111,8 +111,8 @@ func TestLoadDiscoveryScanFiltersIgnoresUnrelatedConfigWarnings(t *testing.T) {
 
 func TestLoadDiscoveryScanFiltersReadsInclude(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "config.yaml")
-	if err := os.WriteFile(path, []byte("discovery:\n  interfaces:\n    include:\n      - docker0\n"), 0o600); err != nil {
+	path := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(path, []byte("[discovery.interfaces]\ninclude = ['docker0']\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	include, exclude := LoadDiscoveryScanFilters(path)
@@ -123,7 +123,7 @@ func TestLoadDiscoveryScanFiltersReadsInclude(t *testing.T) {
 
 func TestLoadDiscoveryScanFiltersEmptyPathUsesWorkingConfig(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte("discovery:\n  interfaces:\n    include:\n      - tailscale0\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte("[discovery.interfaces]\ninclude = ['tailscale0']\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	t.Chdir(dir)

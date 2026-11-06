@@ -36,8 +36,8 @@ func TestServiceRun_WatcherReloadConcurrentWithStartupModelRegistration_Issue658
 		t.Fatalf("write auth file: %v", errWrite)
 	}
 
-	cfgPath := filepath.Join(authDir, "config.yaml")
-	if errWrite := os.WriteFile(cfgPath, []byte("{}"), 0o600); errWrite != nil {
+	cfgPath := filepath.Join(authDir, "config.toml")
+	if errWrite := os.WriteFile(cfgPath, nil, 0o600); errWrite != nil {
 		t.Fatalf("write dummy config: %v", errWrite)
 	}
 

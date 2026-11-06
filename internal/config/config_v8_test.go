@@ -12,11 +12,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
-	"gopkg.in/yaml.v3"
 )
 
 func TestV8ExampleLoadsAndRoundTrips(t *testing.T) {
-	example, err := os.ReadFile(filepath.Join("..", "..", "config.example.yaml"))
+	example, err := os.ReadFile(filepath.Join("..", "..", "config.example.toml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,11 +41,11 @@ func TestV8ExampleLoadsAndRoundTrips(t *testing.T) {
 	text := strings.ReplaceAll(string(example), "\r\n", "\n")
 	_, block, found := strings.Cut(text, "# BEGIN API KEY EXAMPLES\n")
 	if !found {
-		t.Fatal("config.example.yaml is missing the API-key examples")
+		t.Fatal("config.example.toml is missing the API-key examples")
 	}
 	block, _, found = strings.Cut(block, "# END API KEY EXAMPLES")
 	if !found {
-		t.Fatal("config.example.yaml is missing the end of the API-key examples")
+		t.Fatal("config.example.toml is missing the end of the API-key examples")
 	}
 	var uncommented strings.Builder
 	for _, line := range strings.Split(strings.TrimSuffix(block, "\n"), "\n") {
@@ -73,7 +72,7 @@ func TestV8ExampleLoadsAndRoundTrips(t *testing.T) {
 	if !cfg.QuotaExceeded.AntigravityCredits || cfg.QuotaExceeded.SwitchProject || cfg.QuotaExceeded.SwitchPreviewModel {
 		t.Fatal("legacy-only quota examples must remain commented")
 	}
-	path := filepath.Join(t.TempDir(), "config.yaml")
+	path := filepath.Join(t.TempDir(), "config.toml")
 	if err = os.WriteFile(path, data, 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -84,22 +83,13 @@ func TestV8ExampleLoadsAndRoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var beforeNode, afterNode yaml.Node
-	if err = beforeNode.Encode(cfg); err != nil {
-		t.Fatal(err)
-	}
-	if err = afterNode.Encode(reloaded); err != nil {
-		t.Fatal(err)
-	}
-	if !nodesStructurallyEqual(&beforeNode, &afterNode) {
+	if !reflect.DeepEqual(cfg, reloaded) {
 		t.Fatal("runtime values changed after saving v8 example")
 	}
 	saved, _ := os.ReadFile(path)
-	var node yaml.Node
-	if err = yaml.Unmarshal(saved, &node); err != nil {
-		t.Fatal(err)
-	}
-	if groups := yamlPath(node.Content[0], "api-keys.gemini"); groups == nil || len(groups.Content) != 2 || yamlPath(groups.Content[0], "name").Value != "gemini-1" {
+	node := testV8Document(t, saved)
+	groups, _ := testV8Path(node, "api-keys.gemini").([]any)
+	if len(groups) != 2 || testV8Path(groups[0].(map[string]any), "name") != "gemini-1" {
 		t.Fatal("save lost upstream group identity")
 	}
 }
@@ -112,13 +102,13 @@ func TestV8PresencePrecedenceAndCleanup(t *testing.T) {
 		keys      int
 		unchanged bool
 	}{
-		{"legacy", "request-retry: 4\ndisable-cooling: true\napi-keys: [old]\n", 4, true, 1, true},
-		{"mixed explicit zero", "request-retry: 4\ndisable-cooling: true\napi-keys: [old]\nrouting:\n  retry: {request-retry: 0}\n  cooldown: {disable-cooling: false}\naccess: {api-keys: []}\n", 0, false, 0, false},
-		{"version does not force migration", "config-version: 8\nrequest-retry: 4\ndisable-cooling: true\napi-keys: [old]\n", 4, true, 1, true},
-		{"partial new block", "request-retry: 4\ndisable-cooling: true\napi-keys: [old]\nrouting: {retry: {max-retry-credentials: 2}}\n", 4, true, 1, true},
+		{"legacy", "request-retry = 4\ndisable-cooling = true\napi-keys = [\"old\"]\n", 4, true, 1, true},
+		{"mixed explicit zero", "request-retry = 4\ndisable-cooling = true\napi-keys = [\"old\"]\nrouting.retry.request-retry = 0\nrouting.cooldown.disable-cooling = false\naccess.api-keys = []\n", 0, false, 0, false},
+		{"version does not force migration", "config-version = 8\nrequest-retry = 4\ndisable-cooling = true\napi-keys = [\"old\"]\n", 4, true, 1, true},
+		{"partial new block", "request-retry = 4\ndisable-cooling = true\napi-keys = [\"old\"]\nrouting.retry.max-retry-credentials = 2\n", 4, true, 1, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "config.yaml")
+			path := filepath.Join(t.TempDir(), "config.toml")
 			if err := os.WriteFile(path, []byte(tc.raw), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -134,9 +124,8 @@ func TestV8PresencePrecedenceAndCleanup(t *testing.T) {
 				t.Fatal("legacy config was rewritten")
 			}
 			if !tc.unchanged {
-				var doc yaml.Node
-				_ = yaml.Unmarshal(saved, &doc)
-				if yamlPath(doc.Content[0], "request-retry") != nil || legacyPath(doc.Content[0], "api-keys") != nil || yamlPath(doc.Content[0], "disable-cooling") != nil {
+				doc := testV8Document(t, saved)
+				if testV8Path(doc, "request-retry") != nil || testV8Path(doc, "api-keys") != nil || testV8Path(doc, "disable-cooling") != nil {
 					t.Fatal("conflicting legacy fields remain")
 				}
 			}
@@ -147,62 +136,36 @@ func TestV8PresencePrecedenceAndCleanup(t *testing.T) {
 func TestV8KeyInheritance(t *testing.T) {
 	for _, provider := range []string{"gemini", "interactions", "vertex", "codex", "claude", "xai", "meta"} {
 		t.Run(provider, func(t *testing.T) {
-			raw := "request-retry: 9\napi-keys:\n  " + provider + ":\n" + `    - name: shared
-      base-url: https://example.invalid
-      priority: 7
-      prefix: group
-      proxy-url: direct
-      headers: {X-Group: yes}
-      models: [{name: model, alias: alias}]
-      excluded-models: [blocked]
-      disable-cooling: true
-      request-retry: 3
-      keys:
-        - api-key: inherited
-          priority: null
-          headers: null
-          disable-cooling: null
-          request-retry: null
-        - api-key: overridden
-          weight: 0
-          priority: 0
-          prefix: ''
-          proxy-url: ''
-          headers: {}
-          models: []
-          excluded-models: []
-          disable-cooling: false
-          request-retry: 0
-        - api-key: global-retry
-          request-retry: -1
+			raw := "request-retry = 9\napi-keys." + provider + ` = [{ name = "shared", base-url = "https://example.invalid", priority = 7, prefix = "group", proxy-url = "direct", headers = { X-Group = "yes" }, models = [{ name = "model", alias = "alias" }], excluded-models = ["blocked"], disable-cooling = true, request-retry = 3, keys = [{ api-key = "inherited" }, { api-key = "overridden", weight = 0, priority = 0, prefix = "", proxy-url = "", headers = {}, models = [], excluded-models = [], disable-cooling = false, request-retry = 0 }, { api-key = "global-retry", request-retry = -1 }] }]
 `
 			cfg, err := ParseConfigBytes([]byte(raw))
 			if err != nil {
 				t.Fatal(err)
 			}
-			var effective yaml.Node
-			if err = effective.Encode(cfg); err != nil {
+			encoded, err := MarshalTOML(cfg)
+			if err != nil {
 				t.Fatal(err)
 			}
+			effective := testV8Document(t, encoded)
 			var old string
 			for _, family := range v8KeyFamilies {
 				if family.current == provider {
 					old = family.old
 				}
 			}
-			keys := yamlPath(&effective, old)
-			if keys == nil || len(keys.Content) != 3 {
+			keys := testV8Path(effective, old).([]any)
+			if keys == nil || len(keys) != 3 {
 				t.Fatal("group did not expand to three keys")
 			}
-			first, second, third := keys.Content[0], keys.Content[1], keys.Content[2]
-			if yamlPath(first, "priority").Value != "7" || yamlPath(first, "request-retry").Value != "3" || yamlPath(first, "disable-cooling").Value != "true" || yamlPath(first, "headers") == nil {
+			first, second, third := keys[0].(map[string]any), keys[1].(map[string]any), keys[2].(map[string]any)
+			if fmt.Sprint(testV8Path(first, "priority")) != "7" || fmt.Sprint(testV8Path(first, "request-retry")) != "3" || fmt.Sprint(testV8Path(first, "disable-cooling")) != "true" || testV8Path(first, "headers") == nil {
 				t.Fatal("null did not inherit")
 			}
-			if yamlPath(second, "request-retry").Value != "0" || yamlPath(second, "disable-cooling").Value != "false" || yamlPath(second, "weight").Value != "0" || yamlPath(third, "request-retry").Value != "-1" {
+			if fmt.Sprint(testV8Path(second, "request-retry")) != "0" || fmt.Sprint(testV8Path(second, "disable-cooling")) != "false" || fmt.Sprint(testV8Path(second, "weight")) != "0" || fmt.Sprint(testV8Path(third, "request-retry")) != "-1" {
 				t.Fatal("explicit overrides lost")
 			}
 			for _, name := range []string{"headers", "models", "excluded-models"} {
-				if node := yamlPath(second, name); node != nil && len(node.Content) != 0 {
+				if node := testV8Path(second, name); node != nil && reflect.ValueOf(node).Len() != 0 {
 					t.Fatalf("empty %s inherited group value", name)
 				}
 			}
@@ -211,26 +174,16 @@ func TestV8KeyInheritance(t *testing.T) {
 }
 
 func TestV8MigrationPreservesLegacySemantics(t *testing.T) {
-	raw := []byte(`host: 127.0.0.1
-port: 8317
-api-keys: [client]
-request-retry: 0
-ws-auth: false
-quota-exceeded: {switch-project: true, switch-preview-model: true, antigravity-credits: true}
-codex-api-key:
-  - api-key: a
-    base-url: https://example.invalid
-    headers: {X-Test: first}
-    request-retry: 0
-    disable-cooling: false
-  - api-key: b
-    base-url: https://example.invalid
-    headers: {X-Test: second}
-    request-retry: -1
-openai-compatibility:
-  - name: compatible
-    base-url: https://example.invalid
-    api-key-entries: [{api-key: a, weight: 0}, {api-key: b, proxy-url: direct}]
+	raw := []byte(`host = "127.0.0.1"
+port = 8317
+api-keys = ["client"]
+request-retry = 0
+ws-auth = false
+quota-exceeded.switch-project = true
+quota-exceeded.switch-preview-model = true
+quota-exceeded.antigravity-credits = true
+codex-api-key = [{ "api-key" = "a", "base-url" = "https://example.invalid", "headers" = { "X-Test" = "first" }, "request-retry" = 0, "disable-cooling" = false }, { "api-key" = "b", "base-url" = "https://example.invalid", "headers" = { "X-Test" = "second" }, "request-retry" = -1 }]
+openai-compatibility = [{ "name" = "compatible", "base-url" = "https://example.invalid", "api-key-entries" = [{ "api-key" = "a", "weight" = 0 }, { "api-key" = "b", "proxy-url" = "direct" }] }]
 `)
 	before, err := ParseConfigBytes(raw)
 	if err != nil {
@@ -252,10 +205,9 @@ openai-compatibility:
 	if !reflect.DeepEqual(before, after) {
 		t.Fatal("migration changed effective config")
 	}
-	var doc yaml.Node
-	_ = yaml.Unmarshal(migrated, &doc)
-	groups := yamlPath(doc.Content[0], "api-keys.codex")
-	if len(groups.Content) != 2 {
+	doc := testV8Document(t, migrated)
+	groups, _ := testV8Path(doc, "api-keys.codex").([]any)
+	if len(groups) != 2 {
 		t.Fatal("different shared settings were combined")
 	}
 	if !after.QuotaExceeded.SwitchProject || !after.QuotaExceeded.SwitchPreviewModel {
@@ -264,13 +216,11 @@ openai-compatibility:
 }
 
 func TestV8MigrationCommentsUnknownLegacySections(t *testing.T) {
-	raw := []byte(`home:
-  enabled: true
-  host: ignored.example
-enable-gemini-cli-endpoint: true
-forgotten-setting:
-  items: [first, second]
-proxy-url: old
+	raw := []byte(`home.enabled = true
+home.host = "ignored.example"
+enable-gemini-cli-endpoint = true
+forgotten-setting.items = ["first", "second"]
+proxy-url = "old"
 `)
 	unchanged, changed, err := NormalizeConfigLayout(raw, false)
 	if err != nil || changed || string(unchanged) != string(raw) {
@@ -280,16 +230,16 @@ proxy-url: old
 	if err != nil || !changed {
 		t.Fatalf("migrate legacy file: changed=%v error=%v", changed, err)
 	}
-	var doc yaml.Node
-	if err = yaml.Unmarshal(migrated, &doc); err != nil {
+	doc, err := ParseConfigDocument(migrated)
+	if err != nil {
 		t.Fatal(err)
 	}
 	for _, key := range []string{"home", "enable-gemini-cli-endpoint", "forgotten-setting", "proxy-url"} {
-		if yamlPath(doc.Content[0], key) != nil {
+		if testV8Path(doc, key) != nil {
 			t.Fatalf("legacy section %s remained active after migration", key)
 		}
 	}
-	for _, text := range []string{"# home:", "#     enabled: true", "#     host: ignored.example", "# enable-gemini-cli-endpoint: true", "# forgotten-setting:", "#     items: [first, second]"} {
+	for _, text := range []string{"# home =", "enabled", "ignored.example", "# enable-gemini-cli-endpoint = true", "# forgotten-setting =", "first"} {
 		if !strings.Contains(string(migrated), text) {
 			t.Fatalf("unknown legacy section was not preserved as a comment: %s\n%s", text, migrated)
 		}
@@ -302,19 +252,17 @@ proxy-url: old
 		t.Fatalf("migration changed effective settings: cfg=%+v error=%v", cfg, err)
 	}
 	remigrated, _, err := NormalizeConfigLayout(migrated, true)
-	if err != nil || strings.Count(string(remigrated), "# home:") != 1 || strings.Count(string(remigrated), "# forgotten-setting:") != 1 {
+	if err != nil || strings.Count(string(remigrated), "# home =") != 1 || strings.Count(string(remigrated), "# forgotten-setting =") != 1 {
 		t.Fatalf("repeated migration lost or duplicated comments: %v\n%s", err, remigrated)
 	}
 }
 
 func TestV8MigrationCommentsUnknownNestedFields(t *testing.T) {
-	raw := []byte(`server: {port: 8317}
-routing: {strategy: fill-first, session-affinity: true}
-oauth:
-  providers:
-    codex:
-      disable-codex-cloaking: true
-      retired-setting: {mode: old}
+	raw := []byte(`server.port = 8317
+routing.strategy = "fill-first"
+routing.session-affinity = true
+oauth.providers.codex.disable-codex-cloaking = true
+oauth.providers.codex.retired-setting.mode = "old"
 `)
 	unchanged, changed, err := NormalizeConfigLayout(raw, false)
 	if err != nil || changed || string(unchanged) != string(raw) {
@@ -327,11 +275,11 @@ oauth:
 	if err = ValidateV8Config(migrated); err != nil {
 		t.Fatalf("migrated config is invalid: %v\n%s", err, migrated)
 	}
-	var doc yaml.Node
-	if err = yaml.Unmarshal(migrated, &doc); err != nil {
+	doc, err := ParseConfigDocument(migrated)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if yamlPath(doc.Content[0], "oauth.providers.codex.retired-setting") != nil || !strings.Contains(string(migrated), "# oauth.providers.codex.retired-setting:") {
+	if testV8Path(doc, "oauth.providers.codex.retired-setting") != nil || !strings.Contains(string(migrated), "# oauth.providers.codex.retired-setting =") {
 		t.Fatalf("unknown nested field was not preserved as a comment: %s", migrated)
 	}
 	cfg, err := ParseConfigBytes(migrated)
@@ -339,7 +287,7 @@ oauth:
 		t.Fatalf("migration changed known settings: cfg=%+v error=%v", cfg, err)
 	}
 	remigrated, _, err := NormalizeConfigLayout(migrated, true)
-	if err != nil || strings.Count(string(remigrated), "# oauth.providers.codex.retired-setting:") != 1 {
+	if err != nil || strings.Count(string(remigrated), "# oauth.providers.codex.retired-setting =") != 1 {
 		t.Fatalf("repeated migration lost or duplicated the comment: %v\n%s", err, remigrated)
 	}
 }
@@ -357,19 +305,17 @@ func TestV8MigrationCommentsUnknownLegacySectionsWarnsConsole(t *testing.T) {
 		logger.SetOutput(previousOut)
 	})
 
-	raw := []byte(`host: "127.0.0.1"
-port: 8317
-some-obsolete-legacy-block:
-  alpha: 1
-  beta: two
-another-legacy-key:
-  gamma: 3
+	raw := []byte(`host = "127.0.0.1"
+port = 8317
+some-obsolete-legacy-block.alpha = 1
+some-obsolete-legacy-block.beta = "two"
+another-legacy-key.gamma = 3
 `)
 	migrated, changed, errMigrate := NormalizeConfigLayout(raw, true)
 	if errMigrate != nil || !changed {
 		t.Fatalf("NormalizeConfigLayout() error = %v, changed = %v", errMigrate, changed)
 	}
-	if !strings.Contains(string(migrated), "# some-obsolete-legacy-block:") || !strings.Contains(string(migrated), "# another-legacy-key:") {
+	if !strings.Contains(string(migrated), "# some-obsolete-legacy-block =") || !strings.Contains(string(migrated), "# another-legacy-key =") {
 		t.Fatalf("expected unknown sections to be commented out, got: %s", string(migrated))
 	}
 
@@ -432,9 +378,9 @@ another-legacy-key:
 	// Known-only config produces no warnings
 	hook.Reset()
 	hookBuf.Reset()
-	knownRaw := []byte(`host: "127.0.0.1"
-port: 8317
-debug: true
+	knownRaw := []byte(`host = "127.0.0.1"
+port = 8317
+debug = true
 `)
 	_, _, errKnown := NormalizeConfigLayout(knownRaw, true)
 	if errKnown != nil {
@@ -446,10 +392,9 @@ debug: true
 }
 
 func TestV8MigrationConcurrentOutputSwitch(t *testing.T) {
-	raw := []byte(`host: "127.0.0.1"
-port: 8317
-some-concurrent-legacy-block:
-  data: true
+	raw := []byte(`host = "127.0.0.1"
+port = 8317
+some-concurrent-legacy-block.data = true
 `)
 	var warnMu sync.Mutex
 	var buf bytes.Buffer
@@ -480,14 +425,14 @@ some-concurrent-legacy-block:
 }
 
 func TestV8SaveCommentsObsoleteSections(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := `auth: {old: true}
-ampcode: {old: true}
-amp-upstream-url: https://old.example
-amp-upstream-api-key: old-secret
-generative-language-api-key: old-key
-home: {enabled: true}
-proxy-url: old
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := `auth.old = true
+ampcode.old = true
+amp-upstream-url = "https://old.example"
+amp-upstream-api-key = "old-secret"
+generative-language-api-key = "old-key"
+home.enabled = true
+proxy-url = "old"
 `
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
@@ -507,11 +452,11 @@ proxy-url: old
 		t.Fatalf("saved migration is invalid: %v", err)
 	}
 	for _, key := range []string{"auth", "ampcode", "amp-upstream-url", "amp-upstream-api-key", "generative-language-api-key", "home"} {
-		if !strings.Contains(string(saved), "# "+key+":") {
+		if !strings.Contains(string(saved), "# "+key+" =") {
 			t.Errorf("obsolete setting %s was discarded rather than commented", key)
 		}
 	}
-	if !strings.Contains(string(saved), "# amp-upstream-api-key: old-secret") {
+	if !strings.Contains(string(saved), "old-secret") {
 		t.Fatal("obsolete setting lost its value")
 	}
 }
@@ -529,70 +474,57 @@ func TestV8MigrationPreservesEmptyLegacyContainers(t *testing.T) {
 		{"antigravity", "oauth.providers.antigravity"}, {"antigravity.connection-pool", "oauth.providers.antigravity.connection-pool"},
 		{"xai", "upstream.xai"},
 	} {
-		for _, empty := range []string{"{}", "null"} {
-			t.Run(section.old+"/"+empty, func(t *testing.T) {
-				var doc, value yaml.Node
-				if err := yaml.Unmarshal([]byte("port: 8317\nplugins: {configs: {sample: {enabled: false, options: {}}}}\n"), &doc); err != nil {
-					t.Fatal(err)
-				}
-				if err := yaml.Unmarshal([]byte(empty), &value); err != nil {
-					t.Fatal(err)
-				}
-				value.Content[0].LineComment = "Keep this empty block comment"
-				setYAMLPath(doc.Content[0], section.old, value.Content[0])
-				raw, err := yaml.Marshal(&doc)
-				if err != nil {
-					t.Fatal(err)
-				}
-				before, err := ParseConfigBytes(raw)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if unchanged, changed, errNormalize := NormalizeConfigLayout(raw, false); errNormalize != nil || changed || string(unchanged) != string(raw) {
-					t.Fatalf("legacy-only load changed the file: %v", errNormalize)
-				}
-				migrated, _, err := NormalizeConfigLayout(raw, true)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if err = ValidateV8Config(migrated); err != nil {
-					t.Fatalf("migration left an invalid block: %v", err)
-				}
-				after, err := ParseConfigBytes(migrated)
-				if err != nil {
-					t.Fatal(err)
-				}
-				var beforeNode, afterNode yaml.Node
-				if err = beforeNode.Encode((*legacyConfig)(before)); err != nil {
-					t.Fatal(err)
-				}
-				if err = afterNode.Encode((*legacyConfig)(after)); err != nil {
-					t.Fatal(err)
-				}
-				if !nodesStructurallyEqual(&beforeNode, &afterNode) {
-					t.Fatal("migration changed effective defaults or plugin options")
-				}
-				if err = yaml.Unmarshal(migrated, &doc); err != nil {
-					t.Fatal(err)
-				}
-				moved := yamlPath(doc.Content[0], section.current)
-				if yamlPath(doc.Content[0], section.old) != nil || moved == nil || moved.Kind != yaml.MappingNode || len(moved.Content) != 0 {
-					t.Fatal("empty legacy container was not moved to its v8 path")
-				}
-				if !strings.Contains(string(migrated), "Keep this empty block comment") {
-					t.Fatal("migration dropped the empty block comment")
-				}
-			})
-		}
+		t.Run(section.old, func(t *testing.T) {
+			root := map[string]any{"port": int64(8317), "plugins": map[string]any{"configs": map[string]any{"sample": map[string]any{"enabled": false, "options": map[string]any{}}}}}
+			setMapPath(root, section.old, map[string]any{})
+			raw, err := RenderConfigDocument(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			raw = append([]byte("# Keep this empty block comment\n"), raw...)
+			before, err := ParseConfigBytes(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if unchanged, changed, errNormalize := NormalizeConfigLayout(raw, false); errNormalize != nil || changed || !bytes.Equal(unchanged, raw) {
+				t.Fatalf("legacy-only load changed the file: %v", errNormalize)
+			}
+			migrated, _, err := NormalizeConfigLayout(raw, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err = ValidateV8Config(migrated); err != nil {
+				t.Fatal(err)
+			}
+			after, err := ParseConfigBytes(migrated)
+			if err != nil {
+				t.Fatal(err)
+			}
+			before.OAuthOnlyFields, after.OAuthOnlyFields = nil, nil
+			if !reflect.DeepEqual(before, after) {
+				t.Fatal("migration changed effective defaults or plugin options")
+			}
+			doc := testV8Document(t, migrated)
+			moved, ok := testV8Path(doc, section.current).(map[string]any)
+			if testV8Path(doc, section.old) != nil || !ok || len(moved) != 0 {
+				t.Fatal("empty legacy container was not moved to its v8 path")
+			}
+			if !bytes.Contains(migrated, []byte("Keep this empty block comment")) {
+				t.Fatal("migration dropped the empty block comment")
+			}
+		})
 	}
 }
 
 func TestV8EmptyLegacyContainersKeepNewValues(t *testing.T) {
-	raw := []byte(`port: 8317
-tls: null
-codex: {disable-codex-cloaking: true, live-media-relay: {}}
-server: {tls: {enable: true, cert: server.crt, key: server.key}}
-oauth: {providers: {codex: {live-media-relay: {max-sessions: 12}}}}
+	raw := []byte(`port = 8317
+tls = {}
+codex.disable-codex-cloaking = true
+codex.live-media-relay = {  }
+server.tls.enable = true
+server.tls.cert = "server.crt"
+server.tls.key = "server.key"
+oauth.providers.codex.live-media-relay.max-sessions = 12
 `)
 	for _, migrate := range []bool{false, true} {
 		data, _, err := NormalizeConfigLayout(raw, migrate)
@@ -606,14 +538,14 @@ oauth: {providers: {codex: {live-media-relay: {max-sessions: 12}}}}
 		if !cfg.TLS.Enable || cfg.TLS.Cert != "server.crt" || cfg.TLS.Key != "server.key" || cfg.Codex.LiveMediaRelay.MaxSessions != 12 || !cfg.Codex.DisableCodexCloaking {
 			t.Fatal("empty legacy block overwrote new values or a non-empty sibling")
 		}
-		var doc yaml.Node
-		if err = yaml.Unmarshal(data, &doc); err != nil {
+		doc, err := ParseConfigDocument(data)
+		if err != nil {
 			t.Fatal(err)
 		}
-		if yamlPath(doc.Content[0], "tls") != nil || yamlPath(doc.Content[0], "codex.live-media-relay") != nil {
+		if testV8Path(doc, "tls") != nil || testV8Path(doc, "codex.live-media-relay") != nil {
 			t.Fatal("conflicting empty legacy blocks were not removed")
 		}
-		if !migrate && yamlPath(doc.Content[0], "codex.disable-codex-cloaking") == nil {
+		if !migrate && testV8Path(doc, "codex.disable-codex-cloaking") == nil {
 			t.Fatal("conflict cleanup migrated a non-conflicting legacy sibling")
 		}
 	}
@@ -624,9 +556,9 @@ func TestV8PrivateIPAliasPrecedenceAndMigration(t *testing.T) {
 		name, raw string
 		want      bool
 	}{
-		{"allow", "codex: {live-media-relay: {allow-private-remote-ips: true}}\n", false},
-		{"deny", "codex: {live-media-relay: {allow-private-remote-ips: false}}\n", true},
-		{"new wins", "codex: {live-media-relay: {allow-private-remote-ips: false}}\noauth: {providers: {codex: {live-media-relay: {disable-private-remote-ips: false}}}}\n", false},
+		{"allow", "codex.live-media-relay.allow-private-remote-ips = true\n", false},
+		{"deny", "codex.live-media-relay.allow-private-remote-ips = false\n", true},
+		{"new wins", "codex.live-media-relay.allow-private-remote-ips = false\noauth.providers.codex.live-media-relay.disable-private-remote-ips = false\n", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := ParseConfigBytes([]byte(tc.raw))
@@ -636,7 +568,7 @@ func TestV8PrivateIPAliasPrecedenceAndMigration(t *testing.T) {
 			if cfg.Codex.LiveMediaRelay.DisablePrivateRemoteIPs != tc.want {
 				t.Fatal("wrong private-IP policy")
 			}
-			path := filepath.Join(t.TempDir(), "config.yaml")
+			path := filepath.Join(t.TempDir(), "config.toml")
 			if err = os.WriteFile(path, []byte(tc.raw), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -659,8 +591,8 @@ func TestV8PrivateIPAliasPrecedenceAndMigration(t *testing.T) {
 }
 
 func TestV8SaveLegacyAdapterAndManualFallback(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "config-version: 8\nrouting: {retry: {request-retry: 1}}\noauth: {providers: {aistudio: {ws-auth: true}}}\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := "config-version = 8\nrouting.retry.request-retry = 1\noauth.providers.aistudio.ws-auth = true\n"
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -679,7 +611,7 @@ func TestV8SaveLegacyAdapterAndManualFallback(t *testing.T) {
 	if reloaded.RequestRetry != 0 || reloaded.WebsocketAuth {
 		t.Fatal("legacy API write was shadowed by stale v8 values")
 	}
-	if err = os.WriteFile(path, []byte("config-version: 8\nrequest-retry: 5\nws-auth: true\n"), 0600); err != nil {
+	if err = os.WriteFile(path, []byte("config-version = 8\nrequest-retry = 5\nws-auth = true\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	reloaded, err = LoadConfig(path)
@@ -693,10 +625,10 @@ func TestV8SaveLegacyAdapterAndManualFallback(t *testing.T) {
 
 func TestV8RejectsInvalidGroups(t *testing.T) {
 	for _, raw := range []string{
-		"api-keys: {codex: [{name: a, keys: [{api-key: a, weight: 1.5}]}]}",
-		"api-keys: {codex: [{name: a, keys: [{api-key: a, base-url: https://invalid}]}]}",
-		"api-keys: {codex: [{name: a, keys: {api-key: a}}]}",
-		"server: true", "config-version: 9", "server: {port: bad}",
+		"api-keys.codex = [{ \"name\" = \"a\", \"keys\" = [{ \"api-key\" = \"a\", \"weight\" = 1.5 }] }]\n",
+		"api-keys.codex = [{ \"name\" = \"a\", \"keys\" = [{ \"api-key\" = \"a\", \"base-url\" = \"https://invalid\" }] }]\n",
+		"api-keys.codex = [{ \"name\" = \"a\", \"keys\" = { \"api-key\" = \"a\" } }]\n",
+		"server = true\n", "config-version = 9\n", "server.port = \"bad\"\n",
 	} {
 		t.Run(raw, func(t *testing.T) {
 			if _, err := ParseConfigBytes([]byte(raw)); err == nil {
@@ -708,10 +640,9 @@ func TestV8RejectsInvalidGroups(t *testing.T) {
 
 func TestV8ValidationRejectsLegacyWriteLayout(t *testing.T) {
 	for _, raw := range []string{
-		"debug: true", "server: {port: 8317}\nport: 8318", "api-keys: [client]",
-		"codex-api-key: []", "codex: {}", "quota-exceeded: {antigravity-credits: true}",
-		"home: {enabled: true}", "enable-gemini-cli-endpoint: true", "unknown-root: true",
-		"<<: {debug: true}",
+		"debug = true\n", "server.port = 8317\nport = 8318\n", "api-keys = [\"client\"]\n",
+		"codex-api-key = []\n", "codex = {  }\n", "quota-exceeded.antigravity-credits = true\n",
+		"home.enabled = true\n", "enable-gemini-cli-endpoint = true\n", "unknown-root = true\n",
 	} {
 		t.Run(raw, func(t *testing.T) {
 			if _, err := ParseConfigBytes([]byte(raw)); err != nil {
@@ -725,8 +656,8 @@ func TestV8ValidationRejectsLegacyWriteLayout(t *testing.T) {
 }
 
 func TestV8SecretHashUsesNewPath(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	if err := os.WriteFile(path, []byte("management: {secret-key: test-secret}\n"), 0600); err != nil {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("management.secret-key = \"test-secret\"\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := LoadConfig(path)
@@ -740,8 +671,8 @@ func TestV8SecretHashUsesNewPath(t *testing.T) {
 }
 
 func TestV8LegacyClientKeysDoNotOverwriteUpstreamGroups(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	if err := os.WriteFile(path, []byte("api-keys: {codex: [{name: upstream, base-url: 'https://example.invalid', keys: [{api-key: upstream-key}]}]}\n"), 0600); err != nil {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("api-keys.codex = [{ \"name\" = \"upstream\", \"base-url\" = \"https://example.invalid\", \"keys\" = [{ \"api-key\" = \"upstream-key\" }] }]\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := LoadConfig(path)
@@ -783,15 +714,15 @@ api-keys:
       name: second
       keys: [{api-key: two, request-retry: 0}]
 `)
-	before, err := ParseConfigBytes(raw)
+	before, err := DecodeConfig(raw, ConfigFormatYAML)
 	if err != nil {
 		t.Fatal(err)
 	}
-	migrated, _, err := NormalizeConfigLayout(raw, true)
+	migrated, err := YAMLToTOML(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	after, err := ParseConfigBytes(migrated)
+	after, err := DecodeConfig(migrated, ConfigFormatTOML)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -805,10 +736,10 @@ api-keys:
 
 func TestV8LegacyAddsExplicitZeroRetryOverride(t *testing.T) {
 	for _, raw := range []string{
-		"request-retry: 3\napi-keys: {codex: [{name: upstream, base-url: 'https://example.invalid', keys: [{api-key: upstream-key}]}]}\n",
-		"request-retry: 3\ncodex-api-key: [{base-url: 'https://example.invalid', api-key: upstream-key}]\n",
+		"request-retry = 3\napi-keys.codex = [{ \"name\" = \"upstream\", \"base-url\" = \"https://example.invalid\", \"keys\" = [{ \"api-key\" = \"upstream-key\" }] }]\n",
+		"request-retry = 3\ncodex-api-key = [{ \"base-url\" = \"https://example.invalid\", \"api-key\" = \"upstream-key\" }]\n",
 	} {
-		path := filepath.Join(t.TempDir(), "config.yaml")
+		path := filepath.Join(t.TempDir(), "config.toml")
 		if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -839,7 +770,7 @@ func TestV8LegacyNullRouting(t *testing.T) {
 		"server: {port: 8317}\nrouting: null\n",
 	} {
 		t.Run(strings.TrimSpace(raw), func(t *testing.T) {
-			cfg, err := ParseConfigBytes([]byte(raw))
+			cfg, err := DecodeConfig([]byte(raw), ConfigFormatYAML)
 			if err != nil {
 				t.Fatalf("parse legacy null routing: %v", err)
 			}
@@ -858,7 +789,7 @@ func TestV8LegacyNullRouting(t *testing.T) {
 			if err != nil || string(data) != raw {
 				t.Fatalf("loading legacy null routing rewrote the file: %v", err)
 			}
-			if err = SaveConfigPreserveComments(path, loaded, true); err != nil {
+			if err = SaveConfigPreserveComments(filepath.Join(filepath.Dir(path), "config.toml"), loaded, true); err != nil {
 				t.Fatalf("migrate null routing: %v", err)
 			}
 			reloaded, err := LoadConfig(path)
@@ -868,7 +799,7 @@ func TestV8LegacyNullRouting(t *testing.T) {
 		})
 	}
 	for _, raw := range []string{"routing: false", "routing: []", "routing: {retry: false}", "server: null"} {
-		if _, err := ParseConfigBytes([]byte(raw)); err == nil {
+		if _, err := DecodeConfig([]byte(raw), ConfigFormatYAML); err == nil {
 			t.Errorf("accepted invalid container: %s", raw)
 		}
 	}
@@ -903,32 +834,44 @@ func TestV8SecretHashResolvesReferences(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var doc yaml.Node
-			if err = yaml.Unmarshal(saved, &doc); err != nil {
+			saved, err = os.ReadFile(filepath.Join(filepath.Dir(path), "config.toml"))
+			if err != nil {
 				t.Fatal(err)
 			}
-			effective := expandConfigAliases(doc.Content[0])
-			stored := yamlPath(effective, tc.path+".secret-key")
-			if stored == nil || stored.Value != cfg.RemoteManagement.SecretKey || !looksLikeBcrypt(stored.Value) {
+			effective := testV8Document(t, saved)
+			stored, _ := testV8Path(effective, tc.path+".secret-key").(string)
+			if stored != cfg.RemoteManagement.SecretKey || !looksLikeBcrypt(stored) {
 				t.Fatal("effective management secret was not hashed at the correct path")
 			}
 			if cfg.RemoteManagement.AllowRemote != tc.allowRemote || cfg.Port != 8317 || !strings.Contains(string(saved), "# Keep this comment") {
 				t.Fatal("hashing changed unrelated settings or comments")
 			}
-			if other := yamlPath(effective, "other.secret-key"); other != nil && other.Value != secret {
-				t.Fatal("hashing mutated another use of the shared anchor")
-			}
-			if tc.path == "management" && yamlPath(effective, "remote-management.secret-key") != nil {
-				t.Fatal("hashing left a conflicting legacy secret")
+			unchanged, err := os.ReadFile(path)
+			if err != nil || string(unchanged) != raw {
+				t.Fatal("legacy import mutated the YAML source")
 			}
 			reloaded, err := LoadConfig(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			second, err := os.ReadFile(path)
+			second, err := os.ReadFile(filepath.Join(filepath.Dir(path), "config.toml"))
 			if err != nil || string(second) != string(saved) || reloaded.RemoteManagement.SecretKey != cfg.RemoteManagement.SecretKey || reloaded.RemoteManagement.AllowRemote != tc.allowRemote {
 				t.Fatalf("second load changed the persisted hash or settings: %v", err)
 			}
 		})
 	}
+}
+
+func testV8Document(t *testing.T, data []byte) map[string]any {
+	t.Helper()
+	root, err := ParseConfigDocument(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+func testV8Path(root map[string]any, path string) any {
+	value, _ := mapPath(root, path)
+	return value
 }

@@ -32,27 +32,33 @@
 
 `codex-service-tier` 声明请求规整能力。当 `fast` 为 `true` 时，如果 `req.ToFormat` 为 `codex` 且 `req.Model` 为 `gpt-5.5`，它会将 `service_tier` 设置为 `priority`。
 
-```yaml
-plugins:
-  configs:
-    codex-service-tier:
-      enabled: true
-      priority: 1
-      fast: false
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.codex-service-tier]
+enabled = true
+priority = 1
+fast = false
 ```
 
 ## 请求生命周期
 
 `request-lifecycle` 同时声明 `request_interceptor` 和 `request_lifecycle_plugin`。它会在认证选择前占用并发槽位，可以直接返回自定义 `403` 或 `429` 响应而不请求上游模型，并在成功、失败、拒绝或取消时通过 `request.complete` 释放已接入请求的槽位。
 
-```yaml
-plugins:
-  configs:
-    request-lifecycle:
-      enabled: true
-      priority: 100
-      max_concurrency: 2
-      reject_keyword: "blocked"
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.request-lifecycle]
+enabled = true
+priority = 100
+max_concurrency = 2
+reject_keyword = "blocked"
 ```
 
 构建方式和生命周期语义详见 `request-lifecycle/README.md`。
@@ -61,12 +67,15 @@ plugins:
 
 `host-callback-auth-files` 声明 Management API 能力，并暴露名为 `Host Auth Files` 的浏览器资源，演示 `host.auth.list`、`host.auth.get`（物理 JSON 文件）、`host.auth.get_runtime` 与 `host.auth.save`。
 
-```yaml
-plugins:
-  configs:
-    host-callback-auth-files:
-      enabled: true
-      priority: 1
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.host-callback-auth-files]
+enabled = true
+priority = 1
 ```
 
 详见 `host-callback-auth-files/README.md`。
@@ -77,12 +86,15 @@ plugins:
 
 当该资源转发自身收到的 `host_callback_id` 时，CPA 会识别发起宿主模型回调的插件，并在嵌套模型执行中跳过同一个插件的拦截器。因此宿主模型回调不会递归调用发起插件自身，但其他已启用插件仍可拦截这次嵌套请求。
 
-```yaml
-plugins:
-  configs:
-    host-model-callback:
-      enabled: true
-      priority: 1
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.host-model-callback]
+enabled = true
+priority = 1
 ```
 
 默认示例模型是 `gpt-5.5`，但请求能否成功取决于当前 CPA 模型和认证配置是否可以路由该模型。
@@ -91,15 +103,18 @@ plugins:
 
 `scheduler` 声明调度能力。它可以从候选列表中选择配置的 auth ID，委托内置的 `fill-first` 或 `round-robin` 调度器，或在 `deny` 为 `true` 时拒绝调度。
 
-```yaml
-plugins:
-  configs:
-    scheduler:
-      enabled: true
-      priority: 1
-      auth_id: ""
-      delegate: ""
-      deny: false
+```toml
+
+[plugins]
+
+[plugins.configs]
+
+[plugins.configs.scheduler]
+enabled = true
+priority = 1
+auth_id = ""
+delegate = ""
+deny = false
 ```
 
 `auth_id` 会在 `delegate` 为空时选择匹配候选。`delegate` 支持 `""`、`fill-first` 和 `round-robin`；其他非空值会让本插件不处理本次调度。`deny` 会返回调度错误。

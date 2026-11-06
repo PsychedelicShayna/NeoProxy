@@ -149,21 +149,26 @@ Plugin IDs must match:
 
 Dynamic plugins are disabled by default.
 
-```yaml
-plugins:
-  enabled: true
-  dir: "plugins"
-  configs:
-    simple-go:
-      enabled: true
-      priority: 1
-      config1: true
-      config2: "string"
-      config3: 3
-      mode: "safe"
+```toml
+
+[plugins]
+enabled = true
+dir = "plugins"
+
+[plugins.configs]
+
+[plugins.configs.simple-go]
+enabled = true
+priority = 1
+config1 = true
+config2 = "string"
+config3 = 3
+mode = "safe"
 ```
 
-`plugins.configs.<pluginID>` is passed to `plugin.register` or `plugin.reconfigure` as normalized YAML bytes inside the JSON request.
+`plugins.configs.<pluginID>` is passed to `plugin.register` or `plugin.reconfigure` as normalized TOML bytes in the JSON request's `config_toml` field (base64-encoded by JSON). Plugin implementations must decode these bytes as TOML; arbitrary plugin-specific fields and nested tables are preserved alongside the host's `enabled` and `priority` defaults.
+
+Plugin configuration lives in the main TOML configuration file. When a legacy YAML configuration is selected, the host imports it once into a sibling `.toml` file, writes the TOML atomically with the same permissions, and warns about the migration. An existing sibling TOML file takes precedence. The original YAML file is never modified; subsequent API operations and file watching use the resolved TOML path.
 
 ## Host HTTP Bridge
 

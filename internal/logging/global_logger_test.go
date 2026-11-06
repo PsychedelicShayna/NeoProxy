@@ -160,7 +160,7 @@ func TestConfigureLogOutput_V8MigrationMirror(t *testing.T) {
 	restore := setMigrationConsoleOutputForTest(&consoleBuf)
 	t.Cleanup(restore)
 
-	raw := []byte("some-unknown-section:\n  foo: bar\n")
+	raw := []byte("[some-unknown-section]\nfoo = 'bar'\n")
 	if _, _, err := config.NormalizeConfigLayout(raw, true); err != nil {
 		t.Fatalf("NormalizeConfigLayout() error = %v", err)
 	}
@@ -207,7 +207,7 @@ func TestConfigureLogOutput_ConcurrentMigration(t *testing.T) {
 	restore := setMigrationConsoleOutputForTest(&consoleBuf)
 	t.Cleanup(restore)
 
-	raw := []byte("some-unknown-section:\n  foo: bar\n")
+	raw := []byte("[some-unknown-section]\nfoo = 'bar'\n")
 	var wg sync.WaitGroup
 	var errOnce sync.Once
 	var firstErr error

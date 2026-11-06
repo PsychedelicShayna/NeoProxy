@@ -3,17 +3,7 @@ package config
 import "testing"
 
 func TestParseConfigBytesIgnoresHomeConfig(t *testing.T) {
-	cfg, err := ParseConfigBytes([]byte(`
-home:
-  enabled: true
-  host: home.example.com
-  port: 444
-  disable-cluster-discovery: true
-  tls:
-    enable: true
-    server-name: home.example.com
-    ca-cert: C:/certs/ca.pem
-    insecure-skip-verify: true
+	cfg, err := ParseConfigBytes([]byte(`"home" = {"enabled" = true, "host" = "home.example.com", "port" = 444, "disable-cluster-discovery" = true, "tls" = {"enable" = true, "server-name" = "home.example.com", "ca-cert" = "C:/certs/ca.pem", "insecure-skip-verify" = true}}
 `))
 	if err != nil {
 		t.Fatalf("ParseConfigBytes() error = %v", err)

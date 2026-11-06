@@ -71,7 +71,7 @@ func (m *managementTokenRequester) PostOAuthCallback(c *gin.Context) {
 	m.handler.PostOAuthCallback(c)
 }
 
-// WriteConfig persists management configuration to disk.
+// WriteConfig persists a native TOML management document to its canonical TOML path.
 func WriteConfig(path string, data []byte) error {
 	return internalmanagement.WriteConfig(path, data)
 }

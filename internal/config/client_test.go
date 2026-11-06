@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 func TestClientCodexEnableApplyPatch(t *testing.T) {
@@ -16,9 +15,9 @@ func TestClientCodexEnableApplyPatch(t *testing.T) {
 		raw  string
 		want bool
 	}{
-		{"omitted", "config-version: 8\n", false},
-		{"disabled", "client: {codex: {enable-apply-patch: false}}\n", false},
-		{"enabled", "client: {codex: {enable-apply-patch: true}}\n", true},
+		{"omitted", "config-version = 8\n", false},
+		{"disabled", "client.codex.enable-apply-patch = false\n", false},
+		{"enabled", "client.codex.enable-apply-patch = true\n", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if errValidate := ValidateV8Config([]byte(tc.raw)); errValidate != nil {
@@ -35,7 +34,7 @@ func TestClientCodexEnableApplyPatch(t *testing.T) {
 				t.Fatal("client setting must not be OAuth-only")
 			}
 			var sdkCfg SDKConfig
-			if errUnmarshal := yaml.Unmarshal([]byte(tc.raw), &sdkCfg); errUnmarshal != nil {
+			if errUnmarshal := decodeNativeValue(reflect.ValueOf(&sdkCfg).Elem(), testV8Document(t, []byte(tc.raw)), "", false); errUnmarshal != nil {
 				t.Fatalf("decode SDK config: %v", errUnmarshal)
 			}
 			if sdkCfg.Client.Codex.EnableApplyPatch != tc.want {
@@ -59,7 +58,7 @@ func TestClientCodexEnableApplyPatch(t *testing.T) {
 			if errValidate := ValidateV8Config(migrated); errValidate != nil {
 				t.Fatalf("validate normalized config: %v", errValidate)
 			}
-			if errUnmarshal := yaml.Unmarshal(migrated, &decoded); errUnmarshal != nil {
+			if errUnmarshal := decodeNativeValue(reflect.ValueOf(&decoded).Elem(), testV8Document(t, migrated), "", false); errUnmarshal != nil {
 				t.Fatalf("decode normalized config: %v", errUnmarshal)
 			}
 			if decoded.Client.Codex.EnableApplyPatch != tc.want {
@@ -68,8 +67,8 @@ func TestClientCodexEnableApplyPatch(t *testing.T) {
 		})
 	}
 	for _, raw := range []string{
-		"client: {codex: {enable-apply-patch: invalid}}\n",
-		"client: {codex: {unknown: true}}\n",
+		"client.codex.enable-apply-patch = \"invalid\"\n",
+		"client.codex.unknown = true\n",
 	} {
 		if errValidate := ValidateV8Config([]byte(raw)); errValidate == nil {
 			t.Fatalf("accepted invalid config %q", raw)
@@ -78,8 +77,8 @@ func TestClientCodexEnableApplyPatch(t *testing.T) {
 }
 
 func TestClientCodexEnableApplyPatchSave(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	if errWrite := os.WriteFile(path, []byte("config-version: 8\n"), 0600); errWrite != nil {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if errWrite := os.WriteFile(path, []byte("config-version = 8\n"), 0600); errWrite != nil {
 		t.Fatalf("write: %v", errWrite)
 	}
 	cfg := &Config{}
@@ -115,35 +114,35 @@ func TestClientCodexWebSearchResultCache(t *testing.T) {
 	}{
 		{
 			name:      "omitted",
-			raw:       "config-version: 8\n",
+			raw:       "config-version = 8\n",
 			want:      CodexWebSearchResultCacheConfig{},
 			wantTTL:   DefaultCodexWebSearchResultCacheTTL,
 			wantLimit: DefaultCodexWebSearchResultCacheLimit,
 		},
 		{
 			name:      "enabled with integer seconds ttl",
-			raw:       "client: {codex: {web-search-result-cache: {enabled: true, ttl: 1800, limit: 64}}}\n",
+			raw:       "client.codex.web-search-result-cache.enabled = true\nclient.codex.web-search-result-cache.ttl = 1800\nclient.codex.web-search-result-cache.limit = 64\n",
 			want:      CodexWebSearchResultCacheConfig{Enabled: true, TTL: "1800", Limit: 64},
 			wantTTL:   30 * time.Minute,
 			wantLimit: 64,
 		},
 		{
 			name:      "enabled with 30m ttl",
-			raw:       "client: {codex: {web-search-result-cache: {enabled: true, ttl: 30m, limit: 128}}}\n",
+			raw:       "client.codex.web-search-result-cache.enabled = true\nclient.codex.web-search-result-cache.ttl = \"30m\"\nclient.codex.web-search-result-cache.limit = 128\n",
 			want:      CodexWebSearchResultCacheConfig{Enabled: true, TTL: "30m", Limit: 128},
 			wantTTL:   30 * time.Minute,
 			wantLimit: 128,
 		},
 		{
 			name:      "disabled with 24h ttl",
-			raw:       "client: {codex: {web-search-result-cache: {enabled: false, ttl: 24h, limit: 1024}}}\n",
+			raw:       "client.codex.web-search-result-cache.enabled = false\nclient.codex.web-search-result-cache.ttl = \"24h\"\nclient.codex.web-search-result-cache.limit = 1024\n",
 			want:      CodexWebSearchResultCacheConfig{Enabled: false, TTL: "24h", Limit: 1024},
 			wantTTL:   24 * time.Hour,
 			wantLimit: 1024,
 		},
 		{
-			name:      "null fields fall back to defaults",
-			raw:       "client: {codex: {web-search-result-cache: {enabled: null, ttl: null, limit: null}}}\n",
+			name:      "empty cache falls back to defaults",
+			raw:       "client.codex.web-search-result-cache = {}\n",
 			want:      CodexWebSearchResultCacheConfig{},
 			wantTTL:   DefaultCodexWebSearchResultCacheTTL,
 			wantLimit: DefaultCodexWebSearchResultCacheLimit,
@@ -168,7 +167,7 @@ func TestClientCodexWebSearchResultCache(t *testing.T) {
 				t.Fatalf("EffectiveLimit() = %d, want %d", got.EffectiveLimit(), tc.wantLimit)
 			}
 			var sdkCfg SDKConfig
-			if errUnmarshal := yaml.Unmarshal([]byte(tc.raw), &sdkCfg); errUnmarshal != nil {
+			if errUnmarshal := decodeNativeValue(reflect.ValueOf(&sdkCfg).Elem(), testV8Document(t, []byte(tc.raw)), "", false); errUnmarshal != nil {
 				t.Fatalf("decode SDK config: %v", errUnmarshal)
 			}
 			if sdkCfg.Client.Codex.WebSearchResultCache != tc.want {
@@ -192,7 +191,7 @@ func TestClientCodexWebSearchResultCache(t *testing.T) {
 			if errValidate := ValidateV8Config(migrated); errValidate != nil {
 				t.Fatalf("validate normalized config: %v", errValidate)
 			}
-			if errUnmarshal := yaml.Unmarshal(migrated, &decoded); errUnmarshal != nil {
+			if errUnmarshal := decodeNativeValue(reflect.ValueOf(&decoded).Elem(), testV8Document(t, migrated), "", false); errUnmarshal != nil {
 				t.Fatalf("decode normalized config: %v", errUnmarshal)
 			}
 			if decoded.Client.Codex.WebSearchResultCache != tc.want {
@@ -210,15 +209,15 @@ func TestClientCodexWebSearchResultCache(t *testing.T) {
 	}
 
 	for _, raw := range []string{
-		"client: {codex: {web-search-result-cache: false}}\n",
-		"client: {codex: {web-search-result-cache: {unknown: true}}}\n",
-		"client: {codex: {web-search-result-cache: {enabled: invalid}}}\n",
-		"client: {codex: {web-search-result-cache: {ttl: invalid}}}\n",
-		"client: {codex: {web-search-result-cache: {ttl: -30m}}}\n",
-		"client: {codex: {web-search-result-cache: {ttl: -10}}}\n",
-		"client: {codex: {web-search-result-cache: {ttl: true}}}\n",
-		"client: {codex: {web-search-result-cache: {limit: -1}}}\n",
-		"client: {codex: {web-search-result-cache: {limit: invalid}}}\n",
+		"client.codex.web-search-result-cache = false\n",
+		"client.codex.web-search-result-cache.unknown = true\n",
+		"client.codex.web-search-result-cache.enabled = \"invalid\"\n",
+		"client.codex.web-search-result-cache.ttl = \"invalid\"\n",
+		"client.codex.web-search-result-cache.ttl = \"-30m\"\n",
+		"client.codex.web-search-result-cache.ttl = -10\n",
+		"client.codex.web-search-result-cache.ttl = true\n",
+		"client.codex.web-search-result-cache.limit = -1\n",
+		"client.codex.web-search-result-cache.limit = \"invalid\"\n",
 	} {
 		if errValidate := ValidateV8Config([]byte(raw)); errValidate == nil {
 			t.Fatalf("accepted invalid config %q", raw)
@@ -230,8 +229,8 @@ func TestClientCodexWebSearchResultCache(t *testing.T) {
 }
 
 func TestClientCodexWebSearchResultCacheSave(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	if errWrite := os.WriteFile(path, []byte("config-version: 8\n"), 0600); errWrite != nil {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if errWrite := os.WriteFile(path, []byte("config-version = 8\n"), 0600); errWrite != nil {
 		t.Fatalf("write: %v", errWrite)
 	}
 	cfg := &Config{}

@@ -12,14 +12,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/router-for-me/CLIProxyAPI/v8/internal/config"
-	"gopkg.in/yaml.v3"
 )
 
 func TestConfigV8MigrationAndLegacyAPI(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "# Keep this configuration\nport: 8317\nrequest-retry: 3\napi-keys: [client]\nws-auth: true\ntls: {}\npayload: null\ncodex: {live-media-relay: {}}\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := "# Keep this configuration\nport = 8317\nrequest-retry = 3\napi-keys = [\"client\"]\nws-auth = true\ntls = {}\ncodex = {live-media-relay = {}}\n"
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func TestConfigV8MigrationAndLegacyAPI(t *testing.T) {
 	router := gin.New()
 	router.GET("/v8/management/config", h.ConfigV8)
 	router.PATCH("/v8/management/config", h.ConfigV8)
-	router.PUT("/v8/management/config.yaml", h.ConfigV8)
+	router.PUT("/v8/management/config.toml", h.ConfigV8)
 	router.PUT("/v8/management/config/*path", h.ConfigV8)
 	router.DELETE("/v8/management/config/*path", h.ConfigV8)
 	router.PUT("/v0/management/request-retry", h.PutRequestRetry)
@@ -57,7 +57,7 @@ func TestConfigV8MigrationAndLegacyAPI(t *testing.T) {
 	}
 	request(http.MethodPut, "/v0/management/request-retry", `{"value":2}`, 200)
 	saved, _ = os.ReadFile(path)
-	if strings.Contains(string(saved), "config-version") || strings.Contains(string(saved), "routing:") {
+	if strings.Contains(string(saved), "config-version") || strings.Contains(string(saved), "[routing") {
 		t.Fatal("v0 migrated a legacy file")
 	}
 	originalFile, err := os.Stat(path)
@@ -73,7 +73,7 @@ func TestConfigV8MigrationAndLegacyAPI(t *testing.T) {
 		t.Fatal("v8 update replaced the mounted configuration inode")
 	}
 	saved, _ = os.ReadFile(path)
-	if !strings.Contains(string(saved), "config-version: 8") || !strings.Contains(string(saved), "# Keep this configuration") {
+	if !strings.Contains(string(saved), "config-version = 8") || !strings.Contains(string(saved), "# Keep this configuration") {
 		t.Fatal("migration or comment preservation failed")
 	}
 	if err = config.ValidateV8Config(saved); err != nil {
@@ -95,7 +95,7 @@ func TestConfigV8MigrationAndLegacyAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = config.ValidateV8Config(saved); err != nil || !strings.Contains(string(saved), "config-version: 8") {
+	if err = config.ValidateV8Config(saved); err != nil || !strings.Contains(string(saved), "config-version = 8") {
 		t.Fatalf("v0 did not preserve the existing v8 layout: %v", err)
 	}
 	request(http.MethodPut, "/v8/management/config/requests/proxy-url", `"direct"`, 200)
@@ -114,8 +114,8 @@ func TestConfigV8MigrationAndLegacyAPI(t *testing.T) {
 
 func TestConfigV8CommentsUnknownLegacySectionsOnWrite(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "home: {enabled: true, host: ignored.example}\nenable-gemini-cli-endpoint: false\nformer-feature: {mode: old}\nserver: {port: 8317}\nproxy-url: \"\"\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := "home = {enabled = true, host = \"ignored.example\"}\nenable-gemini-cli-endpoint = false\nformer-feature = {mode = \"old\"}\nserver = {port = 8317}\nproxy-url = \"\"\n"
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -154,16 +154,16 @@ func TestConfigV8CommentsUnknownLegacySectionsOnWrite(t *testing.T) {
 	if err = config.ValidateV8Config(saved); err != nil {
 		t.Fatalf("saved file contains invalid legacy fields: %v", err)
 	}
-	var doc yaml.Node
-	if err = yaml.Unmarshal(saved, &doc); err != nil {
+	var doc map[string]any
+	if err = toml.Unmarshal(saved, &doc); err != nil {
 		t.Fatal(err)
 	}
 	for _, key := range []string{"home", "enable-gemini-cli-endpoint", "former-feature"} {
-		if configV8Node(doc.Content[0], []string{key}) != nil || !strings.Contains(string(saved), "# "+key+":") {
+		if configV8Node(doc, []string{key}) != nil || !strings.Contains(string(saved), "# "+key) {
 			t.Fatalf("unknown legacy section %s was not commented on disk", key)
 		}
 	}
-	if url := configV8Node(doc.Content[0], []string{"requests", "proxy-url"}); url == nil || url.Value != "direct" {
+	if url := configV8Node(doc, []string{"requests", "proxy-url"}); url != "direct" {
 		t.Fatal("path update did not persist the proxy URL")
 	}
 	if h.cfg.Home.Host != "runtime.example" || !h.cfg.Home.Enabled || h.cfg.ProxyURL != "direct" {
@@ -176,7 +176,7 @@ func TestConfigV8CommentsUnknownLegacySectionsOnWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, key := range []string{"home", "enable-gemini-cli-endpoint", "former-feature"} {
-		if strings.Count(string(saved), "# "+key+":") != 1 {
+		if strings.Count(string(saved), "# "+key) != 1 {
 			t.Fatalf("subsequent write or deletion lost or duplicated %s comments", key)
 		}
 	}
@@ -184,8 +184,8 @@ func TestConfigV8CommentsUnknownLegacySectionsOnWrite(t *testing.T) {
 
 func TestConfigV8CommentsUnknownNestedFieldsOnWrite(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := "server: {port: 8317}\noauth: {providers: {codex: {disable-codex-cloaking: true, retired-setting: false}}}\n"
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := "server = {port = 8317}\noauth = {providers = {codex = {disable-codex-cloaking = true, retired-setting = false}}}\n"
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +219,7 @@ func TestConfigV8CommentsUnknownNestedFieldsOnWrite(t *testing.T) {
 	if err = config.ValidateV8Config(saved); err != nil {
 		t.Fatalf("saved config is invalid: %v\n%s", err, saved)
 	}
-	if strings.Count(string(saved), "# oauth.providers.codex.retired-setting: false") != 1 {
+	if strings.Count(string(saved), "# oauth.providers.codex.retired-setting") != 1 {
 		t.Fatalf("existing unknown field was not preserved as a comment: %s", saved)
 	}
 	loaded, err := config.LoadConfig(path)
@@ -233,7 +233,7 @@ func TestConfigV8CommentsUnknownNestedFieldsOnWrite(t *testing.T) {
 	}
 	request(http.MethodDelete, "/v8/management/config/upstream/codex/disable-codex-cloaking", "", http.StatusOK)
 	saved, err = os.ReadFile(path)
-	if err != nil || strings.Count(string(saved), "# oauth.providers.codex.retired-setting: false") != 1 {
+	if err != nil || strings.Count(string(saved), "# oauth.providers.codex.retired-setting") != 1 {
 		t.Fatalf("deleting the neighboring setting lost the archived comment: %v\n%s", err, saved)
 	}
 }
@@ -249,8 +249,8 @@ func TestV8NestedWriteMigratesOnlyOnSuccess(t *testing.T) {
 		{"legacy envelope", `{"value":0}`, 422, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "config.yaml")
-			if err := os.WriteFile(path, []byte("request-retry: 3\n"), 0600); err != nil {
+			path := filepath.Join(t.TempDir(), "config.toml")
+			if err := os.WriteFile(path, []byte("request-retry = 3\n"), 0600); err != nil {
 				t.Fatal(err)
 			}
 			cfg, err := config.LoadConfig(path)
@@ -266,7 +266,7 @@ func TestV8NestedWriteMigratesOnlyOnSuccess(t *testing.T) {
 				t.Fatalf("status=%d body=%s", recorder.Code, recorder.Body.String())
 			}
 			data, _ := os.ReadFile(path)
-			if strings.Contains(string(data), "config-version: 8") != tc.migrated {
+			if strings.Contains(string(data), "config-version = 8") != tc.migrated {
 				t.Fatal("unexpected migration")
 			}
 		})
@@ -285,8 +285,8 @@ func TestV8MigrationReloadSnapshotMatchesDisk(t *testing.T) {
 		{"v8 config", "/v8/management/config", "/v8/management/config", `{"observability":{"logs":{"debug":true}}}`, func(h *Handler) gin.HandlerFunc { return h.ConfigV8 }, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "config.yaml")
-			if err := os.WriteFile(path, []byte("codex: {disable-codex-cloaking: true}\nxai: {inject-x-search: true}\n"), 0600); err != nil {
+			path := filepath.Join(t.TempDir(), "config.toml")
+			if err := os.WriteFile(path, []byte("codex = {disable-codex-cloaking = true}\nxai = {inject-x-search = true}\n"), 0600); err != nil {
 				t.Fatal(err)
 			}
 			cfg, err := config.LoadConfig(path)
@@ -333,18 +333,8 @@ func TestV8MigrationReloadSnapshotMatchesDisk(t *testing.T) {
 }
 
 func TestV8GroupedCredentialsSurviveLegacyWrites(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := `api-keys:
-  codex:
-    - name: production
-      base-url: https://example.invalid
-      headers: {X-Shared: value}
-      request-retry: 2
-      keys:
-        - api-key: first
-          request-retry: null
-        - api-key: second
-          request-retry: 0
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := `api-keys = {codex = [{name = "production", base-url = "https://example.invalid", headers = {X-Shared = "value"}, request-retry = 2, keys = [{api-key = "first"}, {api-key = "second", request-retry = 0}]}]}
 `
 	if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
@@ -387,16 +377,16 @@ func TestConfigV8DeleteLastField(t *testing.T) {
 		path  string
 		check func(*config.Config) bool
 	}{
-		{"retry", "request-retry: 3\n", "routing/retry/request-retry", func(cfg *config.Config) bool { return cfg.RequestRetry == 0 }},
-		{"websocket", "ws-auth: false\n", "oauth/providers/aistudio/ws-auth", func(cfg *config.Config) bool { return cfg.WebsocketAuth }},
-		{"debug", "debug: true\n", "observability/logs/debug", func(cfg *config.Config) bool { return !cfg.Debug }},
-		{"sibling", "routing: {strategy: fill-first, retry: {request-retry: 3}}\n", "routing/retry/request-retry", func(cfg *config.Config) bool { return cfg.RequestRetry == 0 && cfg.Routing.Strategy == "fill-first" }},
-		{"provider", "oauth: {providers: {codex: {disable-codex-cloaking: true}}}\n", "upstream/codex/disable-codex-cloaking", func(cfg *config.Config) bool { return !cfg.Codex.DisableCodexCloaking }},
-		{"excluded models", "oauth: {excluded-models: {codex: [blocked-model]}}\n", "oauth/excluded-models", func(cfg *config.Config) bool { return len(cfg.OAuthExcludedModels) == 0 }},
+		{"retry", "request-retry = 3\n", "routing/retry/request-retry", func(cfg *config.Config) bool { return cfg.RequestRetry == 0 }},
+		{"websocket", "ws-auth = false\n", "oauth/providers/aistudio/ws-auth", func(cfg *config.Config) bool { return cfg.WebsocketAuth }},
+		{"debug", "debug = true\n", "observability/logs/debug", func(cfg *config.Config) bool { return !cfg.Debug }},
+		{"sibling", "routing = {strategy = \"fill-first\", retry = {request-retry = 3}}\n", "routing/retry/request-retry", func(cfg *config.Config) bool { return cfg.RequestRetry == 0 && cfg.Routing.Strategy == "fill-first" }},
+		{"provider", "oauth = {providers = {codex = {disable-codex-cloaking = true}}}\n", "upstream/codex/disable-codex-cloaking", func(cfg *config.Config) bool { return !cfg.Codex.DisableCodexCloaking }},
+		{"excluded models", "oauth = {excluded-models = {codex = [\"blocked-model\"]}}\n", "oauth/excluded-models", func(cfg *config.Config) bool { return len(cfg.OAuthExcludedModels) == 0 }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			file := filepath.Join(t.TempDir(), "config.yaml")
-			raw := tc.raw + "port: 8317\napi-keys: [client]\nplugins: {configs: {sample: {enabled: false, options: {}}}}\n"
+			file := filepath.Join(t.TempDir(), "config.toml")
+			raw := tc.raw + "port = 8317\napi-keys = [\"client\"]\nplugins = {configs = {sample = {enabled = false, options = {}}}}\n"
 			if err := os.WriteFile(file, []byte(raw), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -428,14 +418,14 @@ func TestConfigV8DeleteLastField(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var doc yaml.Node
-			if err = yaml.Unmarshal(saved, &doc); err != nil {
+			var doc map[string]any
+			if err = toml.Unmarshal(saved, &doc); err != nil {
 				t.Fatal(err)
 			}
-			if configV8Node(doc.Content[0], strings.Split(tc.path, "/")) != nil {
+			if configV8Node(doc, strings.Split(tc.path, "/")) != nil {
 				t.Fatal("save reintroduced the deleted field")
 			}
-			if options := configV8Node(doc.Content[0], []string{"plugins", "configs", "sample", "options"}); options == nil || options.Kind != yaml.MappingNode || len(options.Content) != 0 {
+			if options := configV8Node(doc, []string{"plugins", "configs", "sample", "options"}); options == nil || len(options.(map[string]any)) != 0 {
 				t.Fatal("delete removed an unrelated explicit empty mapping")
 			}
 			for _, method := range []string{http.MethodGet, http.MethodDelete} {
@@ -451,12 +441,12 @@ func TestConfigV8DeleteLastField(t *testing.T) {
 
 func TestConfigV8ReplaceEmptyGroup(t *testing.T) {
 	for _, tc := range []struct{ path, raw string }{
-		{"routing/retry", "routing: {retry: {request-retry: 3}}\n"},
-		{"oauth/providers/aistudio", "oauth: {providers: {aistudio: {ws-auth: false}}}\n"},
-		{"observability/logs", "observability: {logs: {debug: true}}\n"},
+		{"routing/retry", "routing = {retry = {request-retry = 3}}\n"},
+		{"oauth/providers/aistudio", "oauth = {providers = {aistudio = {ws-auth = false}}}\n"},
+		{"observability/logs", "observability = {logs = {debug = true}}\n"},
 	} {
 		t.Run(tc.path, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "config.yaml")
+			path := filepath.Join(t.TempDir(), "config.toml")
 			if err := os.WriteFile(path, []byte(tc.raw), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -489,12 +479,12 @@ func TestConfigV8EmptyExcludedModelsSurvivesSave(t *testing.T) {
 	}{
 		{"unrelated v0 write", "{}", "/v0/management/debug", `{"value":true}`},
 		{"unrelated v8 write", "{}", "/v8/management/config/observability/logs/debug", `true`},
-		{"explicit v8 empty write", "{codex: [blocked-model]}", "/v8/management/config/oauth/excluded-models", `{}`},
-		{"v0 clears migrated rules", "{codex: [blocked-model]}", "/v0/management/oauth-excluded-models", `{}`},
+		{"explicit v8 empty write", "{codex = [\"blocked-model\"]}", "/v8/management/config/oauth/excluded-models", `{}`},
+		{"v0 clears migrated rules", "{codex = [\"blocked-model\"]}", "/v0/management/oauth-excluded-models", `{}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "config.yaml")
-			raw := "port: 8317\noauth:\n  excluded-models: " + tc.rules + "\n"
+			path := filepath.Join(t.TempDir(), "config.toml")
+			raw := "port = 8317\noauth = {excluded-models = " + tc.rules + "}\n"
 			if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -523,7 +513,7 @@ func TestConfigV8EmptyExcludedModelsSurvivesSave(t *testing.T) {
 				t.Fatal(err)
 			}
 			// Later manual legacy edits must remain shadowed by the explicit v8 empty map.
-			saved = append(saved, []byte("\noauth-excluded-models: {codex: [legacy-blocked-model]}\n")...)
+			saved = append([]byte("oauth-excluded-models = {codex = [\"legacy-blocked-model\"]}\n"), saved...)
 			if err = os.WriteFile(path, saved, 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -538,11 +528,11 @@ func TestConfigV8EmptyExcludedModelsSurvivesSave(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var doc yaml.Node
-			if err = yaml.Unmarshal(saved, &doc); err != nil {
+			var doc map[string]any
+			if err = toml.Unmarshal(saved, &doc); err != nil {
 				t.Fatal(err)
 			}
-			if configV8Node(doc.Content[0], []string{"oauth-excluded-models"}) != nil {
+			if configV8Node(doc, []string{"oauth-excluded-models"}) != nil {
 				t.Error("load retained conflicting legacy rules")
 			}
 		})
@@ -550,14 +540,8 @@ func TestConfigV8EmptyExcludedModelsSurvivesSave(t *testing.T) {
 }
 
 func TestConfigV8JSONTURNSecrets(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	raw := []byte(`oauth:
-  providers:
-    codex:
-      live-media-relay:
-        ice-servers:
-          - {urls: ['turn:example.invalid:3478'], username: test-relay-user, credential: test-relay-password}
-          - {urls: ['turn:example.invalid:3478'], username: test-relay-user-2, credential: test-relay-password-2}
+	path := filepath.Join(t.TempDir(), "config.toml")
+	raw := []byte(`oauth = {providers = {codex = {live-media-relay = {ice-servers = [{urls = ["turn:example.invalid:3478"], username = "test-relay-user", credential = "test-relay-password"}, {urls = ["turn:example.invalid:3478"], username = "test-relay-user-2", credential = "test-relay-password-2"}]}}}}
 `)
 	if err := os.WriteFile(path, raw, 0600); err != nil {
 		t.Fatal(err)
@@ -570,7 +554,7 @@ func TestConfigV8JSONTURNSecrets(t *testing.T) {
 	r := gin.New()
 	r.GET("/v8/management/config", h.ConfigV8)
 	r.PUT("/v8/management/config", h.ConfigV8)
-	r.GET("/v8/management/config.yaml", h.ConfigV8)
+	r.GET("/v8/management/config.toml", h.ConfigV8)
 	r.GET("/v8/management/config/*path", h.ConfigV8)
 	r.PUT("/v8/management/config/*path", h.ConfigV8)
 	for _, url := range []string{"/v8/management/config", "/v8/management/config/oauth/providers/codex/live-media-relay/ice-servers"} {
@@ -598,9 +582,9 @@ func TestConfigV8JSONTURNSecrets(t *testing.T) {
 		}
 	}
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v8/management/config.yaml", nil))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/v8/management/config.toml", nil))
 	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "test-relay-password") {
-		t.Fatal("YAML export lost TURN credentials")
+		t.Fatal("TOML export lost TURN credentials")
 	}
 	for _, body := range []string{
 		`[{"urls":["turn:replacement.invalid:3478"]}]`,
@@ -626,21 +610,14 @@ func TestConfigV8JSONTURNSecrets(t *testing.T) {
 
 func TestConfigV8DeletePreservesDocumentPresence(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	file := filepath.Join(t.TempDir(), "config.yaml")
+	file := filepath.Join(t.TempDir(), "config.toml")
 	raw := `# Keep document comment
-config-version: 8
-server: {port: 8317}
-routing:
-  retry:
-    request-retry: 3
-    max-retry-interval: 30
-plugins:
-  configs:
-    sample:
-      enabled: false
-      options: {} # Keep empty mapping
-      custom-null: null # Keep explicit null
-      custom-tree: {unknown: [one, {two: 2}]}
+# Keep empty mapping
+# Keep explicit empty scalar
+config-version = 8
+server = {port = 8317}
+routing = {retry = {request-retry = 3, max-retry-interval = 30}}
+plugins = {configs = {sample = {enabled = false, options = {}, custom-empty = "", custom-tree = {unknown = ["one", {two = 2}]}}}}
 `
 	if err := os.WriteFile(file, []byte(raw), 0600); err != nil {
 		t.Fatal(err)
@@ -664,17 +641,17 @@ plugins:
 			t.Fatalf("%s %s: status=%d body=%s", method, path, w.Code, w.Body.String())
 		}
 	}
-	read := func() ([]byte, *yaml.Node) {
+	read := func() ([]byte, map[string]any) {
 		t.Helper()
 		data, errRead := os.ReadFile(file)
 		if errRead != nil {
 			t.Fatal(errRead)
 		}
-		var doc yaml.Node
-		if errDecode := yaml.Unmarshal(data, &doc); errDecode != nil {
+		var doc map[string]any
+		if errDecode := toml.Unmarshal(data, &doc); errDecode != nil {
 			t.Fatal(errDecode)
 		}
-		return data, doc.Content[0]
+		return data, doc
 	}
 	checkReload := func() {
 		t.Helper()
@@ -700,7 +677,7 @@ plugins:
 	// Simulate a new sibling written on the server after the first deletion.
 	// The next request must use the latest file, not a stale runtime projection.
 	data, _ := read()
-	data = []byte(strings.Replace(string(data), "max-retry-interval: 30", "max-retry-interval: 30\n        max-retry-credentials: 7 # Keep new sibling", 1))
+	data = []byte(strings.Replace(string(data), "max-retry-interval = 30", "max-retry-interval = 30\nmax-retry-credentials = 7 # Keep new sibling", 1))
 	if err = os.WriteFile(file, data, 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -715,41 +692,25 @@ plugins:
 	}
 	request(http.MethodGet, "routing/retry/max-retry-credentials", http.StatusOK, "7")
 	// Apart from the requested removals and the server-side sibling, the whole
-	// document must retain the same presence and values (including null/maps).
-	expected := cloneConfigV8Node(original)
+	// document must retain the same presence and values (including empty scalars/maps).
+	expected := cloneConfigV8Value(original)
 	deleteConfigV8Path(expected, []string{"routing", "retry", "request-retry"})
-	retry := configV8Node(expected, []string{"routing", "retry"})
-	retry.Content = append(retry.Content,
-		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "max-retry-credentials"},
-		&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!int", Value: "7"})
+	retry := configV8Node(expected, []string{"routing", "retry"}).(map[string]any)
+	retry["max-retry-credentials"] = int64(7)
 	deleteConfigV8Path(expected, []string{"routing", "retry", "max-retry-interval"})
-	var expectedValue, actualValue any
-	if err = expected.Decode(&expectedValue); err != nil {
-		t.Fatal(err)
-	}
-	if err = root.Decode(&actualValue); err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(expectedValue, actualValue) {
+	if !reflect.DeepEqual(expected, root) {
 		t.Fatal("DELETE changed unrelated document fields or their presence")
 	}
 	pluginPath := []string{"plugins", "configs", "sample"}
-	var beforePlugin, afterPlugin any
-	if err = configV8Node(original, pluginPath).Decode(&beforePlugin); err != nil {
-		t.Fatal(err)
-	}
-	if err = configV8Node(root, pluginPath).Decode(&afterPlugin); err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(beforePlugin, afterPlugin) {
+	if !reflect.DeepEqual(configV8Node(original, pluginPath), configV8Node(root, pluginPath)) {
 		t.Fatal("opaque plugin settings changed")
 	}
-	for _, comment := range []string{"# Keep document comment", "# Keep empty mapping", "# Keep explicit null", "# Keep new sibling"} {
+	for _, comment := range []string{"# Keep document comment", "# Keep empty mapping", "# Keep explicit empty scalar", "# Keep new sibling"} {
 		if !strings.Contains(string(data), comment) {
 			t.Fatalf("lost comment %s", comment)
 		}
 	}
-	for _, tc := range []struct{ name, body string }{{"options", "{}"}, {"custom-null", "null"}} {
+	for _, tc := range []struct{ name, body string }{{"options", "{}"}, {"custom-empty", `""`}} {
 		path := "plugins/configs/sample/" + tc.name
 		request(http.MethodGet, path, http.StatusOK, tc.body)
 		request(http.MethodDelete, path, http.StatusOK, "")
@@ -759,23 +720,12 @@ plugins:
 	}
 }
 
-func TestConfigV8SaveNormalizesCollectionStylesToBlockYAML(t *testing.T) {
+func TestConfigV8SaveNormalizesCollectionStylesToTOML(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	file := filepath.Join(t.TempDir(), "config.yaml")
-	raw := `config-version: 8
-server:
-  port: 8317
-api-keys:
-  openai-compatibility:
-    - name: compat-provider
-      base-url: "https://api.example.com"
-      headers:
-        User-Agent: "$User-Agent"
-      models:
-        - alias: "coding"
-          name: "gpt-4o"
-      keys:
-        - api-key: "sk-compat-1"
+	file := filepath.Join(t.TempDir(), "config.toml")
+	raw := `config-version = 8
+server = {port = 8317}
+api-keys = {openai-compatibility = [{name = "compat-provider", base-url = "https://api.example.com", headers = {User-Agent = "$User-Agent"}, models = [{alias = "coding", name = "gpt-4o"}], keys = [{api-key = "sk-compat-1"}]}]}
 `
 	if errWrite := os.WriteFile(file, []byte(raw), 0600); errWrite != nil {
 		t.Fatal(errWrite)
@@ -806,15 +756,15 @@ api-keys:
 	}
 	savedStr := string(saved)
 
-	// Ensure the saved config does NOT contain inline JSON / flow style for complex collections
-	if strings.Contains(savedStr, "[{") || strings.Contains(savedStr, `headers: {`) || strings.Contains(savedStr, `models: [{`) {
-		t.Fatalf("config contains flow style / inline JSON collections:\n%s", savedStr)
+	// Ensure complex collections use TOML rather than inline JSON syntax.
+	if strings.Contains(savedStr, `"name":`) || strings.Contains(savedStr, `"headers":`) || strings.Contains(savedStr, `"models":`) {
+		t.Fatalf("config contains JSON collections instead of TOML:\n%s", savedStr)
 	}
-	if !strings.Contains(savedStr, "openai-compatibility:") || !strings.Contains(savedStr, "- name:") || !strings.Contains(savedStr, "base-url:") {
-		t.Fatalf("expected block style sequence with unquoted keys for openai-compatibility, got:\n%s", savedStr)
+	if !strings.Contains(savedStr, "openai-compatibility") || !strings.Contains(savedStr, "name =") || !strings.Contains(savedStr, "base-url =") {
+		t.Fatalf("expected native TOML collection for openai-compatibility, got:\n%s", savedStr)
 	}
 	if strings.Contains(savedStr, `"name":`) || strings.Contains(savedStr, `"base-url":`) {
-		t.Fatalf("expected keys to be unquoted in block YAML, got:\n%s", savedStr)
+		t.Fatalf("expected keys to be unquoted in TOML, got:\n%s", savedStr)
 	}
 
 	// Also test PATCH at root /v8/management/config with JSON
@@ -831,14 +781,14 @@ api-keys:
 		t.Fatal(errRead)
 	}
 	savedStr = string(saved)
-	if strings.Contains(savedStr, "[{") || strings.Contains(savedStr, `headers: {`) || strings.Contains(savedStr, `models: [{`) {
-		t.Fatalf("PATCH saved config contains flow style / inline JSON collections:\n%s", savedStr)
+	if strings.Contains(savedStr, `"name":`) || strings.Contains(savedStr, `"headers":`) || strings.Contains(savedStr, `"models":`) {
+		t.Fatalf("PATCH saved config contains JSON collections instead of TOML:\n%s", savedStr)
 	}
-	if !strings.Contains(savedStr, "openai-compatibility:") || !strings.Contains(savedStr, "- name:") {
-		t.Fatalf("expected block style sequence after PATCH for openai-compatibility, got:\n%s", savedStr)
+	if !strings.Contains(savedStr, "openai-compatibility") || !strings.Contains(savedStr, "name =") {
+		t.Fatalf("expected native TOML collection after PATCH for openai-compatibility, got:\n%s", savedStr)
 	}
 
-	// Verify that empty sequence retains flow style []
+	// Verify that an explicit empty array remains present.
 	emptyJSON := `{"server":{"trusted-proxies":[]}}`
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPatch, "/v8/management/config", strings.NewReader(emptyJSON))
@@ -852,7 +802,7 @@ api-keys:
 		t.Fatal(errRead)
 	}
 	savedStr = string(saved)
-	if !strings.Contains(savedStr, "trusted-proxies: []") {
+	if !strings.Contains(savedStr, "trusted-proxies = []") {
 		t.Fatalf("expected empty sequence to retain flow style [], got:\n%s", savedStr)
 	}
 
@@ -870,8 +820,8 @@ api-keys:
 		t.Fatal(errRead)
 	}
 	savedStr = string(saved)
-	if strings.Contains(savedStr, "[{") || strings.Contains(savedStr, `headers: {`) || strings.Contains(savedStr, `models: [{`) {
-		t.Fatalf("root PUT saved config contains flow style / inline JSON collections:\n%s", savedStr)
+	if strings.Contains(savedStr, `"name":`) || strings.Contains(savedStr, `"headers":`) || strings.Contains(savedStr, `"models":`) {
+		t.Fatalf("root PUT saved config contains JSON collections instead of TOML:\n%s", savedStr)
 	}
 	if strings.Contains(savedStr, `"config-version":`) || strings.Contains(savedStr, `"server":`) || strings.Contains(savedStr, `"api-keys":`) {
 		t.Fatalf("root PUT saved config contains quoted keys:\n%s", savedStr)
@@ -883,7 +833,7 @@ api-keys:
 	// Verify the final saved file loads correctly into Config
 	loaded, errLoaded := config.LoadConfig(file)
 	if errLoaded != nil {
-		t.Fatalf("LoadConfig failed on normalized saved YAML: %v", errLoaded)
+		t.Fatalf("LoadConfig failed on normalized saved TOML: %v", errLoaded)
 	}
 	if len(loaded.OpenAICompatibility) != 1 || loaded.OpenAICompatibility[0].Name != "compat-provider-root" {
 		t.Fatalf("unexpected loaded config content: %+v", loaded.OpenAICompatibility)
